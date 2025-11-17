@@ -43,11 +43,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ProductListProps {
     products: (Product & { id: string })[];
-    setProducts: (products: (Product & { id: string })[]) => void;
+    onUpdateProduct: (product: Product & { id: string }) => void;
+    onDeleteProduct: (productId: string) => void;
 }
 
 
-export default function ProductList({ products, setProducts }: ProductListProps) {
+export default function ProductList({ products, onUpdateProduct, onDeleteProduct }: ProductListProps) {
   const { toast } = useToast();
   const [nameFilter, setNameFilter] = React.useState("");
   const [filteredProducts, setFilteredProducts] = React.useState(products);
@@ -68,11 +69,7 @@ export default function ProductList({ products, setProducts }: ProductListProps)
   }
 
   const handleDeleteClick = (productId: string) => {
-     // In a real app, you'd make an API call to delete the product
-    console.log("Deleting product with id:", productId);
-
-    setProducts(products.filter(p => p.id !== productId));
-
+    onDeleteProduct(productId);
     toast({
         title: "Produto Excluído!",
         description: "O produto foi removido com sucesso.",
@@ -80,15 +77,13 @@ export default function ProductList({ products, setProducts }: ProductListProps)
       });
   }
 
-  const handleFormSuccess = (updatedProduct?: Product & { id: string }) => {
+  const handleFormSuccess = (updatedProduct: Product & { id: string }) => {
+    onUpdateProduct(updatedProduct);
     setIsEditDialogOpen(false);
     setEditingProduct(null);
-    if (updatedProduct) {
-        setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-    }
      toast({
         title: "Sucesso!",
-        description: "Lista de produtos atualizada.",
+        description: "Produto atualizado com sucesso.",
       });
   };
 
@@ -166,7 +161,7 @@ export default function ProductList({ products, setProducts }: ProductListProps)
               </DialogHeader>
               <ProductForm
                 initialData={editingProduct}
-                onSuccess={(product) => handleFormSuccess(product as Product & { id: string })}
+                onSuccess={handleFormSuccess}
               />
             </DialogContent>
           </Dialog>

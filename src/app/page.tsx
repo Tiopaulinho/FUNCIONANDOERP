@@ -34,13 +34,21 @@ const initialProducts: (Product & { id: string })[] = [
 
 export default function Home() {
   const [products, setProducts] = React.useState(initialProducts);
+  const [isNewProductDialogOpen, setIsNewProductDialogOpen] = React.useState(false);
 
   const addProduct = (newProduct: Product & { id: string }) => {
     setProducts((prevProducts) => [...prevProducts, newProduct]);
+    setIsNewProductDialogOpen(false); // Close dialog on success
+  };
+  
+  const updateProduct = (updatedProduct: Product & { id: string }) => {
+    setProducts((prevProducts) => 
+      prevProducts.map((p) => p.id === updatedProduct.id ? updatedProduct : p)
+    );
   };
 
-  const updateProducts = (updatedProducts: (Product & { id: string })[]) => {
-    setProducts(updatedProducts);
+  const deleteProduct = (productId: string) => {
+    setProducts((prevProducts) => prevProducts.filter((p) => p.id !== productId));
   };
 
 
@@ -85,7 +93,7 @@ export default function Home() {
                   <SalesOrderForm products={products} onProductAdd={addProduct} />
                 </DialogContent>
               </Dialog>
-               <Dialog>
+               <Dialog open={isNewProductDialogOpen} onOpenChange={setIsNewProductDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline">
                     <Package className="mr-2 h-4 w-4" />
@@ -96,11 +104,7 @@ export default function Home() {
                   <DialogHeader>
                     <DialogTitle>Novo Produto</DialogTitle>
                   </DialogHeader>
-                  <ProductForm onSuccess={(newProduct) => {
-                     if (newProduct) {
-                        addProduct(newProduct as Product & { id: string });
-                      }
-                  }} />
+                  <ProductForm onSuccess={addProduct} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -112,7 +116,11 @@ export default function Home() {
             <SalesOrderList />
           </TabsContent>
           <TabsContent value="products">
-            <ProductList products={products} setProducts={updateProducts} />
+            <ProductList 
+              products={products}
+              onUpdateProduct={updateProduct}
+              onDeleteProduct={deleteProduct}
+            />
           </TabsContent>
         </Tabs>
       </div>

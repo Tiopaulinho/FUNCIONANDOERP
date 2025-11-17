@@ -17,7 +17,7 @@ export type Customer = z.infer<typeof customerRegistrationSchema>;
 
 export const productSchema = z.object({
   name: z.string().min(3, "O nome do produto deve ter pelo menos 3 caracteres."),
-  price: z.coerce.number().min(0.01, "O preço deve ser positivo."),
+  price: z.coerce.number({invalid_type_error: "O preço é obrigatório."}).min(0.01, "O preço deve ser positivo."),
   // You can add more fields like description, sku, etc.
 });
 

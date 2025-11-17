@@ -24,7 +24,7 @@ type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   initialData?: (Product & { id: string }) | null;
-  onSuccess?: (product?: Product & { id: string }) => void;
+  onSuccess?: (product: Product & { id: string }) => void;
 }
 
 export default function ProductForm({ initialData, onSuccess }: ProductFormProps) {
@@ -36,13 +36,15 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     resolver: zodResolver(productSchema),
     defaultValues: initialData || {
       name: "",
-      price: 0,
+      price: undefined, // Use undefined for empty state
     },
   });
 
   React.useEffect(() => {
     if (initialData) {
       form.reset(initialData);
+    } else {
+      form.reset({ name: "", price: undefined });
     }
   }, [initialData, form]);
 
@@ -64,14 +66,15 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
       description: isEditMode ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!",
     });
     
-    setIsSubmitting(false);
-    
     if (onSuccess) {
       onSuccess(newOrUpdatedProduct);
     }
+    
     if (!isEditMode) {
-      form.reset({ name: "", price: 0 });
+      form.reset({ name: "", price: undefined });
     }
+    
+    setIsSubmitting(false);
   }
 
   return (
@@ -107,7 +110,14 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                   <FormItem>
                     <FormLabel>Preço (R$)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="Ex: 59,90" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="Ex: 59,90" 
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
