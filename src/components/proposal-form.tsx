@@ -72,23 +72,20 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
   const watchedDiscount = form.watch("discount");
   const watchedShipping = form.watch("shipping");
   
-  const subtotal = React.useMemo(() => 
-    watchedItems.reduce((acc, item) => {
+ const subtotal = React.useMemo(() => {
+    return watchedItems.reduce((acc, item) => {
       const quantity = Number(item.quantity) || 0;
       const price = Number(item.price) || 0;
-      return acc + (quantity * price);
-    }, 0),
-  [watchedItems]);
-
-  const discountAmount = React.useMemo(() => {
-    const discountValue = Number(watchedDiscount) || 0;
-    return subtotal * (discountValue / 100);
-  }, [subtotal, watchedDiscount]);
+      return acc + quantity * price;
+    }, 0);
+  }, [watchedItems]);
 
   const total = React.useMemo(() => {
+    const discountValue = Number(watchedDiscount) || 0;
     const shippingValue = Number(watchedShipping) || 0;
+    const discountAmount = subtotal * (discountValue / 100);
     return subtotal - discountAmount + shippingValue;
-  }, [subtotal, discountAmount, watchedShipping]);
+  }, [subtotal, watchedDiscount, watchedShipping]);
 
 
   const handleProductSelect = (productId: string, index: number) => {
