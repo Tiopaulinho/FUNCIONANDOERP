@@ -20,8 +20,9 @@ import {
 import SalesOrderForm from "@/components/sales-order-form";
 import ProductList from "@/components/product-list";
 import ProductForm from "@/components/product-form";
-import type { Product, SalesOrder, Lead, Customer } from "@/lib/schemas";
+import type { Product, SalesOrder, Lead, Customer, Proposal } from "@/lib/schemas";
 import SalesFunnel from "@/components/sales-funnel";
+import ProposalList from "@/components/proposal-list";
 
 
 const initialProducts: (Product & { id: string })[] = [
@@ -61,6 +62,7 @@ export default function Home() {
   const [orders, setOrders] = React.useState<SalesOrder[]>(initialOrders);
   const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
   const [customers, setCustomers] = React.useState(initialCustomers);
+  const [proposals, setProposals] = React.useState<Proposal[]>([]);
 
   const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
   const [leadForOrder, setLeadForOrder] = React.useState<Lead | null>(null);
@@ -130,6 +132,32 @@ export default function Home() {
     setLeads(prevLeads => prevLeads.filter(l => l.id !== leadId));
   };
 
+  const handleProposalSave = (proposal: Proposal) => {
+    setProposals(prev => {
+        const existing = prev.find(p => p.id === proposal.id);
+        if (existing) {
+            return prev.map(p => p.id === proposal.id ? proposal : p);
+        }
+        return [...prev, proposal];
+    });
+    updateLead({ ...leads.find(l => l.id === proposal.leadId)!, proposalId: proposal.id });
+};
+
+const handleProposalSent = (proposal: Proposal) => {
+    handleProposalSave({ ...proposal, status: 'Sent' });
+    updateLead({ ...leads.find(l => l.id === proposal.leadId)!, status: 'Negociação' });
+};
+
+  const deleteProposal = (proposalId: string) => {
+    setProposals(prev => prev.filter(p => p.id !== proposalId));
+    // Also remove from lead
+    const leadToUpdate = leads.find(l => l.proposalId === proposalId);
+    if (leadToUpdate) {
+        const { proposalId, ...rest } = leadToUpdate;
+        updateLead(rest as Lead);
+    }
+  };
+
 
   return (
     <main className="flex min-h-dvh w-full flex-col items-center bg-background p-4 md:p-8">
@@ -139,6 +167,7 @@ export default function Home() {
             <TabsList>
               <TabsTrigger value="customers">Clientes</TabsTrigger>
               <TabsTrigger value="funnel">Funil de Venda</TabsTrigger>
+              <TabsTrigger value="proposals">Propostas</TabsTrigger>
               <TabsTrigger value="orders">Pedidos de Venda</TabsTrigger>
               <TabsTrigger value="products">Produtos</TabsTrigger>
             </TabsList>
@@ -151,12 +180,22 @@ export default function Home() {
               leads={leads} 
               setLeads={setLeads} 
               onOpenNewOrder={openNewOrderDialog}
-              onRegisterCustomer={addCustomer}
               customers={customers}
               products={products}
               onProductAdd={addProduct}
               onUpdateLead={updateLead}
               onDeleteLead={deleteLead}
+              proposals={proposals}
+              onProposalSave={handleProposalSave}
+              onProposalSent={handleProposalSent}
+            />
+          </TabsContent>
+           <TabsContent value="proposals">
+            <ProposalList 
+              proposals={proposals}
+              leads={leads}
+              customers={customers}
+              onDeleteProposal={deleteProposal}
             />
           </TabsContent>
           <TabsContent value="orders">

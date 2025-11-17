@@ -56,6 +56,7 @@ export type LeadStatus = "Lista de Leads" | "Contato" | "Proposta" | "Negociaç�
 export type Lead = z.infer<typeof leadSchema> & {
   id: string;
   status: LeadStatus;
+  proposalId?: string;
 }
 
 
@@ -71,11 +72,13 @@ export const proposalSchema = z.object({
   id: z.string().optional(),
   leadId: z.string(),
   date: z.string(),
+  status: z.enum(["Draft", "Sent"]),
   items: z.array(proposalItemSchema).min(1, "Adicione pelo menos um item."),
   discount: z.coerce.number().min(0, "O desconto não pode ser negativo.").optional(),
   shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
   observations: z.string().optional(),
   paymentMethods: z.string().optional(),
+  total: z.number().optional(), // Will be calculated
 });
 
 export type Proposal = z.infer<typeof proposalSchema>;

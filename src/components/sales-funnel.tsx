@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Wand2, Send, Save } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2 } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -55,9 +55,14 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
                 <Building className="h-4 w-4 text-muted-foreground" />
                 {lead.name}
             </CardTitle>
-            {lead.proposalNotes && (
-                 <StickyNote className="h-4 w-4 text-amber-500" />
-            )}
+            <div className="flex items-center gap-2">
+                {lead.proposalId && (
+                    <FileCheck2 className="h-4 w-4 text-blue-500" />
+                )}
+                {lead.proposalNotes && !lead.proposalId && (
+                    <StickyNote className="h-4 w-4 text-amber-500" />
+                )}
+            </div>
         </div>
         <CardDescription className="text-sm flex items-center gap-2 pt-1">
             <User className="h-4 w-4 text-muted-foreground" />
@@ -70,7 +75,6 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
             </CardDescription>
         )}
       </CardHeader>
-      
     </Card>
   );
 };
@@ -88,9 +92,13 @@ const LeadDetailsModal = ({
   onOpenChange: (open: boolean) => void;
   onEdit: (lead: Lead) => void;
   onDelete: (leadId: string) => void;
-  onGenerateProposal: (lead: Lead) => void;
+  onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
 }) => {
   if (!lead) return null;
+
+  const handleGenerateClick = () => {
+    onGenerateProposal(lead, !!lead.proposalId);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -131,10 +139,10 @@ const LeadDetailsModal = ({
         </div>
         <Separator />
         <div className="flex justify-end items-center gap-2">
-            {lead.status === 'Proposta' && (
-              <Button onClick={() => onGenerateProposal(lead)}>
-                <FileText className="mr-2 h-4 w-4" />
-                Gerar Proposta
+            {(lead.status === 'Proposta' || lead.proposalId) && (
+              <Button onClick={handleGenerateClick}>
+                {lead.proposalId ? <FilePenLine className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
+                {lead.proposalId ? 'Ver/Editar Proposta' : 'Gerar Proposta'}
               </Button>
             )}
             <Button variant="outline" onClick={() => onEdit(lead)}>
@@ -227,12 +235,14 @@ interface SalesFunnelProps {
   leads: Lead[];
   setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
   onOpenNewOrder: (lead: Lead) => void;
-  onRegisterCustomer: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
+  onUpdateLead: (lead: Lead) => void;
+  onDeleteLead: (leadId: string) => void;
   customers: (Customer & { id: string })[];
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
-  onUpdateLead: (lead: Lead) => void;
-  onDeleteLead: (leadId: string) => void;
+  proposals: Proposal[];
+  onProposalSave: (proposal: Proposal) => void;
+  onProposalSent: (proposal: Proposal) => void;
 }
 
 export default function SalesFunnel({ 
@@ -243,6 +253,9 @@ export default function SalesFunnel({
     onDeleteLead,
     products,
     onProductAdd,
+    proposals,
+    onProposalSave,
+    onProposalSent
 }: SalesFunnelProps) {
   const { toast } = useToast();
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
@@ -280,8 +293,6 @@ export default function SalesFunnel({
 
         if (newStatus === 'Criar Pedido (Aprovado)') {
             onOpenNewOrder(lead);
-            // We don't change the status here, it will be changed implicitly
-            // when the order is created. Or we can have another status like "Pedido Criado"
             return; 
         }
       
@@ -326,7 +337,7 @@ export default function SalesFunnel({
   
   const handleEditClick = (lead: Lead) => {
     setEditingLead(lead);
-    setIsDetailsModalOpen(false); // Close details modal
+    setIsDetailsModalOpen(false);
     setIsEditModalOpen(true);
   };
 
@@ -350,44 +361,49 @@ export default function SalesFunnel({
     });
   }
 
-  const handleGenerateProposalClick = (lead: Lead) => {
+  const handleGenerateProposalClick = (lead: Lead, isEditing: boolean) => {
+    if (isEditing) {
+        const proposal = proposals.find(p => p.id === lead.proposalId);
+        setSavedProposal(proposal || null);
+    } else {
+        setSavedProposal(null);
+    }
     setGenerateProposalLead(lead);
     setIsDetailsModalOpen(false);
     setIsGenerateProposalModalOpen(true);
   }
 
-  const handleProposalSave = (proposal: Proposal) => {
-    console.log("Proposal to be actioned:", proposal);
+  const handleProposalFormSuccess = (proposal: Proposal) => {
     setSavedProposal(proposal);
-    setIsGenerateProposalModalOpen(false); // Close form
-    setIsPostProposalActionsModalOpen(true); // Open actions modal
+    setIsGenerateProposalModalOpen(false);
+    setIsPostProposalActionsModalOpen(true);
   }
   
   const handleFinalizeProposal = () => {
     if (savedProposal) {
-      console.log("Proposal finalized:", savedProposal);
-      // Here you would save to DB
-      if (generateProposalLead) {
-        onUpdateLead({ ...generateProposalLead, status: 'Negociação' });
-      }
+      onProposalSave(savedProposal);
       toast({
         title: "Proposta Salva!",
-        description: `A proposta para ${generateProposalLead?.name} foi salva e o lead movido para Negociação.`
+        description: `A proposta para ${generateProposalLead?.name} foi salva.`
       });
     }
     resetProposalFlow();
   };
   
   const handleSendWhatsApp = () => {
-    toast({
-      title: "Funcionalidade em breve!",
-      description: "O envio de propostas pelo WhatsApp será implementado em breve.",
-    });
+    if (savedProposal) {
+      onProposalSent(savedProposal);
+      toast({
+        title: "Proposta Enviada!",
+        description: `Lead movido para Negociação. O envio via WhatsApp será implementado em breve.`
+      });
+    }
+    resetProposalFlow();
   }
 
   const handleEditProposal = () => {
-    setIsPostProposalActionsModalOpen(false); // Close actions
-    setIsGenerateProposalModalOpen(true); // Re-open form
+    setIsPostProposalActionsModalOpen(false);
+    setIsGenerateProposalModalOpen(true);
   }
 
   const resetProposalFlow = () => {
@@ -486,12 +502,12 @@ export default function SalesFunnel({
             onSave={handleSaveProposalNotes}
         />
 
-        <Dialog open={isGenerateProposalModalOpen} onOpenChange={setIsGenerateProposalModalOpen}>
+        <Dialog open={isGenerateProposalModalOpen} onOpenChange={(open) => { if (!open) resetProposalFlow(); else setIsGenerateProposalModalOpen(true);}}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Gerar Proposta</DialogTitle>
+                    <DialogTitle>{savedProposal ? "Editar Proposta" : "Gerar Proposta"}</DialogTitle>
                     <DialogDescription>
-                        Crie uma proposta comercial para o lead <span className="font-semibold text-foreground">{generateProposalLead?.name}</span>.
+                        Crie ou edite uma proposta comercial para o lead <span className="font-semibold text-foreground">{generateProposalLead?.name}</span>.
                     </DialogDescription>
                 </DialogHeader>
                 {generateProposalLead && (
@@ -499,7 +515,7 @@ export default function SalesFunnel({
                         lead={generateProposalLead}
                         products={products}
                         onProductAdd={onProductAdd}
-                        onSuccess={handleProposalSave}
+                        onSuccess={handleProposalFormSuccess}
                         initialData={savedProposal}
                     />
                 )}
@@ -509,22 +525,22 @@ export default function SalesFunnel({
         <Dialog open={isPostProposalActionsModalOpen} onOpenChange={setIsPostProposalActionsModalOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Proposta Criada</DialogTitle>
+                    <DialogTitle>Proposta Pronta</DialogTitle>
                     <DialogDescription>
-                        A proposta para <span className="font-semibold text-foreground">{generateProposalLead?.name}</span> está pronta. O que você gostaria de fazer agora?
+                        A proposta para <span className="font-semibold text-foreground">{generateProposalLead?.name}</span> foi salva. O que você gostaria de fazer?
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="grid grid-cols-2 gap-4 pt-4 sm:grid-cols-2">
                     <Button onClick={handleFinalizeProposal}>
-                        <Save className="mr-2" /> Salvar e Finalizar
+                        <Save className="mr-2 h-4 w-4" /> Apenas Salvar
                     </Button>
                     <Button onClick={handleSendWhatsApp} variant="secondary">
-                        <Send className="mr-2" /> Enviar por WhatsApp
+                        <Send className="mr-2 h-4 w-4" /> Salvar e Enviar
                     </Button>
                     <Button onClick={handleEditProposal} variant="outline">
-                        <FilePenLine className="mr-2" /> Editar Proposta
+                        <FilePenLine className="mr-2 h-4 w-4" /> Editar Proposta
                     </Button>
-                    <Button onClick={resetProposalFlow} variant="destructive">
+                    <Button onClick={resetProposalFlow} variant="ghost">
                         Cancelar
                     </Button>
                 </DialogFooter>

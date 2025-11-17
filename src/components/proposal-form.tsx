@@ -41,6 +41,7 @@ interface ProposalFormProps {
 
 export default function ProposalForm({ lead, onSuccess, products, onProductAdd, initialData }: ProposalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isEditMode = !!initialData;
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
@@ -52,8 +53,15 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
       observations: lead.proposalNotes || "",
       paymentMethods: "",
       date: new Date().toISOString().split('T')[0],
+      status: "Draft",
     },
   });
+
+   React.useEffect(() => {
+    if (initialData) {
+        form.reset(initialData);
+    }
+  }, [initialData, form]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -99,10 +107,13 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
     setIsSubmitting(true);
 
     const finalProposal: Proposal = {
+      ...initialData,
       ...data,
       id: initialData?.id || `PROP-${Date.now()}`,
       date: new Date().toISOString().split('T')[0],
       items: data.items.map(item => ({ ...item, id: item.id || `pitem-${Date.now()}-${Math.random()}` })),
+      total: total,
+      status: initialData?.status || "Draft",
     };
     
     console.log("Nova proposta:", finalProposal);
@@ -225,7 +236,7 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
                     <p className="text-3xl font-bold">{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                 </div>
                 <Button type="submit" disabled={isSubmitting} size="lg">
-                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Salvando...</> : <><FileText className="mr-2 h-5 w-5" /> Salvar Proposta</>}
+                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Salvando...</> : <><FileText className="mr-2 h-5 w-5" /> {isEditMode ? "Atualizar Proposta" : "Criar Proposta"}</>}
                 </Button>
             </div>
           </div>
