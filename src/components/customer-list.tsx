@@ -17,6 +17,8 @@ import {
   CardContent,
 } from "./ui/card";
 import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { FilePenLine, Trash2 } from "lucide-react";
 
 const allCustomers = [
   {
@@ -95,6 +97,7 @@ export default function CustomerList() {
               <TableHead>Telefone</TableHead>
               <TableHead>Cidade</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -105,6 +108,18 @@ export default function CustomerList() {
                 <TableCell>{customer.phone}</TableCell>
                 <TableCell>{customer.city}</TableCell>
                 <TableCell>{customer.state}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon">
+                      <FilePenLine className="h-4 w-4" />
+                      <span className="sr-only">Editar</span>
+                    </Button>
+                    <Button variant="destructive" size="icon">
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Excluir</span>
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
