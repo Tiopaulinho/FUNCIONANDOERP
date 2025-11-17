@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Wand2 } from "lucide-react";
 import type { Lead, LeadStatus, Customer } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -73,28 +73,115 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
   );
 };
 
+const GenerateProposalModal = ({
+    lead,
+    open,
+    onOpenChange,
+  }: {
+    lead: Lead | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => {
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [proposalText, setProposalText] = React.useState("");
+
+    React.useEffect(() => {
+        if(open) {
+            setProposalText("");
+            setIsLoading(false);
+        }
+    }, [open]);
+
+    if (!lead) return null;
+  
+    const handleGenerate = async () => {
+        setIsLoading(true);
+        // Simulação de chamada de IA
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        const generatedText = `
+Prezado(a) ${lead.contact},
+
+Agradecemos a oportunidade de apresentar esta proposta para ${lead.name}.
+
+Com base em nossa conversa, entendemos que vocês estão buscando: ${lead.proposalNotes || '[Detalhes da necessidade do cliente]'}.
+
+Nossa solução oferece [Benefício 1], [Benefício 2] e [Benefício 3]. O investimento para este projeto é de ${lead.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.
+
+Estamos à disposição para discutir os próximos passos.
+
+Atenciosamente,
+Equipe Cliente Fácil
+        `.trim();
+        
+        setProposalText(generatedText);
+        setIsLoading(false);
+        toast({
+            title: "Proposta Gerada!",
+            description: "A proposta foi criada com base nas informações do lead.",
+        });
+    }
+  
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/> Gerar Proposta para {lead.name}</DialogTitle>
+            <DialogDescription>
+              Use as informações do lead para gerar uma proposta comercial.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-center">
+                <Button onClick={handleGenerate} disabled={isLoading}>
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Gerando...
+                        </>
+                    ) : (
+                        <>
+                            <Wand2 className="mr-2 h-4 w-4" />
+                            Gerar com IA
+                        </>
+                    )}
+                </Button>
+            </div>
+
+            {proposalText && (
+                <div className="space-y-2 pt-4">
+                    <h3 className="font-semibold">Resultado da Proposta:</h3>
+                    <Textarea 
+                        value={proposalText}
+                        readOnly
+                        rows={12}
+                        className="bg-muted/50"
+                    />
+                </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
 const LeadDetailsModal = ({ 
   lead, 
   open, 
   onOpenChange,
   onEdit,
-  onDelete
+  onDelete,
+  onGenerateProposal
 }: { 
   lead: Lead | null; 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
   onEdit: (lead: Lead) => void;
   onDelete: (leadId: string) => void;
+  onGenerateProposal: (lead: Lead) => void;
 }) => {
-  const { toast } = useToast();
   if (!lead) return null;
-
-  const handleGenerateProposal = () => {
-    toast({
-      title: "Gerando Proposta...",
-      description: `A proposta para ${lead.name} está sendo preparada.`,
-    });
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -136,7 +223,7 @@ const LeadDetailsModal = ({
         <Separator />
         <div className="flex justify-end items-center gap-2">
             {lead.status === 'Proposta' && (
-              <Button onClick={handleGenerateProposal}>
+              <Button onClick={() => onGenerateProposal(lead)}>
                 <FileText className="mr-2 h-4 w-4" />
                 Gerar Proposta
               </Button>
@@ -248,9 +335,11 @@ export default function SalesFunnel({
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
   const [editingLead, setEditingLead] = React.useState<Lead | null>(null);
   const [proposalLead, setProposalLead] = React.useState<Lead | null>(null);
+  const [generateProposalLead, setGenerateProposalLead] = React.useState<Lead | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isProposalModalOpen, setIsProposalModalOpen] = React.useState(false);
+  const [isGenerateProposalModalOpen, setIsGenerateProposalModalOpen] = React.useState(false);
 
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
@@ -342,6 +431,12 @@ export default function SalesFunnel({
     });
   }
 
+  const handleGenerateProposalClick = (lead: Lead) => {
+    setGenerateProposalLead(lead);
+    setIsDetailsModalOpen(false);
+    setIsGenerateProposalModalOpen(true);
+  }
+
   const leadsByStatus = React.useMemo(() => {
     const grouped: { [key in LeadStatus]?: Lead[] } = {};
     for (const status of funnelStatuses) {
@@ -408,6 +503,7 @@ export default function SalesFunnel({
           onOpenChange={setIsDetailsModalOpen}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
+          onGenerateProposal={handleGenerateProposalClick}
         />
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -429,8 +525,12 @@ export default function SalesFunnel({
             onSave={handleSaveProposalNotes}
         />
 
+        <GenerateProposalModal
+            lead={generateProposalLead}
+            open={isGenerateProposalModalOpen}
+            onOpenChange={setIsGenerateProposalModalOpen}
+        />
+
     </div>
   );
 }
-
-    
