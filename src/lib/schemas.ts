@@ -17,10 +17,9 @@ export const customerRegistrationSchema = z.object({
 export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: string };
 
 export const productSchema = z.object({
-  name: z.string().min(3, "O nome do produto é obrigatório."),
-  category: z.enum(["VESTUARIOS", "PAPELARIA", "SERVICOS"], {
-    errorMap: () => ({ message: "Selecione uma categoria válida." }),
-  }),
+  name: z.string().min(1, "O nome do produto é obrigatório."),
+  category: z.string().min(1, "A categoria é obrigatória."),
+  newCategory: z.string().optional(),
   type: z.string().optional(),
   material: z.string().optional(),
   color: z.string().optional(),
@@ -34,7 +33,16 @@ export const productSchema = z.object({
   taxes: z.coerce.number().min(0, "Os impostos não podem ser negativos.").optional(),
   profitMargin: z.coerce.number().min(0, "A margem não pode ser negativa.").optional(),
   productionMinutes: z.coerce.number().min(0, "Os minutos não podem ser negativos.").optional(),
+}).refine(data => {
+    if (data.category === 'OUTROS') {
+        return !!data.newCategory && data.newCategory.length > 0;
+    }
+    return true;
+}, {
+    message: "Por favor, especifique o nome da nova categoria.",
+    path: ["newCategory"],
 });
+
 
 export type Product = z.infer<typeof productSchema>;
 
@@ -114,3 +122,4 @@ export type ProposalItem = z.infer<typeof proposalItemSchema>;
     
 
     
+

@@ -50,6 +50,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     defaultValues: initialData || {
       name: "",
       category: "",
+      newCategory: "",
       type: "",
       material: "",
       color: "",
@@ -68,8 +69,11 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
   
   React.useEffect(() => {
     if (initialData) {
+      const isStandardCategory = ["VESTUARIOS", "PAPELARIA", "SERVICOS"].includes(initialData.category);
       form.reset({
         ...initialData,
+        category: isStandardCategory ? initialData.category : "OUTROS",
+        newCategory: isStandardCategory ? "" : initialData.category,
         price: initialData.price ?? 0,
         rawMaterialCost: initialData.rawMaterialCost ?? 0,
         laborCost: initialData.laborCost ?? 0,
@@ -79,7 +83,6 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
         profitMargin: initialData.profitMargin ?? 0,
         productionMinutes: initialData.productionMinutes ?? 0,
       });
-      // Estimate cost per minute from initial data if possible
       if (initialData.laborCost && initialData.productionMinutes) {
         setCostPerMinute(initialData.laborCost / initialData.productionMinutes);
       }
@@ -87,6 +90,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
       form.reset({
         name: "",
         category: "",
+        newCategory: "",
         type: "",
         material: "",
         color: "",
@@ -123,9 +127,11 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     const profitValue = totalCost * (profitMargin / 100);
     const suggestedPrice = totalCost + profitValue;
     const actualProfit = chargedPrice - totalCost;
+    
+    const finalCategory = watchedFields.category === 'OUTROS' ? watchedFields.newCategory : watchedFields.category;
 
     const composedName = [
-      watchedFields.category,
+      finalCategory,
       watchedFields.type,
       watchedFields.material,
       watchedFields.color,
@@ -148,10 +154,16 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
     
+    const finalCategory = data.category === 'OUTROS' ? data.newCategory : data.category;
+
     const newOrUpdatedProduct = {
       ...data,
+      category: finalCategory || '',
       id: initialData?.id || `prod-${Date.now()}`,
     };
+    
+    delete (newOrUpdatedProduct as any).newCategory;
+
 
     console.log(isEditMode ? "Produto atualizado:" : "Novo produto:", newOrUpdatedProduct);
 
@@ -161,13 +173,14 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     });
     
     if (onSuccess) {
-      onSuccess(newOrUpdatedProduct);
+      onSuccess(newOrUpdatedProduct as Product & { id: string });
     }
     
     if (!isEditMode) {
       form.reset({
         name: "",
         category: "",
+        newCategory: "",
         type: "",
         material: "",
         color: "",
@@ -247,12 +260,28 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                           <SelectItem value="VESTUARIOS">Vestuário</SelectItem>
                           <SelectItem value="PAPELARIA">Papelaria</SelectItem>
                           <SelectItem value="SERVICOS">Serviços</SelectItem>
+                          <SelectItem value="OUTROS">Outros</SelectItem>
                         </SelectContent>
                       </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              {watchedFields.category === 'OUTROS' && (
+                <FormField
+                  control={form.control}
+                  name="newCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome da Nova Categoria</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Brindes Corporativos" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="type" render={({ field }) => ( <FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ex: Cilíndrica, Baby Look" {...field} /></FormControl><FormMessage /></FormItem> )} />
                 <FormField control={form.control} name="material" render={({ field }) => ( <FormItem><FormLabel>Material</FormLabel><FormControl><Input placeholder="Ex: Porcelana, Algodão" {...field} /></FormControl><FormMessage /></FormItem> )} />
