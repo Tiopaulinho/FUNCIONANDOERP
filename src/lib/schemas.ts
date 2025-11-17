@@ -25,6 +25,7 @@ export const productSchema = z.object({
   fees: z.coerce.number().min(0, "As taxas não podem ser negativas.").optional(),
   taxes: z.coerce.number().min(0, "Os impostos não podem ser negativos.").optional(),
   profitMargin: z.coerce.number().min(0, "A margem não pode ser negativa.").optional(),
+  productionMinutes: z.coerce.number().min(0, "Os minutos não podem ser negativos.").optional(),
 });
 
 export type Product = z.infer<typeof productSchema>;

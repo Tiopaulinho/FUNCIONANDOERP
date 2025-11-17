@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -20,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { productSchema, type Product } from "@/lib/schemas";
 import { Separator } from "./ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import LaborCostCalculator from "./labor-cost-calculator";
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -34,6 +35,9 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = React.useState(false);
+  const [productionMinutes, setProductionMinutes] = React.useState(
+    initialData?.productionMinutes || 0
+  );
   const isEditMode = !!initialData;
 
   const form = useForm<ProductFormValues>({
@@ -47,9 +51,10 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
       fees: 0,
       taxes: 0,
       profitMargin: 0,
+      productionMinutes: 0,
     },
   });
-
+  
   React.useEffect(() => {
     if (initialData) {
       form.reset({
@@ -61,7 +66,9 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
         fees: initialData.fees ?? 0,
         taxes: initialData.taxes ?? 0,
         profitMargin: initialData.profitMargin ?? 0,
+        productionMinutes: initialData.productionMinutes ?? 0,
       });
+      setProductionMinutes(initialData.productionMinutes || 0);
     } else {
       form.reset({
         name: "",
@@ -72,7 +79,9 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
         fees: 0,
         taxes: 0,
         profitMargin: 0,
+        productionMinutes: 0,
       });
+      setProductionMinutes(0);
     }
   }, [initialData, form]);
 
@@ -123,16 +132,32 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     }
     
     if (!isEditMode) {
-      form.reset({ name: "", price: 0 });
+      form.reset({ name: "", price: 0, productionMinutes: 0 });
+      setProductionMinutes(0);
     }
     
     setIsSubmitting(false);
   }
 
-  const handleApplyLaborCost = (cost: number) => {
-    form.setValue("laborCost", parseFloat(cost.toFixed(2)), { shouldDirty: true, shouldValidate: true });
+  const handleApplyCostPerMinute = (costPerMinute: number) => {
+    const newLaborCost = costPerMinute * productionMinutes;
+    form.setValue("laborCost", parseFloat(newLaborCost.toFixed(2)), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
     setIsCalculatorOpen(false);
-  }
+  };
+
+  const handleProductionMinutesChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const minutes = Number(e.target.value);
+    setProductionMinutes(minutes);
+    form.setValue("productionMinutes", minutes, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
 
   return (
     <div className="w-full">
@@ -168,12 +193,35 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                 <FormField control={form.control} name="rawMaterialCost" render={({ field }) => (
                     <FormItem><FormLabel>Custo da Matéria Prima (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
+                 <FormField control={form.control} name="suppliesCost" render={({ field }) => (
+                    <FormItem><FormLabel>Custo de Insumos (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <FormField
+                  control={form.control}
+                  name="productionMinutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tempo de Produção (min)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          {...field}
+                          onChange={handleProductionMinutesChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                  <FormField control={form.control} name="laborCost" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Custo de Mão de Obra (R$)</FormLabel>
                         <div className="flex items-center gap-2">
                             <FormControl>
-                                <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                                <Input type="number" step="0.01" {...field} readOnly className="bg-muted/50" />
                             </FormControl>
                             <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
                                 <DialogTrigger asChild>
@@ -182,16 +230,14 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-xl">
-                                    <LaborCostCalculator onApplyCost={handleApplyLaborCost} />
+                                    <LaborCostCalculator onApplyCost={handleApplyCostPerMinute} />
                                 </DialogContent>
                             </Dialog>
                         </div>
                         <FormMessage />
                     </FormItem>
                 )} />
-                 <FormField control={form.control} name="suppliesCost" render={({ field }) => (
-                    <FormItem><FormLabel>Custo de Insumos (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
-                )} />
+
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField control={form.control} name="fees" render={({ field }) => (
@@ -284,3 +330,5 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     </div>
   );
 }
+
+    

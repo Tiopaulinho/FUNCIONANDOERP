@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -13,10 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Calculator } from "lucide-react";
-import { Separator } from "./ui/separator";
 
 interface LaborCostCalculatorProps {
-  onApplyCost: (cost: number) => void;
+  onApplyCost: (costPerMinute: number) => void;
 }
 
 export default function LaborCostCalculator({ onApplyCost }: LaborCostCalculatorProps) {
@@ -24,22 +24,18 @@ export default function LaborCostCalculator({ onApplyCost }: LaborCostCalculator
   const [fixedCosts, setFixedCosts] = React.useState(1200);
   const [hoursPerDay, setHoursPerDay] = React.useState(8);
   const [daysPerWeek, setDaysPerWeek] = React.useState(5);
-  const [productionMinutes, setProductionMinutes] = React.useState(0);
 
-  const { costPerMinute, totalLaborCost } = React.useMemo(() => {
+  const costPerMinute = React.useMemo(() => {
     const totalMonthlyCost = salary + fixedCosts;
     const weeklyHours = hoursPerDay * daysPerWeek;
     const monthlyHours = weeklyHours * 4.33; // Average weeks in a month
     const monthlyMinutes = monthlyHours * 60;
     
-    const costPerMinute = monthlyMinutes > 0 ? totalMonthlyCost / monthlyMinutes : 0;
-    const totalLaborCost = costPerMinute * productionMinutes;
-
-    return { costPerMinute, totalLaborCost };
-  }, [salary, fixedCosts, hoursPerDay, daysPerWeek, productionMinutes]);
+    return monthlyMinutes > 0 ? totalMonthlyCost / monthlyMinutes : 0;
+  }, [salary, fixedCosts, hoursPerDay, daysPerWeek]);
 
   const handleApplyCost = () => {
-    onApplyCost(totalLaborCost);
+    onApplyCost(costPerMinute);
   };
 
   return (
@@ -50,7 +46,7 @@ export default function LaborCostCalculator({ onApplyCost }: LaborCostCalculator
           Calculadora de Custo de Mão de Obra
         </CardTitle>
         <CardDescription>
-          Preencha os campos abaixo para descobrir o custo do seu minuto de trabalho e aplicá-lo ao produto.
+          Preencha os campos para descobrir o custo do seu minuto de trabalho.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -84,33 +80,18 @@ export default function LaborCostCalculator({ onApplyCost }: LaborCostCalculator
         <Card className="bg-muted/50">
             <CardHeader>
                 <CardDescription>Custo Total por Minuto</CardDescription>
-                <CardTitle className="text-2xl">{costPerMinute.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
-            </CardHeader>
-        </Card>
-
-        <Separator />
-
-        <div className="space-y-4">
-            <h3 className="font-semibold">Custo para este Produto</h3>
-            <div>
-                <Label htmlFor="production-minutes">Minutos para produzir este item</Label>
-                <Input id="production-minutes" type="number" value={productionMinutes} onChange={(e) => setProductionMinutes(Number(e.target.value))} />
-            </div>
-        </div>
-        
-        <Card>
-            <CardHeader>
-                <CardDescription>Custo de Mão de Obra para o Produto</CardDescription>
-                <CardTitle className="text-2xl text-primary">{totalLaborCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
+                <CardTitle className="text-2xl text-primary">{costPerMinute.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
             </CardHeader>
         </Card>
 
       </CardContent>
       <CardFooter>
         <Button className="w-full" onClick={handleApplyCost}>
-          Aplicar Custo e Fechar
+          Aplicar Custo por Minuto e Fechar
         </Button>
       </CardFooter>
     </Card>
   );
 }
+
+    
