@@ -68,25 +68,25 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
     name: "items",
   });
   
-  const watchedItems = form.watch("items");
-  const watchedDiscount = form.watch("discount");
-  const watchedShipping = form.watch("shipping");
-  
- const subtotal = React.useMemo(() => {
-    return watchedItems.reduce((acc, item) => {
+  const watchedFields = form.watch(["items", "discount", "shipping"]);
+  const watchedItems = watchedFields[0];
+  const watchedDiscount = watchedFields[1];
+  const watchedShipping = watchedFields[2];
+
+  const {subtotal, total} = React.useMemo(() => {
+    const sub = watchedItems.reduce((acc, item) => {
       const quantity = Number(item.quantity) || 0;
       const price = Number(item.price) || 0;
       return acc + quantity * price;
     }, 0);
-  }, [watchedItems]);
-
-  const total = React.useMemo(() => {
+    
     const discountValue = Number(watchedDiscount) || 0;
     const shippingValue = Number(watchedShipping) || 0;
-    const discountAmount = subtotal * (discountValue / 100);
-    return subtotal - discountAmount + shippingValue;
-  }, [subtotal, watchedDiscount, watchedShipping]);
+    const discountAmount = sub * (discountValue / 100);
+    const tot = sub - discountAmount + shippingValue;
 
+    return { subtotal: sub, total: tot };
+  }, [watchedItems, watchedDiscount, watchedShipping]);
 
   const handleProductSelect = (productId: string, index: number) => {
     const product = products.find(p => p.id === productId);
@@ -181,7 +181,7 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
                     <TableCell>
                       <FormField control={form.control} name={`items.${index}.price`} render={({ field }) => ( <FormItem><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} /></FormControl></FormItem> )} />
                     </TableCell>
-                    <TableCell className="text-right">{( (Number(watchedItems[index]?.quantity) || 0) * (Number(watchedItems[index]?.price) || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
+                    <TableCell className="text-right">{( (Number(watchedItems?.[index]?.quantity) || 0) * (Number(watchedItems?.[index]?.price) || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                     <TableCell>
                       <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
