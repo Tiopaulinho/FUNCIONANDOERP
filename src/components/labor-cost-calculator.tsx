@@ -31,7 +31,10 @@ export default function LaborCostCalculator({ onApplyCost }: LaborCostCalculator
     const monthlyHours = weeklyHours * 4.33; // Average weeks in a month
     const monthlyMinutes = monthlyHours * 60;
     
-    return monthlyMinutes > 0 ? totalMonthlyCost / monthlyMinutes : 0;
+    if (monthlyMinutes > 0) {
+      return totalMonthlyCost / monthlyMinutes;
+    }
+    return 0;
   }, [salary, fixedCosts, hoursPerDay, daysPerWeek]);
 
   const handleApplyCost = () => {
@@ -79,7 +82,7 @@ export default function LaborCostCalculator({ onApplyCost }: LaborCostCalculator
         
         <Card className="bg-muted/50">
             <CardHeader>
-                <CardDescription>Custo Total por Minuto</CardDescription>
+                <CardDescription>Custo por Minuto</CardDescription>
                 <CardTitle className="text-2xl text-primary">{costPerMinute.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
             </CardHeader>
         </Card>
@@ -93,5 +96,3 @@ export default function LaborCostCalculator({ onApplyCost }: LaborCostCalculator
     </Card>
   );
 }
-
-    

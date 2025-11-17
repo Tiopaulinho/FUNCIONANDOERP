@@ -35,9 +35,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = React.useState(false);
-  const [productionMinutes, setProductionMinutes] = React.useState(
-    initialData?.productionMinutes || 0
-  );
+  const [costPerMinute, setCostPerMinute] = React.useState(0);
   const isEditMode = !!initialData;
 
   const form = useForm<ProductFormValues>({
@@ -68,7 +66,10 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
         profitMargin: initialData.profitMargin ?? 0,
         productionMinutes: initialData.productionMinutes ?? 0,
       });
-      setProductionMinutes(initialData.productionMinutes || 0);
+      // Estimate cost per minute from initial data if possible
+      if (initialData.laborCost && initialData.productionMinutes) {
+        setCostPerMinute(initialData.laborCost / initialData.productionMinutes);
+      }
     } else {
       form.reset({
         name: "",
@@ -81,7 +82,6 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
         profitMargin: 0,
         productionMinutes: 0,
       });
-      setProductionMinutes(0);
     }
   }, [initialData, form]);
 
@@ -132,41 +132,39 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     }
     
     if (!isEditMode) {
-      form.reset({ name: "", price: 0, productionMinutes: 0 });
-      setProductionMinutes(0);
+      form.reset({ name: "", price: 0, rawMaterialCost: 0, laborCost: 0, suppliesCost: 0, fees: 0, taxes: 0, profitMargin: 0, productionMinutes: 0 });
+      setCostPerMinute(0);
     }
     
     setIsSubmitting(false);
   }
 
-  const handleApplyCostPerMinute = (costPerMinute: number) => {
-    const newLaborCost = costPerMinute * productionMinutes;
+  const handleApplyCostPerMinute = (newCostPerMinute: number) => {
+    setCostPerMinute(newCostPerMinute);
+    const productionMinutes = form.getValues("productionMinutes") || 0;
+    const newLaborCost = newCostPerMinute * productionMinutes;
     form.setValue("laborCost", parseFloat(newLaborCost.toFixed(2)), {
       shouldDirty: true,
       shouldValidate: true,
     });
     setIsCalculatorOpen(false);
   };
-
-  const handleProductionMinutesChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  
+  const handleProductionMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const minutes = Number(e.target.value);
-    setProductionMinutes(minutes);
     form.setValue("productionMinutes", minutes, {
       shouldDirty: true,
       shouldValidate: true,
     });
-    // Recalculate labor cost if cost per minute is already set
-    const costPerMinute = form.getValues('laborCost') / (form.getValues('productionMinutes') || 1);
-     if (costPerMinute > 0 && isFinite(costPerMinute)) {
-        const newLaborCost = costPerMinute * minutes;
-        form.setValue("laborCost", parseFloat(newLaborCost.toFixed(2)), {
+    if (costPerMinute > 0) {
+      const newLaborCost = costPerMinute * minutes;
+      form.setValue("laborCost", parseFloat(newLaborCost.toFixed(2)), {
         shouldDirty: true,
         shouldValidate: true,
-        });
+      });
     }
   };
+
 
   return (
     <div className="w-full">
@@ -342,5 +340,3 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     </div>
   );
 }
-
-    
