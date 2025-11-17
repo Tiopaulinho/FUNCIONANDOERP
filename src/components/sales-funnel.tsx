@@ -167,13 +167,6 @@ const LeadDetailsModal = ({
         </DialogHeader>
         <Separator />
         <div className="space-y-4">
-            <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-muted-foreground" />
-                <div>
-                    <p className="text-sm text-muted-foreground">Valor</p>
-                    <p className="font-bold text-lg">{lead.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-                </div>
-            </div>
              {lead.phone && (
                 <div className="flex items-center gap-2">
                     <Phone className="h-5 w-5 text-muted-foreground" />
@@ -738,5 +731,7 @@ export default function SalesFunnel({
     
 
 
+
+    
 
     
