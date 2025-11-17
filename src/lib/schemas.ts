@@ -57,3 +57,26 @@ export type Lead = z.infer<typeof leadSchema> & {
   id: string;
   status: LeadStatus;
 }
+
+
+export const proposalItemSchema = z.object({
+  id: z.string().optional(),
+  productId: z.string().min(1, "Selecione um produto."),
+  productName: z.string(),
+  quantity: z.coerce.number().min(1, "A quantidade deve ser no mínimo 1."),
+  price: z.coerce.number().min(0.01, "O preço deve ser positivo."),
+});
+
+export const proposalSchema = z.object({
+  id: z.string().optional(),
+  leadId: z.string(),
+  date: z.string(),
+  items: z.array(proposalItemSchema).min(1, "Adicione pelo menos um item."),
+  discount: z.coerce.number().min(0, "O desconto não pode ser negativo.").optional(),
+  shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
+  observations: z.string().optional(),
+  paymentMethods: z.string().optional(),
+});
+
+export type Proposal = z.infer<typeof proposalSchema>;
+export type ProposalItem = z.infer<typeof proposalItemSchema>;

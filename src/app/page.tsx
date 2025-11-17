@@ -153,6 +153,8 @@ export default function Home() {
               onOpenNewOrder={openNewOrderDialog}
               onRegisterCustomer={addCustomer}
               customers={customers}
+              products={products}
+              onProductAdd={addProduct}
               onUpdateLead={updateLead}
               onDeleteLead={deleteLead}
             />
