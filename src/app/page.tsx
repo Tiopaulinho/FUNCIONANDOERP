@@ -96,7 +96,7 @@ export default function Home() {
     }
     // After saving order, move lead to a final state if it came from a lead
     if (leadForOrder) {
-      updateLead({ ...leadForOrder, status: 'Negociação' }); // Or a new "Completed" status
+      updateLead({ ...leadForOrder, status: 'Criar Pedido (Aprovado)' }); 
     }
     setIsSalesOrderDialogOpen(false);
     setEditingOrder(null);
@@ -136,8 +136,9 @@ export default function Home() {
 
     // If a lead was being processed, update it with the new customer ID
     if (leadForOrder) {
-      setLeads(prevLeads => prevLeads.map(l => l.id === leadForOrder.id ? { ...l, contact: newCustomer.name, customerId: newCustomer.id } : l));
-      setLeadForOrder(prev => prev ? { ...prev, contact: newCustomer.name, customerId: newCustomer.id } : null);
+      const updatedLead = { ...leadForOrder, contact: newCustomer.name, customerId: newCustomer.id };
+      updateLead(updatedLead);
+      setLeadForOrder(updatedLead);
     }
     return newCustomer;
   }
@@ -158,12 +159,18 @@ export default function Home() {
         }
         return [...prev, proposal];
     });
-    updateLead({ ...leads.find(l => l.id === proposal.leadId)!, proposalId: proposal.id });
+    const leadToUpdate = leads.find(l => l.id === proposal.leadId);
+    if (leadToUpdate && !leadToUpdate.proposalId) {
+      updateLead({ ...leadToUpdate, proposalId: proposal.id });
+    }
 };
 
 const handleProposalSent = (proposal: Proposal) => {
     handleProposalSave({ ...proposal, status: 'Sent' });
-    updateLead({ ...leads.find(l => l.id === proposal.leadId)!, status: 'Negociação' });
+    const leadToUpdate = leads.find(l => l.id === proposal.leadId);
+    if (leadToUpdate) {
+      updateLead({ ...leadToUpdate, status: 'Negociação' });
+    }
 };
 
   const deleteProposal = (proposalId: string) => {
