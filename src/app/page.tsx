@@ -16,6 +16,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { UserPlus, ShoppingCart } from "lucide-react";
+import SalesOrderForm from "@/components/sales-order-form";
 
 export default function Home() {
   return (
@@ -37,15 +38,27 @@ export default function Home() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[800px]">
                   <DialogHeader>
-                    <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
+                    <DialogTitle className="sr-only">
+                      Cadastro de Cliente
+                    </DialogTitle>
                   </DialogHeader>
                   <CustomerRegistrationForm />
                 </DialogContent>
               </Dialog>
-               <Button variant="outline">
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Novo Pedido
-                </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Novo Pedido
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>Novo Pedido de Venda</DialogTitle>
+                  </DialogHeader>
+                  <SalesOrderForm />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           <TabsContent value="customers">
