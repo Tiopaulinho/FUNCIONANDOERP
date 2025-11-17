@@ -128,6 +128,8 @@ export default function SalesOrderForm({
 
   React.useEffect(() => {
     const resetForm = () => {
+      let defaultItems = [{ productId: "", productName: "", quantity: 1, price: 0 }];
+      
       if (isEditMode && initialData) {
         form.reset({
           ...initialData,
@@ -140,12 +142,16 @@ export default function SalesOrderForm({
       } else if (cameFromLead) {
         form.reset({
           customerId: customerForLead?.id || "",
-          items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+          items: proposalData?.items?.map(item => ({
+            ...item,
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+          })) || defaultItems,
         });
       } else {
         form.reset({
           customerId: "",
-          items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+          items: defaultItems,
         });
       }
     };
@@ -315,10 +321,15 @@ export default function SalesOrderForm({
                 )}
               />
                {proposalData && (
-                <Button type="button" variant="outline" size="sm" onClick={loadProposalData}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Carregar Dados da Proposta
-                </Button>
+                <div className="flex items-center gap-4">
+                  <Button type="button" variant="outline" size="sm" onClick={loadProposalData}>
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Carregar Dados da Proposta
+                  </Button>
+                  <div className="text-sm text-muted-foreground">
+                    Proposta ID: <span className="font-mono text-foreground">{proposalData.id}</span>
+                  </div>
+                </div>
             )}
           </div>
 
@@ -467,3 +478,5 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    
