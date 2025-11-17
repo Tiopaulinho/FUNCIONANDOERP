@@ -15,8 +15,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { UserPlus, ShoppingCart } from "lucide-react";
+import { UserPlus, ShoppingCart, Package } from "lucide-react";
 import SalesOrderForm from "@/components/sales-order-form";
+import ProductList from "@/components/product-list";
+import ProductForm from "@/components/product-form";
 
 export default function Home() {
   return (
@@ -27,6 +29,7 @@ export default function Home() {
             <TabsList>
               <TabsTrigger value="customers">Clientes</TabsTrigger>
               <TabsTrigger value="orders">Pedidos de Venda</TabsTrigger>
+              <TabsTrigger value="products">Produtos</TabsTrigger>
             </TabsList>
             <div className="flex gap-2">
               <Dialog>
@@ -59,6 +62,20 @@ export default function Home() {
                   <SalesOrderForm />
                 </DialogContent>
               </Dialog>
+               <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Package className="mr-2 h-4 w-4" />
+                    Novo Produto
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Novo Produto</DialogTitle>
+                  </DialogHeader>
+                  <ProductForm />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           <TabsContent value="customers">
@@ -66,6 +83,9 @@ export default function Home() {
           </TabsContent>
           <TabsContent value="orders">
             <SalesOrderList />
+          </TabsContent>
+          <TabsContent value="products">
+            <ProductList />
           </TabsContent>
         </Tabs>
       </div>

@@ -17,38 +17,43 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { productSchema } from "@/lib/schemas";
+import { productSchema, type Product } from "@/lib/schemas";
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
+  initialData?: (Product & { id: string }) | null;
   onSuccess?: () => void;
 }
 
-export default function ProductForm({ onSuccess }: ProductFormProps) {
+export default function ProductForm({ initialData, onSuccess }: ProductFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isEditMode = !!initialData;
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       name: "",
       price: 0,
     },
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
   async function onSubmit(data: ProductFormValues) {
     setIsSubmitting(true);
-    console.log("Novo produto:", data);
-    // Simulate API call to save the product
+    console.log(isEditMode ? "Produto atualizado:" : "Novo produto:", data);
+    // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    // In a real app, this would be an API call
-    // const result = await saveProductAction(data);
     
     toast({
       title: "Sucesso!",
-      description: "Produto cadastrado com sucesso!",
+      description: isEditMode ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!",
     });
     
     setIsSubmitting(false);
@@ -56,7 +61,9 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
     if (onSuccess) {
       onSuccess();
     }
-    form.reset();
+    if (!isEditMode) {
+      form.reset();
+    }
   }
 
   return (
@@ -66,7 +73,7 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
           <PackagePlus className="h-6 w-6 text-primary" />
         </div>
         <p className="mt-2 text-muted-foreground">
-          Preencha os dados para adicionar um novo produto.
+          {isEditMode ? "Altere os dados para atualizar o produto." : "Preencha os dados para adicionar um novo produto."}
         </p>
       </div>
         <Form {...form}>
@@ -110,7 +117,7 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
                   Salvando...
                 </>
               ) : (
-                "Salvar Produto"
+                isEditMode ? "Salvar Alterações" : "Salvar Produto"
               )}
             </Button>
           </form>
