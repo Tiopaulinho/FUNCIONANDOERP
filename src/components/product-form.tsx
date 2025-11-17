@@ -76,21 +76,25 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
 
   const watchedFields = form.watch();
 
-  const { suggestedPrice, totalCost, actualProfit } = React.useMemo(() => {
+  const { baseCost, totalCost, suggestedPrice, actualProfit } = React.useMemo(() => {
     const rawMaterialCost = Number(watchedFields.rawMaterialCost) || 0;
     const laborCost = Number(watchedFields.laborCost) || 0;
     const suppliesCost = Number(watchedFields.suppliesCost) || 0;
-    const fees = Number(watchedFields.fees) || 0;
-    const taxes = Number(watchedFields.taxes) || 0;
+    const feesPercent = Number(watchedFields.fees) || 0;
+    const taxesPercent = Number(watchedFields.taxes) || 0;
     const profitMargin = Number(watchedFields.profitMargin) || 0;
     const chargedPrice = Number(watchedFields.price) || 0;
 
-    const totalCost = rawMaterialCost + laborCost + suppliesCost + fees + taxes;
+    const baseCost = rawMaterialCost + laborCost + suppliesCost;
+    const feesValue = baseCost * (feesPercent / 100);
+    const taxesValue = baseCost * (taxesPercent / 100);
+    const totalCost = baseCost + feesValue + taxesValue;
+    
     const profitValue = totalCost * (profitMargin / 100);
     const suggestedPrice = totalCost + profitValue;
     const actualProfit = chargedPrice - totalCost;
 
-    return { suggestedPrice, totalCost, actualProfit };
+    return { baseCost, totalCost, suggestedPrice, actualProfit };
   }, [watchedFields]);
   
 
@@ -163,12 +167,28 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                  <FormField control={form.control} name="suppliesCost" render={({ field }) => (
                     <FormItem><FormLabel>Custo de Insumos (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField control={form.control} name="fees" render={({ field }) => (
-                    <FormItem><FormLabel>Taxas (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Taxas (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="taxes" render={({ field }) => (
-                    <FormItem><FormLabel>Impostos (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Impostos (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <Card className="bg-muted/50">
+                    <CardHeader className="p-4">
+                        <CardDescription>Custo Base (Sem Taxas)</CardDescription>
+                        <CardTitle className="text-2xl">{baseCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
+                    </CardHeader>
+                </Card>
+                 <Card>
+                    <CardHeader className="p-4">
+                        <CardDescription>Custo Total (Com Taxas)</CardDescription>
+                        <CardTitle className="text-2xl">{totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
+                    </CardHeader>
+                </Card>
               </div>
             </div>
 

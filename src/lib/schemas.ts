@@ -22,8 +22,8 @@ export const productSchema = z.object({
   rawMaterialCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
   laborCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
   suppliesCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
-  fees: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
-  taxes: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
+  fees: z.coerce.number().min(0, "As taxas não podem ser negativas.").optional(),
+  taxes: z.coerce.number().min(0, "Os impostos não podem ser negativos.").optional(),
   profitMargin: z.coerce.number().min(0, "A margem não pode ser negativa.").optional(),
 });
 
@@ -54,7 +54,7 @@ export const leadSchema = z.object({
   contact: z.string().min(3, "O nome do contato deve ter pelo menos 3 caracteres."),
   email: z.string().email({ message: "Email inválido" }).optional(),
   phone: z.string().optional(),
-  value: z.coerce.number({invalid_type_error: "O valor é obrigatório."}).min(0, "O valor não pode ser negativo."),
+  value: z.coerce.number({invalid_type_error: "O valor é obrigatório."}).min(0, "O valor não pode ser negativo.").optional(),
   proposalNotes: z.string().optional(),
 });
 
