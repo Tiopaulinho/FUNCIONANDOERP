@@ -41,8 +41,8 @@ import ProposalForm from "./proposal-form";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void }) => {
-  
+const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, proposals: Proposal[] }) => {
+  const proposal = proposals.find(p => p.id === lead.proposalId);
   return (
     <Card 
       className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card" 
@@ -56,9 +56,12 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
                 <Building className="h-4 w-4 text-muted-foreground" />
                 {lead.name}
             </CardTitle>
-            <div className="flex items-center gap-2">
-                {lead.proposalId && (
-                    <FileCheck2 className="h-4 w-4 text-blue-500" />
+             <div className="flex items-center gap-2">
+                {proposal && (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" />
+                        {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </Badge>
                 )}
                 {lead.proposalNotes && !lead.proposalId && (
                     <StickyNote className="h-4 w-4 text-amber-500" />
@@ -630,6 +633,7 @@ export default function SalesFunnel({
                           lead={lead} 
                           onDragStart={handleDragStart}
                           onClick={() => handleCardClick(lead)}
+                          proposals={proposals}
                         />
                     ))
                   )}
@@ -733,3 +737,6 @@ export default function SalesFunnel({
 
     
 
+
+
+    
