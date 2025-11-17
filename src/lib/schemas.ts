@@ -14,7 +14,7 @@ export const customerRegistrationSchema = z.object({
   state: z.string().min(2, { message: "O estado é obrigatório." }).max(2, { message: "Use a sigla do estado (ex: SP)." }),
 });
 
-export type Customer = z.infer<typeof customerRegistrationSchema>;
+export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: string };
 
 export const productSchema = z.object({
   name: z.string().min(3, "O nome do produto deve ter pelo menos 3 caracteres."),
@@ -46,6 +46,7 @@ export type SalesOrder = {
 export const leadSchema = z.object({
   name: z.string().min(3, "O nome da empresa deve ter pelo menos 3 caracteres."),
   contact: z.string().min(3, "O nome do contato deve ter pelo menos 3 caracteres."),
+  email: z.string().email({ message: "Email inválido" }).optional(),
   phone: z.string().optional(),
   value: z.coerce.number({invalid_type_error: "O valor é obrigatório."}).min(0, "O valor não pode ser negativo."),
   proposalNotes: z.string().optional(),

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
-import type { Customer, Product, SalesOrder, Lead } from "@/lib/schemas";
+import type { Customer, Product, SalesOrder, Lead, Proposal, ProposalItem } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
@@ -59,6 +59,7 @@ interface SalesOrderFormProps {
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
   leadData?: Lead | null;
+  proposalData?: Proposal | null;
   customers: (Customer & { id: string })[];
   onCustomerAdd: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
 }
@@ -69,6 +70,7 @@ export default function SalesOrderForm({
   products, 
   onProductAdd, 
   leadData,
+  proposalData,
   customers,
   onCustomerAdd,
 }: SalesOrderFormProps) {
@@ -97,10 +99,17 @@ export default function SalesOrderForm({
   React.useEffect(() => {
     if (isEditMode && initialData) {
       form.reset(initialData);
-    } else if(cameFromLead && leadData) {
-       form.reset({
-        customerId: customerForLead?.id || "", // Set customer ID if found
-        items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+    } else if (cameFromLead && leadData) {
+      const defaultItems = proposalData?.items?.map((item: ProposalItem) => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+      })) || [{ productId: "", productName: "", quantity: 1, price: 0 }];
+
+      form.reset({
+        customerId: customerForLead?.id || "",
+        items: defaultItems,
       });
     } else {
       form.reset({
@@ -108,7 +117,8 @@ export default function SalesOrderForm({
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, leadData, cameFromLead, form, isEditMode, customers, customerForLead]);
+  }, [initialData, leadData, proposalData, cameFromLead, form, isEditMode, customers, customerForLead]);
+
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -214,7 +224,7 @@ export default function SalesOrderForm({
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.name || ""}
+                            value={customerForLead?.name || leadData?.contact || ""}
                             className="bg-muted/50 cursor-not-allowed"
                           />
                            {!customerForLead && (
@@ -255,7 +265,7 @@ export default function SalesOrderForm({
                             <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
                           </DialogHeader>
                           <CustomerRegistrationForm 
-                             initialData={cameFromLead && !customerForLead ? { name: leadData.name } : {}}
+                             initialData={cameFromLead && !customerForLead ? { name: leadData.name, email: leadData.email, phone: leadData.phone } : {}}
                              onSuccess={handleNewCustomerSuccess} 
                           />
                         </DialogContent>
@@ -412,5 +422,3 @@ export default function SalesOrderForm({
     </div>
   );
 }
-
-    

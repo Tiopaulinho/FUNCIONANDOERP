@@ -66,6 +66,7 @@ export default function Home() {
 
   const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
   const [leadForOrder, setLeadForOrder] = React.useState<Lead | null>(null);
+  const [proposalForOrder, setProposalForOrder] = React.useState<Proposal | null>(null);
   
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = React.useState(false);
   const [isSalesOrderDialogOpen, setIsSalesOrderDialogOpen] = React.useState(false);
@@ -96,6 +97,7 @@ export default function Home() {
     setIsSalesOrderDialogOpen(false);
     setEditingOrder(null);
     setLeadForOrder(null);
+    setProposalForOrder(null);
   }
 
   const handleEditOrder = (order: SalesOrder) => {
@@ -109,11 +111,19 @@ export default function Home() {
 
   const openNewOrderDialog = (lead?: Lead) => {
     setEditingOrder(null);
-    if(lead) {
+    if (lead) {
       const customer = customers.find(c => c.name.toLowerCase() === lead.contact.toLowerCase());
-      setLeadForOrder({...lead, contact: customer?.id || ""});
+      setLeadForOrder({ ...lead, contact: customer?.id || "" });
+      
+      if (lead.proposalId) {
+        const proposal = proposals.find(p => p.id === lead.proposalId);
+        setProposalForOrder(proposal || null);
+      } else {
+        setProposalForOrder(null);
+      }
     } else {
       setLeadForOrder(null);
+      setProposalForOrder(null);
     }
     setIsSalesOrderDialogOpen(true);
   }
@@ -228,6 +238,7 @@ const handleProposalSent = (proposal: Proposal) => {
                 onSuccess={handleOrderSave}
                 initialData={editingOrder}
                 leadData={leadForOrder}
+                proposalData={proposalForOrder}
                 customers={customers}
                 onCustomerAdd={addCustomer}
               />
