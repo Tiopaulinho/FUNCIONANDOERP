@@ -408,15 +408,18 @@ export default function SalesFunnel({
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
 
-  const updateLeadWithHistory = (lead: Lead, newStatus: LeadStatus, notes?: string) => {
+  const updateLeadWithHistory = (lead: Lead, newStatus: LeadStatus, updates?: Partial<Lead>) => {
     const today = new Date().toISOString();
     const newHistoryEntry = { status: newStatus, date: today };
-    const newHistory = [...(lead.statusHistory || []), newHistoryEntry];
+    // Avoid duplicating the last status in history
+    const lastHistory = lead.statusHistory?.[lead.statusHistory.length - 1];
+    const newHistory = lastHistory?.status === newStatus ? lead.statusHistory : [...(lead.statusHistory || []), newHistoryEntry];
+    
     onUpdateLead({ 
         ...lead, 
+        ...updates,
         status: newStatus, 
         statusHistory: newHistory,
-        ...(notes !== undefined && { proposalNotes: notes })
     });
   }
 
@@ -444,7 +447,7 @@ export default function SalesFunnel({
             if (!lead.proposalId) {
                 toast({
                     title: "Ação necessária",
-                    description: "É preciso gerar uma proposta antes de aprovar o lead.",
+                    description: "É preciso gerar e enviar uma proposta antes de aprovar o lead.",
                     variant: "destructive"
                 });
                 return;
@@ -460,7 +463,7 @@ export default function SalesFunnel({
 
   const handleSaveProposalNotes = (notes: string) => {
     if (proposalLead) {
-        updateLeadWithHistory(proposalLead, 'Proposta', notes);
+        updateLeadWithHistory(proposalLead, 'Proposta', { proposalNotes: notes });
         toast({
             title: "Proposta Atualizada!",
             description: "As observações foram salvas e o lead movido.",
@@ -530,8 +533,10 @@ export default function SalesFunnel({
 
   const handleProposalFormSuccess = (proposal: Proposal) => {
     onProposalSave(proposal);
-    if(generateProposalLead && !generateProposalLead.proposalId) {
-        onUpdateLead({ ...generateProposalLead, proposalId: proposal.id });
+    if(generateProposalLead) {
+        const updatedLead = { ...generateProposalLead, proposalId: proposal.id };
+        onUpdateLead(updatedLead);
+        setGenerateProposalLead(updatedLead);
     }
     setSavedProposal(proposal);
     setIsGenerateProposalModalOpen(false);
@@ -551,10 +556,10 @@ export default function SalesFunnel({
   const handleSendWhatsApp = () => {
     if (savedProposal && generateProposalLead) {
       onProposalSent(savedProposal);
-      updateLeadWithHistory(generateProposalLead, 'Negociação');
+      updateLeadWithHistory(generateProposalLead, 'Negociação', { proposalId: savedProposal.id });
       toast({
         title: "Proposta Enviada!",
-        description: `Lead movido para Negociação. O envio via WhatsApp será implementado em breve.`
+        description: `Lead movido para Negociação.`
       });
     }
     resetProposalFlow();
@@ -718,7 +723,7 @@ export default function SalesFunnel({
             lead={proposalLead}
             open={isProposalModalOpen}
             onOpenChange={setIsProposalModalOpen}
-            onSave={handleSaveProposalNotes}
+            onSave={(notes) => handleSaveProposalNotes(notes)}
         />
 
         <Dialog open={isGenerateProposalModalOpen} onOpenChange={(open) => { if (!open) resetProposalFlow(); else setIsGenerateProposalModalOpen(true);}}>
@@ -774,3 +779,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
