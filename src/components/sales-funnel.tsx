@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2 } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText } from "lucide-react";
 import type { Lead, LeadStatus, Customer } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -87,7 +87,15 @@ const LeadDetailsModal = ({
   onEdit: (lead: Lead) => void;
   onDelete: (leadId: string) => void;
 }) => {
+  const { toast } = useToast();
   if (!lead) return null;
+
+  const handleGenerateProposal = () => {
+    toast({
+      title: "Gerando Proposta...",
+      description: `A proposta para ${lead.name} está sendo preparada.`,
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,6 +127,12 @@ const LeadDetailsModal = ({
         </div>
         <Separator />
         <div className="flex justify-end items-center gap-2">
+            {lead.status === 'Proposta' && (
+              <Button onClick={handleGenerateProposal}>
+                <FileText className="mr-2 h-4 w-4" />
+                Gerar Proposta
+              </Button>
+            )}
             <Button variant="outline" onClick={() => onEdit(lead)}>
               <FilePenLine className="mr-2 h-4 w-4" />
               Editar
@@ -164,7 +178,6 @@ const ProposalNotesModal = ({
     onSave: (notes: string) => void;
   }) => {
     const [notes, setNotes] = React.useState(lead?.proposalNotes || "");
-    const [isSaving, setIsSaving] = React.useState(false);
   
     React.useEffect(() => {
       if (lead) {
@@ -175,12 +188,7 @@ const ProposalNotesModal = ({
     if (!lead) return null;
 
     const handleSave = () => {
-        setIsSaving(true);
-        // Simulate API call
-        setTimeout(() => {
-            onSave(notes);
-            setIsSaving(false);
-        }, 700);
+        onSave(notes);
     }
   
     return (
@@ -201,8 +209,7 @@ const ProposalNotesModal = ({
               />
           </div>
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSave}>
               Salvar e Mover
             </Button>
           </div>
@@ -252,7 +259,7 @@ export default function SalesFunnel({
     const lead = leads.find(l => l.id === leadId);
 
     if (lead) {
-        if (newStatus === 'Proposta') {
+        if (newStatus === 'Proposta' && lead.status !== 'Proposta') {
             setProposalLead(lead);
             setIsProposalModalOpen(true);
             return;
@@ -417,3 +424,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
