@@ -18,7 +18,13 @@ export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: strin
 
 export const productSchema = z.object({
   name: z.string().min(3, "O nome do produto deve ter pelo menos 3 caracteres."),
-  price: z.coerce.number({invalid_type_error: "O preço é obrigatório."}).min(0.01, "O preço deve ser positivo."),
+  price: z.coerce.number({invalid_type_error: "O preço é obrigatório."}).min(0, "O preço não pode ser negativo."),
+  rawMaterialCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
+  laborCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
+  suppliesCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
+  fees: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
+  taxes: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
+  profitMargin: z.coerce.number().min(0, "A margem não pode ser negativa.").optional(),
 });
 
 export type Product = z.infer<typeof productSchema>;

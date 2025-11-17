@@ -117,7 +117,7 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
             <TableHeader>
               <TableRow>
                 <TableHead>Nome do Produto</TableHead>
-                <TableHead className="text-right">Preço</TableHead>
+                <TableHead className="text-right">Preço de Venda</TableHead>
                 <TableHead className="text-right w-[120px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -164,7 +164,7 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
           </Table>
         </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Editar Produto</DialogTitle>
               </DialogHeader>
