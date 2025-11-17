@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "./ui/dialog";
 import CustomerRegistrationForm from "./customer-registration-form";
 
@@ -83,11 +84,17 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
          setIsCustomerDialogOpen(true);
        } else {
          onOpenNewOrder(lead);
+         // Move the card only after opening the dialog
+          setLeads(prevLeads => 
+            prevLeads.map(l => 
+              l.id === leadId ? { ...l, status: newStatus } : l
+            )
+          );
        }
     } else {
       setLeads(prevLeads => 
-        prevLeads.map(lead => 
-          lead.id === leadId ? { ...lead, status: newStatus } : lead
+        prevLeads.map(l => 
+          l.id === leadId ? { ...l, status: newStatus } : l
         )
       );
     }
@@ -120,9 +127,9 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
         title: "Cliente Cadastrado!",
         description: "O lead foi movido para 'Criar Pedido' e o cliente foi salvo."
       });
-      // Optionally open new order dialog right away
-      const registeredLead = leads.find(l => l.id === leadToRegister.id);
-      if(registeredLead) onOpenNewOrder({...registeredLead, isNew: false });
+      
+      const registeredLead = {...leadToRegister, isNew: false, status: 'Criar Pedido (Aprovado)' } as Lead;
+      onOpenNewOrder(registeredLead);
 
     }
     setLeadToRegister(null);
@@ -148,7 +155,7 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
                 <h2 className="text-2xl font-bold">Funil de Vendas</h2>
                 <p className="text-muted-foreground">Arraste e solte os leads para atualizar o status.</p>
             </div>
-            <Button onClick={simulateImport}>
+            <Button onClick={simulateImport} variant="outline">
               <Upload className="mr-2 h-4 w-4" />
               Importar Leads (Simulação)
             </Button>
@@ -190,6 +197,9 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
           <DialogContent className="sm:max-w-[800px]">
               <DialogHeader>
                   <DialogTitle>Completar Cadastro do Cliente</DialogTitle>
+                  <DialogDescription>
+                    Este é um novo lead. Por favor, complete o cadastro do cliente antes de criar um pedido.
+                  </DialogDescription>
               </DialogHeader>
               <CustomerRegistrationForm 
                 initialData={{
