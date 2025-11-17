@@ -42,3 +42,13 @@ export type SalesOrder = {
   status: OrderStatus;
   items: OrderItem[];
 };
+
+export type LeadStatus = "Lista de Leads" | "Contato" | "Proposta" | "Negociação" | "Criar Pedido (Aprovado)" | "Reprovado";
+
+export type Lead = {
+  id: string;
+  name: string;
+  contact: string;
+  value: number;
+  status: LeadStatus;
+}

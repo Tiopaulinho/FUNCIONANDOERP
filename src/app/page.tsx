@@ -19,11 +19,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { UserPlus, ShoppingCart, Package } from "lucide-react";
+import { UserPlus, ShoppingCart, Package, Filter } from "lucide-react";
 import SalesOrderForm from "@/components/sales-order-form";
 import ProductList from "@/components/product-list";
 import ProductForm from "@/components/product-form";
-import type { Product, SalesOrder } from "@/lib/schemas";
+import type { Product, SalesOrder, Lead } from "@/lib/schemas";
+import SalesFunnel from "@/components/sales-funnel";
 
 const initialProducts: (Product & { id: string })[] = [
     { id: "prod-1", name: "Notebook Pro", price: 7500 },
@@ -40,10 +41,20 @@ const initialOrders: SalesOrder[] = [
   { id: "ORD-005", customerId: "1", customerName: "José da Silva", date: "2024-07-24", total: 99.90, status: "Entregue", items: [ {id: "item-6", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 1, price: 99.90} ] },
 ];
 
+const initialLeads: Lead[] = [
+  { id: "lead-1", name: "Empresa Alpha", contact: "João", value: 15000, status: "Contato" },
+  { id: "lead-2", name: "Startup Beta", contact: "Mariana", value: 8000, status: "Proposta" },
+  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", value: 25000, status: "Negociação" },
+  { id: "lead-4", name: "Serviços Delta", contact: "Fernanda", value: 5000, status: "Lista de Leads" },
+  { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", value: 50000, status: "Criar Pedido (Aprovado)" },
+  { id: "lead-6", name: "Varejo Zeta", contact: "Ana", value: 12000, status: "Reprovado" },
+];
+
 
 export default function Home() {
   const [products, setProducts] = React.useState(initialProducts);
   const [orders, setOrders] = React.useState<SalesOrder[]>(initialOrders);
+  const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
   const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
   
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = React.useState(false);
@@ -66,7 +77,7 @@ export default function Home() {
   };
   
   const handleOrderSave = (savedOrder: SalesOrder) => {
-    const isEditing = !!savedOrder.id;
+    const isEditing = !!savedOrder.id && orders.some(o => o.id === savedOrder.id);
     if (isEditing) {
       setOrders(prevOrders => prevOrders.map(o => o.id === savedOrder.id ? savedOrder : o));
     } else {
@@ -93,11 +104,12 @@ export default function Home() {
 
   return (
     <main className="flex min-h-dvh w-full flex-col items-center bg-accent/30 p-4 md:p-8">
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-7xl">
         <Tabs defaultValue="customers" className="w-full">
           <div className="mb-4 flex items-center justify-between gap-4">
             <TabsList>
               <TabsTrigger value="customers">Clientes</TabsTrigger>
+              <TabsTrigger value="funnel">Funil de Venda</TabsTrigger>
               <TabsTrigger value="orders">Pedidos de Venda</TabsTrigger>
               <TabsTrigger value="products">Produtos</TabsTrigger>
             </TabsList>
@@ -140,6 +152,9 @@ export default function Home() {
           </div>
           <TabsContent value="customers">
             <CustomerList />
+          </TabsContent>
+          <TabsContent value="funnel">
+            <SalesFunnel leads={leads} setLeads={setLeads} />
           </TabsContent>
           <TabsContent value="orders">
              <SalesOrderList 
