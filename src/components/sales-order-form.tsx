@@ -98,11 +98,11 @@ export default function SalesOrderForm({
   });
 
   React.useEffect(() => {
-    let defaultItems = [{ productId: "", productName: "", quantity: 1, price: 0 }];
+    let defaultItems: (Omit<ProposalItem, 'id'> & {id?: string})[] = [{ productId: "", productName: "", quantity: 1, price: 0 }];
 
     if (proposalData?.items && proposalData.items.length > 0) {
         defaultItems = proposalData.items.map((item: ProposalItem) => ({
-            id: `item-${Date.now()}-${Math.random()}`,
+            id: item.id || `item-${Date.now()}-${Math.random()}`,
             productId: item.productId,
             productName: item.productName,
             quantity: item.quantity || 1,
@@ -450,3 +450,4 @@ export default function SalesOrderForm({
     
 
     
+
