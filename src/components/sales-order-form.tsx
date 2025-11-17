@@ -31,6 +31,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
 import CustomerRegistrationForm from "./customer-registration-form";
+import { CardDescription } from "./ui/card";
 
 const salesOrderItemSchema = z.object({
   id: z.string().optional(),
@@ -76,6 +77,7 @@ export default function SalesOrderForm({
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
   const isEditMode = !!initialData;
+  const cameFromLead = !!leadData?.id;
 
   const form = useForm<SalesOrderFormValues>({
     resolver: zodResolver(salesOrderSchema),
@@ -85,13 +87,20 @@ export default function SalesOrderForm({
     },
   });
 
+  const customerForLead = React.useMemo(() => {
+    if (!leadData) return null;
+    return customers.find(c => c.id === leadData.contact);
+  }, [leadData, customers]);
+
   React.useEffect(() => {
     if (isEditMode && initialData) {
       form.reset(initialData);
     } else if(leadData) {
-      // leadData.contact holds the customer ID in this context
+      // leadData.contact can be a customer ID or a name.
+      // If a customer exists, their ID is in leadData.contact.
+      const customer = customers.find(c => c.id === leadData.contact || c.name === leadData.contact);
       form.reset({
-        customerId: leadData.contact || "",
+        customerId: customer?.id || "",
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     } else {
@@ -100,7 +109,7 @@ export default function SalesOrderForm({
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, leadData, form, isEditMode]);
+  }, [initialData, leadData, form, isEditMode, customers]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -149,6 +158,17 @@ export default function SalesOrderForm({
     setIsSubmitting(true);
 
     const customer = customers.find(c => c.id === data.customerId);
+    
+    if(!customer) {
+      toast({
+        variant: "destructive",
+        title: "Cliente não encontrado",
+        description: "Por favor, cadastre o cliente antes de criar o pedido.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
 
     const finalOrderData: SalesOrder = {
       ...initialData,
@@ -187,27 +207,41 @@ export default function SalesOrderForm({
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
                     <div className="flex items-center gap-2">
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!!leadData}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um cliente" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                       {cameFromLead ? (
+                         <div className="flex-grow">
+                          <Input
+                            readOnly
+                            value={customerForLead?.name || leadData?.contact || ""}
+                            className="bg-muted/50 cursor-not-allowed"
+                          />
+                           {!customerForLead && (
+                              <CardDescription className="text-xs text-destructive mt-1">
+                                Este cliente não tem cadastro. Complete o cadastro para prosseguir.
+                              </CardDescription>
+                           )}
+                         </div>
+                       ) : (
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um cliente" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id}>
+                                {customer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                       )}
                       <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" disabled={!!leadData}>
+                          <Button variant="outline" size="icon">
                             <UserPlus className="h-4 w-4" />
                             <span className="sr-only">Novo Cliente</span>
                           </Button>
@@ -216,7 +250,10 @@ export default function SalesOrderForm({
                           <DialogHeader>
                             <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
                           </DialogHeader>
-                          <CustomerRegistrationForm onSuccess={handleNewCustomerSuccess} />
+                          <CustomerRegistrationForm 
+                             initialData={cameFromLead && !customerForLead ? { name: leadData.contact } : {}}
+                             onSuccess={handleNewCustomerSuccess} 
+                          />
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -371,3 +408,5 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    
