@@ -47,6 +47,7 @@ export const leadSchema = z.object({
   name: z.string().min(3, "O nome da empresa deve ter pelo menos 3 caracteres."),
   contact: z.string().min(3, "O nome do contato deve ter pelo menos 3 caracteres."),
   value: z.coerce.number({invalid_type_error: "O valor é obrigatório."}).min(0, "O valor não pode ser negativo."),
+  proposalNotes: z.string().optional(),
 });
 
 export type LeadStatus = "Lista de Leads" | "Contato" | "Proposta" | "Negociação" | "Criar Pedido (Aprovado)" | "Reprovado";

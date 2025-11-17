@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2 } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2 } from "lucide-react";
 import type { Lead, LeadStatus, Customer } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +34,7 @@ import {
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
 import LeadForm from "./lead-form";
+import { Textarea } from "./ui/textarea";
 
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Criar Pedido (Aprovado)", "Reprovado"];
@@ -47,10 +48,15 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
       onClick={onClick}
     >
       <CardHeader className="p-4">
-        <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Building className="h-4 w-4 text-muted-foreground" />
-            {lead.name}
-        </CardTitle>
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Building className="h-4 w-4 text-muted-foreground" />
+                {lead.name}
+            </CardTitle>
+            {lead.proposalNotes && (
+                 <StickyNote className="h-4 w-4 text-amber-500" />
+            )}
+        </div>
         <CardDescription className="text-sm flex items-center gap-2 pt-1">
             <User className="h-4 w-4 text-muted-foreground" />
             {lead.contact}
@@ -104,6 +110,12 @@ const LeadDetailsModal = ({
             <div className="flex items-center gap-2">
                  <Badge variant="secondary">{lead.status}</Badge>
             </div>
+            {lead.proposalNotes && (
+                 <div className="space-y-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-2"><StickyNote className="h-4 w-4" /> Observações da Proposta</h4>
+                    <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border">{lead.proposalNotes}</p>
+                </div>
+            )}
         </div>
         <Separator />
         <div className="flex justify-end items-center gap-2">
@@ -140,6 +152,66 @@ const LeadDetailsModal = ({
 };
 
 
+const ProposalNotesModal = ({
+    lead,
+    open,
+    onOpenChange,
+    onSave,
+  }: {
+    lead: Lead | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSave: (notes: string) => void;
+  }) => {
+    const [notes, setNotes] = React.useState(lead?.proposalNotes || "");
+    const [isSaving, setIsSaving] = React.useState(false);
+  
+    React.useEffect(() => {
+      if (lead) {
+        setNotes(lead.proposalNotes || "");
+      }
+    }, [lead]);
+  
+    if (!lead) return null;
+
+    const handleSave = () => {
+        setIsSaving(true);
+        // Simulate API call
+        setTimeout(() => {
+            onSave(notes);
+            setIsSaving(false);
+        }, 700);
+    }
+  
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><StickyNote className="h-5 w-5"/> Adicionar Observações à Proposta</DialogTitle>
+            <DialogDescription>
+              Adicione detalhes para a proposta do lead <span className="font-bold">{lead.name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+              <Textarea 
+                placeholder="Ex: Criar proposta para 5 canecas personalizadas..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={5}
+              />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar e Mover
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+
 interface SalesFunnelProps {
   leads: Lead[];
   setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
@@ -160,8 +232,10 @@ export default function SalesFunnel({
   const { toast } = useToast();
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
   const [editingLead, setEditingLead] = React.useState<Lead | null>(null);
+  const [proposalLead, setProposalLead] = React.useState<Lead | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isProposalModalOpen, setIsProposalModalOpen] = React.useState(false);
 
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
@@ -178,17 +252,35 @@ export default function SalesFunnel({
     const lead = leads.find(l => l.id === leadId);
 
     if (lead) {
-      if (newStatus === 'Criar Pedido (Aprovado)') {
-        onOpenNewOrder(lead);
-      }
+        if (newStatus === 'Proposta') {
+            setProposalLead(lead);
+            setIsProposalModalOpen(true);
+            return;
+        }
+
+        if (newStatus === 'Criar Pedido (Aprovado)') {
+            onOpenNewOrder(lead);
+        }
       
-      setLeads(prevLeads => 
-        prevLeads.map(l => 
-          l.id === leadId ? { ...l, status: newStatus } : l
-        )
-      );
+        setLeads(prevLeads => 
+            prevLeads.map(l => 
+            l.id === leadId ? { ...l, status: newStatus } : l
+            )
+        );
     }
   };
+
+  const handleSaveProposalNotes = (notes: string) => {
+    if (proposalLead) {
+        onUpdateLead({ ...proposalLead, status: 'Proposta', proposalNotes: notes });
+        toast({
+            title: "Proposta Atualizada!",
+            description: "As observações foram salvas e o lead movido.",
+        });
+    }
+    setIsProposalModalOpen(false);
+    setProposalLead(null);
+  }
 
   const simulateImport = () => {
     const newLeads: Lead[] = [
@@ -313,7 +405,14 @@ export default function SalesFunnel({
                 onSuccess={handleEditSuccess}
               />
             </DialogContent>
-          </Dialog>
+        </Dialog>
+
+        <ProposalNotesModal 
+            lead={proposalLead}
+            open={isProposalModalOpen}
+            onOpenChange={setIsProposalModalOpen}
+            onSave={handleSaveProposalNotes}
+        />
 
     </div>
   );

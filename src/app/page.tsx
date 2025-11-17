@@ -40,8 +40,8 @@ const initialOrders: SalesOrder[] = [
 ];
 
 const initialLeads: Lead[] = [
-  { id: "lead-1", name: "Empresa Alpha", contact: "João", value: 15000, status: "Contato" },
-  { id: "lead-2", name: "Startup Beta", contact: "Mariana", value: 8000, status: "Proposta" },
+  { id: "lead-1", name: "Empresa Alpha", contact: "João", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X." },
+  { id: "lead-2", name: "Startup Beta", contact: "Mariana", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile." },
   { id: "lead-3", name: "Comércio Gama", contact: "Carlos", value: 25000, status: "Criar Pedido (Aprovado)" },
   { id: "lead-4", name: "Serviços Delta", contact: "Fernanda", value: 5000, status: "Lista de Leads" },
   { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", value: 50000, status: "Criar Pedido (Aprovado)" },

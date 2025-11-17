@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { leadSchema, type Lead } from "@/lib/schemas";
+import { Textarea } from "./ui/textarea";
 
 type LeadFormValues = z.infer<typeof leadSchema>;
 
@@ -38,16 +39,21 @@ export default function LeadForm({ initialData, onSuccess }: LeadFormProps) {
       name: initialData.name,
       contact: initialData.contact,
       value: initialData.value,
+      proposalNotes: initialData.proposalNotes || "",
     } : {
       name: "",
       contact: "",
       value: undefined,
+      proposalNotes: "",
     },
   });
 
   React.useEffect(() => {
     if (initialData) {
-      form.reset(initialData);
+      form.reset({
+        ...initialData,
+        proposalNotes: initialData.proposalNotes || "",
+      });
     }
   }, [initialData, form]);
 
@@ -127,6 +133,19 @@ export default function LeadForm({ initialData, onSuccess }: LeadFormProps) {
                         value={field.value ?? ""}
                         onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} 
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="proposalNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observações da Proposta</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Detalhes para a criação da proposta..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
