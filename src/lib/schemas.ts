@@ -17,7 +17,13 @@ export const customerRegistrationSchema = z.object({
 export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: string };
 
 export const productSchema = z.object({
-  name: z.string().min(3, "O nome do produto deve ter pelo menos 3 caracteres."),
+  name: z.string().min(3, "O nome do produto é obrigatório."),
+  category: z.string().min(1, "A categoria é obrigatória."),
+  type: z.string().optional(),
+  material: z.string().optional(),
+  color: z.string().optional(),
+  size: z.string().optional(),
+  otherDetails: z.string().optional(),
   price: z.coerce.number({invalid_type_error: "O preço é obrigatório."}).min(0, "O preço não pode ser negativo."),
   rawMaterialCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),
   laborCost: z.coerce.number().min(0, "O custo não pode ser negativo.").optional(),

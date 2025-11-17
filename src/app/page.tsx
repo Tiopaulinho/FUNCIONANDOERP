@@ -25,10 +25,10 @@ import ProposalList from "@/components/proposal-list";
 
 
 const initialProducts: (Product & { id: string })[] = [
-    { id: "prod-1", name: "Notebook Pro", price: 7500, rawMaterialCost: 4000, laborCost: 1000, suppliesCost: 200, fees: 50, taxes: 1000, profitMargin: 20 },
-    { id: "prod-2", name: "Mouse Sem Fio", price: 120.50, rawMaterialCost: 50, laborCost: 10, suppliesCost: 5, fees: 2, taxes: 15, profitMargin: 30 },
-    { id: "prod-3", name: "Teclado Mecânico", price: 450, rawMaterialCost: 200, laborCost: 50, suppliesCost: 20, fees: 10, taxes: 70, profitMargin: 25 },
-    { id: "prod-4", name: "Monitor 4K", price: 2300, rawMaterialCost: 1200, laborCost: 200, suppliesCost: 100, fees: 30, taxes: 400, profitMargin: 20 },
+    { id: "prod-1", name: "Notebook Pro", category: "Eletrônicos", price: 7500, rawMaterialCost: 4000, laborCost: 1000, suppliesCost: 200, fees: 50, taxes: 1000, profitMargin: 20 },
+    { id: "prod-2", name: "Mouse Sem Fio", category: "Acessórios", price: 120.50, rawMaterialCost: 50, laborCost: 10, suppliesCost: 5, fees: 2, taxes: 15, profitMargin: 30 },
+    { id: "prod-3", name: "Teclado Mecânico", category: "Acessórios", price: 450, rawMaterialCost: 200, laborCost: 50, suppliesCost: 20, fees: 10, taxes: 70, profitMargin: 25 },
+    { id: "prod-4", name: "Monitor 4K", category: "Eletrônicos", price: 2300, rawMaterialCost: 1200, laborCost: 200, suppliesCost: 100, fees: 30, taxes: 400, profitMargin: 20 },
 ];
 
 const initialOrders: SalesOrder[] = [

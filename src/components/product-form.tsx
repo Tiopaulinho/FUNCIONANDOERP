@@ -42,6 +42,12 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     resolver: zodResolver(productSchema),
     defaultValues: initialData || {
       name: "",
+      category: "",
+      type: "",
+      material: "",
+      color: "",
+      size: "",
+      otherDetails: "",
       price: 0,
       rawMaterialCost: 0,
       laborCost: 0,
@@ -73,6 +79,12 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     } else {
       form.reset({
         name: "",
+        category: "",
+        type: "",
+        material: "",
+        color: "",
+        size: "",
+        otherDetails: "",
         price: 0,
         rawMaterialCost: 0,
         laborCost: 0,
@@ -87,7 +99,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
 
   const watchedFields = form.watch();
 
-  const { baseCost, totalCost, suggestedPrice, actualProfit } = React.useMemo(() => {
+  const { baseCost, totalCost, suggestedPrice, actualProfit, composedName } = React.useMemo(() => {
     const rawMaterialCost = Number(watchedFields.rawMaterialCost) || 0;
     const laborCost = Number(watchedFields.laborCost) || 0;
     const suppliesCost = Number(watchedFields.suppliesCost) || 0;
@@ -105,8 +117,22 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     const suggestedPrice = totalCost + profitValue;
     const actualProfit = chargedPrice - totalCost;
 
-    return { baseCost, totalCost, suggestedPrice, actualProfit };
+    const composedName = [
+      watchedFields.category,
+      watchedFields.type,
+      watchedFields.material,
+      watchedFields.color,
+      watchedFields.size,
+      watchedFields.otherDetails
+    ].filter(Boolean).join(' - ');
+
+
+    return { baseCost, totalCost, suggestedPrice, actualProfit, composedName };
   }, [watchedFields]);
+
+  React.useEffect(() => {
+    form.setValue("name", composedName, { shouldValidate: true });
+  }, [composedName, form]);
   
 
   async function onSubmit(data: ProductFormValues) {
@@ -132,7 +158,23 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     }
     
     if (!isEditMode) {
-      form.reset({ name: "", price: 0, rawMaterialCost: 0, laborCost: 0, suppliesCost: 0, fees: 0, taxes: 0, profitMargin: 0, productionMinutes: 0 });
+      form.reset({
+        name: "",
+        category: "",
+        type: "",
+        material: "",
+        color: "",
+        size: "",
+        otherDetails: "",
+        price: 0,
+        rawMaterialCost: 0,
+        laborCost: 0,
+        suppliesCost: 0,
+        fees: 0,
+        taxes: 0,
+        profitMargin: 0,
+        productionMinutes: 0,
+      });
       setCostPerMinute(0);
     }
     
@@ -179,19 +221,46 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Produto</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Camiseta Branca" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Descrição do Produto</h3>
+              <Separator />
+               <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Caneca, Camiseta, Chaveiro" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="type" render={({ field }) => ( <FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ex: Cilíndrica, Baby Look" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="material" render={({ field }) => ( <FormItem><FormLabel>Material</FormLabel><FormControl><Input placeholder="Ex: Porcelana, Algodão" {...field} /></FormControl><FormMessage /></FormItem> )} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="color" render={({ field }) => ( <FormItem><FormLabel>Cor</FormLabel><FormControl><Input placeholder="Ex: Branca, Preto" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="size" render={({ field }) => ( <FormItem><FormLabel>Tamanho/Capacidade</FormLabel><FormControl><Input placeholder="Ex: 325ml, G, 5x5cm" {...field} /></FormControl><FormMessage /></FormItem> )} />
+              </div>
+               <FormField control={form.control} name="otherDetails" render={({ field }) => ( <FormItem><FormLabel>Outros Detalhes</FormLabel><FormControl><Input placeholder="Ex: Com alça de coração, Estampa frontal" {...field} /></FormControl><FormMessage /></FormItem> )} />
+               <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome Completo do Produto</FormLabel>
+                      <FormControl>
+                        <Input readOnly {...field} className="bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+              />
+            </div>
+
 
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Composição de Custos</h3>
