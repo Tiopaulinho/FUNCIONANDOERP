@@ -80,20 +80,20 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder, onRegiste
     const leadId = e.dataTransfer.getData("leadId");
     const lead = leads.find(l => l.id === leadId);
 
-    if (lead && newStatus === 'Criar Pedido (Aprovado)') {
-       const customerExists = customers.some(c => c.name === lead.contact);
-       if (!customerExists) {
-         setLeadToRegister(lead);
-         setIsCustomerDialogOpen(true);
-       } else {
-         onOpenNewOrder(lead);
-         setLeads(prevLeads => 
-            prevLeads.map(l => 
-              l.id === leadId ? { ...l, status: newStatus } : l
-            )
-          );
-       }
-    } else {
+    if (lead) {
+      if (newStatus === 'Criar Pedido (Aprovado)') {
+        const customerExists = customers.some(c => c.name.toLowerCase() === lead.contact.toLowerCase());
+        
+        // Always open the new order dialog
+        onOpenNewOrder(lead);
+
+        // Still register the customer if they don't exist, but do it behind the scenes or let the user do it from the order form
+        if (!customerExists) {
+            console.log("Customer does not exist, user can create one from order form.");
+        }
+      }
+      
+      // Update lead status regardless
       setLeads(prevLeads => 
         prevLeads.map(l => 
           l.id === leadId ? { ...l, status: newStatus } : l

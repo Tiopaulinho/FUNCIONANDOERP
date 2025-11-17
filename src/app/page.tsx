@@ -34,8 +34,8 @@ const initialProducts: (Product & { id: string })[] = [
 const initialOrders: SalesOrder[] = [
   { id: "ORD-001", customerId: "1", customerName: "José da Silva", date: "2024-07-28", total: 150.50, status: "Entregue", items: [ {id: "item-1", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 150.50} ] },
   { id: "ORD-002", customerId: "2", customerName: "Maria Oliveira", date: "2024-07-27", total: 299.99, status: "Enviado", items: [ {id: "item-2", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 2, price: 120}, {id: "item-3", productId: "prod-3", productName: "Teclado", quantity: 1, price: 59.99} ] },
-  { id: "ORD-003", customerId: "1", customerName: "Carlos Pereira", date: "2024-07-26", total: 75.00, status: "Processando", items: [ {id: "item-4", productId: "prod-4", productName: "Monitor 4K", quantity: 1, price: 75.00} ] },
-  { id: "ORD-004", customerId: "2", customerName: "Ana Costa", date: "2024-07-25", total: 500.00, status: "Pendente", items: [ {id: "item-5", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 500} ] },
+  { id: "ORD-003", customerId: "3", customerName: "Carlos Pereira", date: "2024-07-26", total: 75.00, status: "Processando", items: [ {id: "item-4", productId: "prod-4", productName: "Monitor 4K", quantity: 1, price: 75.00} ] },
+  { id: "ORD-004", customerId: "4", customerName: "Ana Costa", date: "2024-07-25", total: 500.00, status: "Pendente", items: [ {id: "item-5", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 500} ] },
   { id: "ORD-005", customerId: "1", customerName: "José da Silva", date: "2024-07-24", total: 99.90, status: "Entregue", items: [ {id: "item-6", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 1, price: 99.90} ] },
 ];
 
@@ -108,7 +108,8 @@ export default function Home() {
   const openNewOrderDialog = (lead?: Lead) => {
     setEditingOrder(null);
     if(lead) {
-      const customer = customers.find(c => c.name === lead.contact);
+      const customer = customers.find(c => c.name.toLowerCase() === lead.contact.toLowerCase());
+      // Pass lead info, if customer exists, pass their ID, otherwise empty string.
       setLeadForOrder({...lead, contact: customer?.id || ""});
     } else {
       setLeadForOrder(null);
