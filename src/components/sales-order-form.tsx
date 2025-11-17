@@ -86,7 +86,7 @@ export default function SalesOrderForm({
     if (leadData.customerId) {
       return customers.find(c => c.id === leadData.customerId);
     }
-    return null; // Don't guess by name, rely on ID
+    return null;
   }, [leadData, customers]);
 
   const form = useForm<SalesOrderFormValues>({
@@ -99,15 +99,24 @@ export default function SalesOrderForm({
 
   React.useEffect(() => {
     if (isEditMode && initialData) {
-      form.reset(initialData);
+      form.reset({
+        ...initialData,
+        items: initialData.items.map(item => ({
+          ...item,
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+        }))
+      });
     } else if (cameFromLead && leadData) {
-      const defaultItems = proposalData?.items?.map((item: ProposalItem) => ({
-        id: `item-${Date.now()}-${Math.random()}`,
-        productId: item.productId,
-        productName: item.productName,
-        quantity: item.quantity,
-        price: item.price,
-      })) || [{ productId: "", productName: "", quantity: 1, price: 0 }];
+      const defaultItems = proposalData?.items && proposalData.items.length > 0
+        ? proposalData.items.map((item: ProposalItem) => ({
+            id: `item-${Date.now()}-${Math.random()}`,
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+          }))
+        : [{ productId: "", productName: "", quantity: 1, price: 0 }];
 
       form.reset({
         customerId: customerForLead?.id || "",
@@ -208,13 +217,11 @@ export default function SalesOrderForm({
   }
 
   const getCustomerRegistrationInitialData = () => {
-    // This is called when the "+" button is clicked. 
-    // It should only be clickable if the customer doesn't exist.
     if (cameFromLead && !customerForLead && leadData) {
       return { 
-        name: leadData.contact, 
-        email: leadData.email, 
-        phone: leadData.phone 
+        name: leadData.name, 
+        email: leadData.email || "", 
+        phone: leadData.phone || "" 
       };
     }
     return null;
@@ -238,7 +245,7 @@ export default function SalesOrderForm({
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.contact || ""}
+                            value={customerForLead?.name || leadData?.name || ""}
                             className="bg-muted/50"
                           />
                           {!customerForLead && (
@@ -437,5 +444,7 @@ export default function SalesOrderForm({
   );
 }
 
+
+    
 
     
