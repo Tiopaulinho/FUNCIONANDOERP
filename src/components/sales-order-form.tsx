@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
-import type { Customer, Product, SalesOrder } from "@/lib/schemas";
+import type { Customer, Product, SalesOrder, Lead } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
@@ -62,9 +62,10 @@ interface SalesOrderFormProps {
   onSuccess: (order: SalesOrder) => void;
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
+  leadData?: Lead | null;
 }
 
-export default function SalesOrderForm({ initialData, onSuccess, products, onProductAdd }: SalesOrderFormProps) {
+export default function SalesOrderForm({ initialData, onSuccess, products, onProductAdd, leadData }: SalesOrderFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
@@ -81,13 +82,20 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
   React.useEffect(() => {
     if (isEditMode && initialData) {
       form.reset(initialData);
+    } else if(leadData) {
+      // Find customer by name, ideally we'd have a customer ID on the lead
+      const customer = allCustomers.find(c => c.name === leadData.contact);
+       form.reset({
+        customerId: customer?.id || "",
+        items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+      });
     } else {
       form.reset({
         customerId: "",
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, form, isEditMode]);
+  }, [initialData, leadData, form, isEditMode]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -165,6 +173,7 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
+                      disabled={!!leadData}
                     >
                       <FormControl>
                         <SelectTrigger>

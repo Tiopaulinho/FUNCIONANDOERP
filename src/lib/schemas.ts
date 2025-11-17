@@ -51,4 +51,5 @@ export type Lead = {
   contact: string;
   value: number;
   status: LeadStatus;
+  isNew?: boolean; // Flag to indicate if it's from a new import
 }

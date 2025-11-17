@@ -10,8 +10,17 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User } from "lucide-react";
+import { DollarSign, Building, User, Upload } from "lucide-react";
 import type { Lead, LeadStatus } from "@/lib/schemas";
+import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import CustomerRegistrationForm from "./customer-registration-form";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Criar Pedido (Aprovado)", "Reprovado"];
 
@@ -47,9 +56,13 @@ const LeadCard = ({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
 interface SalesFunnelProps {
   leads: Lead[];
   setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
+  onOpenNewOrder: (lead: Lead) => void;
 }
 
-export default function SalesFunnel({ leads, setLeads }: SalesFunnelProps) {
+export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFunnelProps) {
+  const { toast } = useToast();
+  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
+  const [leadToRegister, setLeadToRegister] = React.useState<Lead | null>(null);
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     e.dataTransfer.setData("leadId", leadId);
@@ -62,13 +75,58 @@ export default function SalesFunnel({ leads, setLeads }: SalesFunnelProps) {
   const handleDrop = (e: React.DragEvent, newStatus: LeadStatus) => {
     e.preventDefault();
     const leadId = e.dataTransfer.getData("leadId");
-    
-    setLeads(prevLeads => 
-      prevLeads.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      )
-    );
+    const lead = leads.find(l => l.id === leadId);
+
+    if (lead && newStatus === 'Criar Pedido (Aprovado)') {
+       if (lead.isNew) {
+         setLeadToRegister(lead);
+         setIsCustomerDialogOpen(true);
+       } else {
+         onOpenNewOrder(lead);
+       }
+    } else {
+      setLeads(prevLeads => 
+        prevLeads.map(lead => 
+          lead.id === leadId ? { ...lead, status: newStatus } : lead
+        )
+      );
+    }
   };
+
+  const simulateImport = () => {
+    const newLeads: Lead[] = [
+      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", value: 22000, status: "Lista de Leads", isNew: true },
+      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", value: 33000, status: "Lista de Leads", isNew: true },
+    ];
+    
+    setLeads(prev => [...prev, ...newLeads]);
+
+    toast({
+      title: "Leads Importados!",
+      description: "Novos leads foram adicionados ao seu funil."
+    })
+  }
+
+  const handleCustomerRegistrationSuccess = () => {
+    setIsCustomerDialogOpen(false);
+    if(leadToRegister) {
+      // Mark lead as registered and move it to the approved column
+      setLeads(prevLeads => 
+        prevLeads.map(l => 
+          l.id === leadToRegister.id ? { ...l, status: "Criar Pedido (Aprovado)", isNew: false } : l
+        )
+      );
+       toast({
+        title: "Cliente Cadastrado!",
+        description: "O lead foi movido para 'Criar Pedido' e o cliente foi salvo."
+      });
+      // Optionally open new order dialog right away
+      const registeredLead = leads.find(l => l.id === leadToRegister.id);
+      if(registeredLead) onOpenNewOrder({...registeredLead, isNew: false });
+
+    }
+    setLeadToRegister(null);
+  }
 
   const leadsByStatus = React.useMemo(() => {
     const grouped: { [key in LeadStatus]?: Lead[] } = {};
@@ -85,9 +143,15 @@ export default function SalesFunnel({ leads, setLeads }: SalesFunnelProps) {
 
   return (
     <div className="w-full">
-        <div className="mb-6">
-            <h2 className="text-2xl font-bold">Funil de Vendas</h2>
-            <p className="text-muted-foreground">Arraste e solte os leads para atualizar o status.</p>
+        <div className="mb-6 flex justify-between items-center">
+            <div>
+                <h2 className="text-2xl font-bold">Funil de Vendas</h2>
+                <p className="text-muted-foreground">Arraste e solte os leads para atualizar o status.</p>
+            </div>
+            <Button onClick={simulateImport}>
+              <Upload className="mr-2 h-4 w-4" />
+              Importar Leads (Simulação)
+            </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         {funnelStatuses.map((status) => (
@@ -122,6 +186,22 @@ export default function SalesFunnel({ leads, setLeads }: SalesFunnelProps) {
             </div>
         ))}
         </div>
+        <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
+          <DialogContent className="sm:max-w-[800px]">
+              <DialogHeader>
+                  <DialogTitle>Completar Cadastro do Cliente</DialogTitle>
+              </DialogHeader>
+              <CustomerRegistrationForm 
+                initialData={{
+                  name: leadToRegister?.contact || "",
+                  email: "", // Not available from lead
+                  phone: "", // Not available from lead
+                  // You can add company name to a field if you have one
+                }}
+                onSuccess={handleCustomerRegistrationSuccess}
+              />
+          </DialogContent>
+      </Dialog>
     </div>
   );
 }

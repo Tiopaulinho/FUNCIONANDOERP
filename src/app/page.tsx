@@ -53,6 +53,7 @@ export default function Home() {
   const [orders, setOrders] = React.useState<SalesOrder[]>(initialOrders);
   const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
   const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
+  const [leadForOrder, setLeadForOrder] = React.useState<Lead | null>(null);
   
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = React.useState(false);
   const [isSalesOrderDialogOpen, setIsSalesOrderDialogOpen] = React.useState(false);
@@ -82,6 +83,7 @@ export default function Home() {
     }
     setIsSalesOrderDialogOpen(false);
     setEditingOrder(null);
+    setLeadForOrder(null);
   }
 
   const handleEditOrder = (order: SalesOrder) => {
@@ -93,8 +95,11 @@ export default function Home() {
     setOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
   }
 
-  const openNewOrderDialog = () => {
+  const openNewOrderDialog = (lead?: Lead) => {
     setEditingOrder(null);
+    if(lead) {
+      setLeadForOrder(lead);
+    }
     setIsSalesOrderDialogOpen(true);
   }
 
@@ -114,7 +119,7 @@ export default function Home() {
             <CustomerList />
           </TabsContent>
           <TabsContent value="funnel">
-            <SalesFunnel leads={leads} setLeads={setLeads} />
+            <SalesFunnel leads={leads} setLeads={setLeads} onOpenNewOrder={openNewOrderDialog} />
           </TabsContent>
           <TabsContent value="orders">
              <SalesOrderList 
@@ -145,6 +150,7 @@ export default function Home() {
                 onProductAdd={addProduct}
                 onSuccess={handleOrderSave}
                 initialData={editingOrder}
+                leadData={leadForOrder}
               />
             </DialogContent>
         </Dialog>

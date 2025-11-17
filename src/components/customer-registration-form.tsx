@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -32,7 +33,7 @@ import { Separator } from "./ui/separator";
 type CustomerFormValues = z.infer<typeof customerRegistrationSchema>;
 
 interface CustomerRegistrationFormProps {
-  initialData?: Customer | null;
+  initialData?: Partial<Customer> | null;
   onSuccess?: () => void;
 }
 
@@ -42,28 +43,37 @@ export default function CustomerRegistrationForm({
 }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const isEditMode = !!initialData;
+  const isEditMode = !!(initialData && initialData.email); // A real ID check would be better
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerRegistrationSchema),
-    defaultValues: initialData || {
-      name: "",
-      email: "",
-      phone: "",
-      zip: "",
-      street: "",
-      number: "",
-      complement: "",
-      neighborhood: "",
-      city: "",
-      state: "",
+    defaultValues: {
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      zip: initialData?.zip || "",
+      street: initialData?.street || "",
+      number: initialData?.number || "",
+      complement: initialData?.complement || "",
+      neighborhood: initialData?.neighborhood || "",
+      city: initialData?.city || "",
+      state: initialData?.state || "",
     },
   });
 
   React.useEffect(() => {
-    if (initialData) {
-      form.reset(initialData);
-    }
+    form.reset({
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      zip: initialData?.zip || "",
+      street: initialData?.street || "",
+      number: initialData?.number || "",
+      complement: initialData?.complement || "",
+      neighborhood: initialData?.neighborhood || "",
+      city: initialData?.city || "",
+      state: initialData?.state || "",
+    });
   }, [initialData, form]);
 
   async function onSubmit(data: CustomerFormValues) {
