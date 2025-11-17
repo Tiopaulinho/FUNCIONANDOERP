@@ -5,13 +5,11 @@ import * as React from "react";
 import CustomerRegistrationForm from "@/components/customer-registration-form";
 import CustomerList from "@/components/customer-list";
 import SalesOrderList from "@/components/sales-order-list";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -19,7 +17,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { UserPlus, ShoppingCart, Package } from "lucide-react";
 import SalesOrderForm from "@/components/sales-order-form";
 import ProductList from "@/components/product-list";
 import ProductForm from "@/components/product-form";
@@ -102,7 +99,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center bg-accent/30 p-4 md:p-8">
+    <main className="flex min-h-dvh w-full flex-col items-center bg-muted/40 p-4 md:p-8">
       <div className="w-full max-w-7xl">
         <Tabs defaultValue="customers" className="w-full">
           <div className="mb-4 flex items-center justify-between gap-4">

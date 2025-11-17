@@ -34,10 +34,10 @@ const statusConfig: { [key in OrderStatus]: { variant: "destructive" | "outline"
 };
 
 const OrderCard = ({ order, onDragStart, onClick }: { order: SalesOrder, onDragStart: (e: React.DragEvent, orderId: string) => void, onClick: () => void }) => {
-  const { icon: Icon } = statusConfig[order.status];
+  const { icon: Icon, variant } = statusConfig[order.status];
   return (
     <Card 
-      className="mb-4 cursor-grab active:cursor-grabbing hover:bg-accent" 
+      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow" 
       onClick={onClick}
       draggable="true"
       onDragStart={(e) => onDragStart(e, order.id)}
@@ -46,9 +46,9 @@ const OrderCard = ({ order, onDragStart, onClick }: { order: SalesOrder, onDragS
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-sm font-bold">{order.id}</CardTitle>
-            <CardDescription className="text-xs">{order.customerName}</CardDescription>
+            <CardDescription className="text-xs pt-1">{order.customerName}</CardDescription>
           </div>
-          <Badge variant={statusConfig[order.status].variant} className="capitalize text-xs">
+          <Badge variant={variant} className="capitalize text-xs">
             <Icon className="mr-1 h-3 w-3" />
             {order.status}
           </Badge>
@@ -57,7 +57,7 @@ const OrderCard = ({ order, onDragStart, onClick }: { order: SalesOrder, onDragS
       <CardContent className="p-4 pt-0">
         <div className="flex justify-between items-center text-xs">
           <span className="text-muted-foreground">{new Date(order.date).toLocaleDateString("pt-BR")}</span>
-          <span className="font-semibold">{order.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+          <span className="font-semibold text-base">{order.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
         </div>
       </CardContent>
     </Card>
@@ -220,7 +220,7 @@ export default function SalesOrderList({ orders, setOrders, onEditOrder, onDelet
                 <h2 className="text-2xl font-bold">Pedidos de Venda</h2>
                 <p className="text-muted-foreground">Visualize e gerencie os pedidos de venda dos clientes.</p>
             </div>
-            <Button variant="outline" onClick={onNewOrderClick}>
+            <Button onClick={onNewOrderClick}>
               <ShoppingCart className="mr-2 h-4 w-4" />
               Novo Pedido
             </Button>
@@ -231,12 +231,15 @@ export default function SalesOrderList({ orders, setOrders, onEditOrder, onDelet
               key={status}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, status)}
+              className="flex flex-col"
             >
-              <div className="flex items-center mb-4">
-                  <h3 className="font-semibold text-lg capitalize">{status}</h3>
-                  <Badge variant="secondary" className="ml-2">{ordersByStatus[status]?.length || 0}</Badge>
+              <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-lg capitalize">{status}</h3>
+                    <Badge variant="secondary" className="rounded-full">{ordersByStatus[status]?.length || 0}</Badge>
+                  </div>
               </div>
-              <Card className="bg-muted/40 border-dashed">
+              <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
                   {ordersByStatus[status]?.map((order) => (
                       <OrderCard 
@@ -248,7 +251,7 @@ export default function SalesOrderList({ orders, setOrders, onEditOrder, onDelet
                   ))}
                   {ordersByStatus[status]?.length === 0 && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                          Nenhum pedido aqui.
+                          Arraste um pedido aqui
                       </div>
                   )}
                   </CardContent>

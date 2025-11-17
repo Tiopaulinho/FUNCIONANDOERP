@@ -18,23 +18,23 @@ const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "
 const LeadCard = ({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void }) => {
   return (
     <Card 
-      className="mb-4 cursor-grab active:cursor-grabbing hover:bg-accent" 
+      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow" 
       draggable="true"
       onDragStart={(e) => onDragStart(e, lead.id)}
     >
       <CardHeader className="p-4">
-        <CardTitle className="text-sm font-bold flex items-center gap-2">
+        <CardTitle className="text-base font-bold flex items-center gap-2">
             <Building className="h-4 w-4 text-muted-foreground" />
             {lead.name}
         </CardTitle>
-        <CardDescription className="text-xs flex items-center gap-2 pt-1">
-            <User className="h-3 w-3 text-muted-foreground" />
+        <CardDescription className="text-sm flex items-center gap-2 pt-1">
+            <User className="h-4 w-4 text-muted-foreground" />
             {lead.contact}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="flex justify-between items-center text-sm font-semibold">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 text-base">
                 <DollarSign className="h-4 w-4" />
                 {lead.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </div>
@@ -87,7 +87,7 @@ export default function SalesFunnel({ leads, setLeads }: SalesFunnelProps) {
     <div className="w-full">
         <div className="mb-6">
             <h2 className="text-2xl font-bold">Funil de Vendas</h2>
-            <p className="text-muted-foreground">Gerencie suas oportunidades de negócio.</p>
+            <p className="text-muted-foreground">Arraste e solte os leads para atualizar o status.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         {funnelStatuses.map((status) => (
@@ -95,12 +95,15 @@ export default function SalesFunnel({ leads, setLeads }: SalesFunnelProps) {
               key={status}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, status)}
+              className="flex flex-col"
             >
-              <div className="flex items-center mb-4">
-                  <h3 className="font-semibold text-lg capitalize">{status}</h3>
-                  <Badge variant="secondary" className="ml-2">{leadsByStatus[status]?.length || 0}</Badge>
+              <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-lg capitalize">{status}</h3>
+                    <Badge variant="secondary" className="rounded-full">{leadsByStatus[status]?.length || 0}</Badge>
+                  </div>
               </div>
-              <Card className="bg-muted/40 border-dashed">
+              <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
                   {leadsByStatus[status]?.map((lead) => (
                       <LeadCard 
@@ -111,7 +114,7 @@ export default function SalesFunnel({ leads, setLeads }: SalesFunnelProps) {
                   ))}
                   {leadsByStatus[status]?.length === 0 && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                          Nenhum lead aqui.
+                          Arraste um lead aqui
                       </div>
                   )}
                   </CardContent>

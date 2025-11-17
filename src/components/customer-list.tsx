@@ -116,7 +116,7 @@ export default function CustomerList() {
   };
 
   return (
-    <Card className="shadow-2xl">
+    <Card className="shadow-lg">
       <CardHeader>
           <div className="flex justify-between items-center">
             <div>

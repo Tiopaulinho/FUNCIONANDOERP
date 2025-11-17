@@ -19,7 +19,7 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { FilePenLine, Trash2, Package } from "lucide-react";
+import { FilePenLine, Trash2, PackagePlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -89,7 +89,7 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
   };
 
   return (
-    <Card className="shadow-2xl">
+    <Card className="shadow-lg">
       <CardHeader>
         <div className="flex justify-between items-center">
             <div>
@@ -98,8 +98,8 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
                 Visualize e gerencie os produtos cadastrados no sistema.
               </CardDescription>
             </div>
-            <Button variant="outline" onClick={onNewProductClick}>
-              <Package className="mr-2 h-4 w-4" />
+            <Button onClick={onNewProductClick}>
+              <PackagePlus className="mr-2 h-4 w-4" />
               Novo Produto
             </Button>
         </div>
