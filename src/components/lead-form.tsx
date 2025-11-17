@@ -38,11 +38,13 @@ export default function LeadForm({ initialData, onSuccess }: LeadFormProps) {
     defaultValues: isEditMode ? {
       name: initialData.name,
       contact: initialData.contact,
+      phone: initialData.phone || "",
       value: initialData.value,
       proposalNotes: initialData.proposalNotes || "",
     } : {
       name: "",
       contact: "",
+      phone: "",
       value: undefined,
       proposalNotes: "",
     },
@@ -52,6 +54,7 @@ export default function LeadForm({ initialData, onSuccess }: LeadFormProps) {
     if (initialData) {
       form.reset({
         ...initialData,
+        phone: initialData.phone || "",
         proposalNotes: initialData.proposalNotes || "",
       });
     }
@@ -113,6 +116,19 @@ export default function LeadForm({ initialData, onSuccess }: LeadFormProps) {
                     <FormLabel>Nome do Contato</FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: João da Silva" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: (11) 99999-9999" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

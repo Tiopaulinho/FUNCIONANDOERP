@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone } from "lucide-react";
 import type { Lead, LeadStatus, Customer } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,7 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
       onDragStart={(e) => onDragStart(e, lead.id)}
       onClick={onClick}
     >
-      <CardHeader className="p-4">
+      <CardHeader className="p-4 space-y-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Building className="h-4 w-4 text-muted-foreground" />
@@ -61,6 +61,12 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
             <User className="h-4 w-4 text-muted-foreground" />
             {lead.contact}
         </CardDescription>
+         {lead.phone && (
+            <CardDescription className="text-sm flex items-center gap-2 pt-1">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                {lead.phone}
+            </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="flex justify-between items-center text-sm font-semibold">
@@ -115,6 +121,15 @@ const LeadDetailsModal = ({
                     <p className="font-bold text-lg">{lead.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                 </div>
             </div>
+             {lead.phone && (
+                <div className="flex items-center gap-2">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                        <p className="text-sm text-muted-foreground">Telefone</p>
+                        <p className="font-semibold">{lead.phone}</p>
+                    </div>
+                </div>
+            )}
             <div className="flex items-center gap-2">
                  <Badge variant="secondary">{lead.status}</Badge>
             </div>
@@ -291,8 +306,8 @@ export default function SalesFunnel({
 
   const simulateImport = () => {
     const newLeads: Lead[] = [
-      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", value: 22000, status: "Lista de Leads" },
-      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", value: 33000, status: "Lista de Leads" },
+      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000, status: "Lista de Leads" },
+      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000, status: "Lista de Leads" },
     ];
     
     setLeads(prev => [...prev, ...newLeads]);
@@ -424,5 +439,3 @@ export default function SalesFunnel({
     </div>
   );
 }
-
-    
