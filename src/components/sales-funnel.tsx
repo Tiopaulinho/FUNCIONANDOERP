@@ -241,13 +241,25 @@ const GroupedLeadsModal = ({
     open,
     onOpenChange,
     onViewLead,
+    proposals,
   }: {
     group: Lead[] | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onViewLead: (lead: Lead) => void;
+    proposals: Proposal[];
   }) => {
     if (!group) return null;
+    
+    const getProposalValue = (lead: Lead) => {
+      if (lead.proposalId) {
+        const proposal = proposals.find(p => p.id === lead.proposalId);
+        if (proposal && proposal.total) {
+          return proposal.total;
+        }
+      }
+      return lead.value;
+    }
   
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -264,7 +276,7 @@ const GroupedLeadsModal = ({
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-base">Oportunidade #{lead.id.split('-').pop()}</CardTitle>
-                    <p className="font-bold text-lg">{lead.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                    <p className="font-bold text-lg">{getProposalValue(lead).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                   </div>
                   {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
                 </CardHeader>
@@ -710,6 +722,7 @@ export default function SalesFunnel({
             open={isGroupedLeadsModalOpen}
             onOpenChange={setIsGroupedLeadsModalOpen}
             onViewLead={handleViewSingleLeadFromGroup}
+            proposals={proposals}
         />
 
     </div>
@@ -719,3 +732,4 @@ export default function SalesFunnel({
     
 
     
+
