@@ -19,12 +19,19 @@ import {
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { FilePenLine, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
 import CustomerRegistrationForm from "./customer-registration-form";
 import type { Customer } from "@/lib/schemas";
 
-const allCustomers: Customer[] = [
+const allCustomers: (Customer & { id: string })[] = [
   {
+    id: "1",
     name: "José da Silva",
     email: "jose.silva@example.com",
     phone: "(11) 98765-4321",
@@ -37,6 +44,7 @@ const allCustomers: Customer[] = [
     state: "SP",
   },
   {
+    id: "2",
     name: "Maria Oliveira",
     email: "maria.oliveira@example.com",
     phone: "(21) 91234-5678",
@@ -49,6 +57,7 @@ const allCustomers: Customer[] = [
     state: "RJ",
   },
   {
+    id: "3",
     name: "Carlos Pereira",
     email: "carlos.pereira@example.com",
     phone: "(31) 95555-4444",
@@ -61,6 +70,7 @@ const allCustomers: Customer[] = [
     state: "MG",
   },
   {
+    id: "4",
     name: "Ana Costa",
     email: "ana.costa@example.com",
     phone: "(71) 99999-8888",
@@ -78,6 +88,7 @@ export default function CustomerList() {
   const [nameFilter, setNameFilter] = React.useState("");
   const [emailFilter, setEmailFilter] = React.useState("");
   const [filteredCustomers, setFilteredCustomers] = React.useState(allCustomers);
+  const [editingCustomer, setEditingCustomer] = React.useState<Customer | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -91,9 +102,16 @@ export default function CustomerList() {
     });
     setFilteredCustomers(filtered);
   }, [nameFilter, emailFilter]);
+  
+  const handleEditClick = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setIsEditDialogOpen(true);
+  }
 
   const handleFormSuccess = () => {
     setIsEditDialogOpen(false);
+    setEditingCustomer(null);
+    // Here you would refetch the customer list from the database
   };
 
   return (
@@ -117,54 +135,54 @@ export default function CustomerList() {
           </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Cidade</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCustomers.map((customer) => (
-              <TableRow key={customer.email}>
-                <TableCell className="font-medium">{customer.name}</TableCell>
-                <TableCell>{customer.email}</TableCell>
-                <TableCell>{customer.phone}</TableCell>
-                <TableCell>{customer.city}</TableCell>
-                <TableCell>{customer.state}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                      <DialogTrigger asChild>
-                         <Button variant="outline" size="icon">
-                            <FilePenLine className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                          </Button>
-                      </DialogTrigger>
-                       <DialogContent className="sm:max-w-[800px]">
-                        <DialogHeader>
-                          <DialogTitle className="sr-only">Editar Cliente</DialogTitle>
-                        </DialogHeader>
-                        <CustomerRegistrationForm
-                          initialData={customer}
-                          onSuccess={handleFormSuccess}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                    <Button variant="destructive" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Excluir</span>
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Cidade</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.map((customer) => (
+                <TableRow key={customer.id}>
+                  <TableCell className="font-medium">{customer.name}</TableCell>
+                  <TableCell>{customer.email}</TableCell>
+                  <TableCell>{customer.phone}</TableCell>
+                  <TableCell>{customer.city}</TableCell>
+                  <TableCell>{customer.state}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="outline" size="icon" onClick={() => handleEditClick(customer)}>
+                          <FilePenLine className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                      <Button variant="destructive" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Excluir</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[800px]">
+              <DialogHeader>
+                <DialogTitle className="sr-only">Editar Cliente</DialogTitle>
+              </DialogHeader>
+              <CustomerRegistrationForm
+                initialData={editingCustomer}
+                onSuccess={handleFormSuccess}
+              />
+            </DialogContent>
+          </Dialog>
       </CardContent>
     </Card>
   );
