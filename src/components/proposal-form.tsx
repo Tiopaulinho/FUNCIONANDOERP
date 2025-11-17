@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm, useFieldArray, FormProvider, useWatch, useFormContext } from "react-hook-form";
+import { useForm, useFieldArray, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2, FileText, Percent, Truck } from "lucide-react";
 
@@ -39,39 +39,6 @@ interface ProposalFormProps {
   initialData?: Proposal | null;
 }
 
-const TotalCalculator = () => {
-    const { control } = useFormContext<ProposalFormValues>();
-    const watchedItems = useWatch({ control, name: 'items' });
-    const watchedDiscount = useWatch({ control, name: 'discount' });
-    const watchedShipping = useWatch({ control, name: 'shipping' });
-
-    const total = React.useMemo(() => {
-        const sub = (watchedItems || []).reduce((acc, item) => {
-            const quantity = Number(item.quantity) || 0;
-            const price = Number(item.price) || 0;
-            return acc + (quantity * price);
-        }, 0);
-
-        const discountValue = Number(watchedDiscount) || 0;
-        const shippingValue = Number(watchedShipping) || 0;
-        const discountAmount = sub * (discountValue / 100);
-        return sub - discountAmount + shippingValue;
-    }, [watchedItems, watchedDiscount, watchedShipping]);
-
-    return (
-        <div className="flex items-center gap-4 w-full md:w-auto justify-end">
-            <div className="text-right space-y-1">
-                <p className="text-sm text-muted-foreground">Total da Proposta</p>
-                <p className="text-3xl font-bold">{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-            </div>
-            <Button type="submit" size="lg">
-                {/* O estado de submissão precisa ser gerenciado fora deste componente */}
-                <FileText className="mr-2 h-5 w-5" /> Criar/Atualizar Proposta
-            </Button>
-        </div>
-    );
-};
-
 
 export default function ProposalForm({ lead, onSuccess, products, onProductAdd, initialData }: ProposalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -102,7 +69,9 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
     name: "items",
   });
   
-  const { items: watchedItems } = form.watch();
+  const watchedItems = form.watch('items');
+  const watchedDiscount = form.watch('discount');
+  const watchedShipping = form.watch('shipping');
 
   const total = React.useMemo(() => {
     const sub = (watchedItems || []).reduce((acc, item) => {
@@ -110,11 +79,11 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
         const price = Number(item.price) || 0;
         return acc + (quantity * price);
     }, 0);
-    const discountValue = Number(form.getValues('discount')) || 0;
-    const shippingValue = Number(form.getValues('shipping')) || 0;
+    const discountValue = Number(watchedDiscount) || 0;
+    const shippingValue = Number(watchedShipping) || 0;
     const discountAmount = sub * (discountValue / 100);
     return sub - discountAmount + shippingValue;
-  }, [watchedItems, form]);
+  }, [watchedItems, watchedDiscount, watchedShipping]);
 
 
   const handleProductSelect = (productId: string, index: number) => {
@@ -132,16 +101,7 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
   async function onSubmit(data: ProposalFormValues) {
     setIsSubmitting(true);
 
-    // Recalculate total on submit to ensure accuracy
-    const sub = (data.items || []).reduce((acc, item) => {
-        const quantity = Number(item.quantity) || 0;
-        const price = Number(item.price) || 0;
-        return acc + (quantity * price);
-    }, 0);
-    const discountValue = Number(data.discount) || 0;
-    const shippingValue = Number(data.shipping) || 0;
-    const discountAmount = sub * (discountValue / 100);
-    const finalTotal = sub - discountAmount + shippingValue;
+    const finalTotal = total;
 
     const finalProposal: Proposal = {
       ...initialData,
