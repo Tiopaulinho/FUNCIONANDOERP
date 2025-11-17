@@ -68,14 +68,7 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
             </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="flex justify-between items-center text-sm font-semibold">
-            <div className="flex items-center gap-1 text-base">
-                <DollarSign className="h-4 w-4" />
-                {lead.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </div>
-        </div>
-      </CardContent>
+      
     </Card>
   );
 };
@@ -439,3 +432,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
