@@ -41,8 +41,7 @@ import ProposalForm from "./proposal-form";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, proposals: Proposal[] }) => {
-  const proposal = proposals.find(p => p.id === lead.proposalId);
+const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void }) => {
   return (
     <Card 
       className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card" 
@@ -57,14 +56,11 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
                 {lead.name}
             </CardTitle>
              <div className="flex items-center gap-2">
-                {proposal && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                    </Badge>
-                )}
                 {lead.proposalNotes && !lead.proposalId && (
-                    <StickyNote className="h-4 w-4 text-amber-500" />
+                    <StickyNote className="h-4 w-4 text-amber-500" title="Existem observações para esta proposta" />
+                )}
+                 {lead.proposalId && (
+                    <FileText className="h-4 w-4 text-primary" title="Proposta gerada" />
                 )}
             </div>
         </div>
@@ -136,6 +132,7 @@ const LeadDetailsModal = ({
   onDelete,
   onGenerateProposal,
   onNewPurchase,
+  proposals,
 }: { 
   lead: Lead | null; 
   open: boolean; 
@@ -144,8 +141,11 @@ const LeadDetailsModal = ({
   onDelete: (leadId: string) => void;
   onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
   onNewPurchase: (lead: Lead) => void;
+  proposals: Proposal[];
 }) => {
   if (!lead) return null;
+
+  const proposal = proposals.find(p => p.id === lead.proposalId);
 
   const handleGenerateClick = () => {
     onGenerateProposal(lead, !!lead.proposalId);
@@ -179,6 +179,17 @@ const LeadDetailsModal = ({
             <div className="flex items-center gap-2">
                  <Badge variant="secondary">{lead.status}</Badge>
             </div>
+            {proposal && (
+                <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                        <p className="text-sm text-muted-foreground">Valor da Proposta</p>
+                        <p className="font-semibold text-lg">
+                            {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </p>
+                    </div>
+                </div>
+            )}
             {lead.proposalNotes && (
                  <div className="space-y-2">
                     <h4 className="text-sm font-semibold flex items-center gap-2"><StickyNote className="h-4 w-4" /> Observações da Proposta</h4>
@@ -272,7 +283,7 @@ const GroupedLeadsModal = ({
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-base">Oportunidade #{lead.id.split('-').pop()}</CardTitle>
-                    <p className="font-bold text-lg">{getProposalValue(lead).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                    <p className="font-bold text-lg">{getProposalValue(lead)?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                   </div>
                   {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
                 </CardHeader>
@@ -626,7 +637,6 @@ export default function SalesFunnel({
                           lead={lead} 
                           onDragStart={handleDragStart}
                           onClick={() => handleCardClick(lead)}
-                          proposals={proposals}
                         />
                     ))
                   )}
@@ -651,6 +661,7 @@ export default function SalesFunnel({
           onDelete={handleDeleteClick}
           onGenerateProposal={handleGenerateProposalClick}
           onNewPurchase={handleNewPurchase}
+          proposals={proposals}
         />
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
