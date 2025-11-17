@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Wand2 } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Wand2, Send, Save } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "./ui/dialog";
 import { Separator } from "./ui/separator";
 import {
@@ -253,6 +254,9 @@ export default function SalesFunnel({
   const [isProposalModalOpen, setIsProposalModalOpen] = React.useState(false);
   const [isGenerateProposalModalOpen, setIsGenerateProposalModalOpen] = React.useState(false);
 
+  const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
+  const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
+
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     e.dataTransfer.setData("leadId", leadId);
@@ -352,17 +356,45 @@ export default function SalesFunnel({
     setIsGenerateProposalModalOpen(true);
   }
 
-  const handleProposalSuccess = (proposal: Proposal) => {
-    console.log("Proposal created:", proposal);
-    setIsGenerateProposalModalOpen(false);
-    toast({
-        title: "Proposta Criada!",
-        description: `A proposta para ${generateProposalLead?.name} foi criada com sucesso.`
-    });
-    // Optionally move lead to "Negociação"
-    if (generateProposalLead) {
+  const handleProposalSave = (proposal: Proposal) => {
+    console.log("Proposal to be actioned:", proposal);
+    setSavedProposal(proposal);
+    setIsGenerateProposalModalOpen(false); // Close form
+    setIsPostProposalActionsModalOpen(true); // Open actions modal
+  }
+  
+  const handleFinalizeProposal = () => {
+    if (savedProposal) {
+      console.log("Proposal finalized:", savedProposal);
+      // Here you would save to DB
+      if (generateProposalLead) {
         onUpdateLead({ ...generateProposalLead, status: 'Negociação' });
+      }
+      toast({
+        title: "Proposta Salva!",
+        description: `A proposta para ${generateProposalLead?.name} foi salva e o lead movido para Negociação.`
+      });
     }
+    resetProposalFlow();
+  };
+  
+  const handleSendWhatsApp = () => {
+    toast({
+      title: "Funcionalidade em breve!",
+      description: "O envio de propostas pelo WhatsApp será implementado em breve.",
+    });
+  }
+
+  const handleEditProposal = () => {
+    setIsPostProposalActionsModalOpen(false); // Close actions
+    setIsGenerateProposalModalOpen(true); // Re-open form
+  }
+
+  const resetProposalFlow = () => {
+    setIsPostProposalActionsModalOpen(false);
+    setIsGenerateProposalModalOpen(false);
+    setGenerateProposalLead(null);
+    setSavedProposal(null);
   }
 
 
@@ -467,9 +499,35 @@ export default function SalesFunnel({
                         lead={generateProposalLead}
                         products={products}
                         onProductAdd={onProductAdd}
-                        onSuccess={handleProposalSuccess}
+                        onSuccess={handleProposalSave}
+                        initialData={savedProposal}
                     />
                 )}
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={isPostProposalActionsModalOpen} onOpenChange={setIsPostProposalActionsModalOpen}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Proposta Criada</DialogTitle>
+                    <DialogDescription>
+                        A proposta para <span className="font-semibold text-foreground">{generateProposalLead?.name}</span> está pronta. O que você gostaria de fazer agora?
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="grid grid-cols-2 gap-4 pt-4 sm:grid-cols-2">
+                    <Button onClick={handleFinalizeProposal}>
+                        <Save className="mr-2" /> Salvar e Finalizar
+                    </Button>
+                    <Button onClick={handleSendWhatsApp} variant="secondary">
+                        <Send className="mr-2" /> Enviar por WhatsApp
+                    </Button>
+                    <Button onClick={handleEditProposal} variant="outline">
+                        <FilePenLine className="mr-2" /> Editar Proposta
+                    </Button>
+                    <Button onClick={resetProposalFlow} variant="destructive">
+                        Cancelar
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
 

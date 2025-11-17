@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
 import type { Product, Lead, Proposal } from "@/lib/schemas";
 import { proposalSchema } from "@/lib/schemas";
@@ -37,15 +36,15 @@ interface ProposalFormProps {
   onSuccess: (proposal: Proposal) => void;
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
+  initialData?: Proposal | null;
 }
 
-export default function ProposalForm({ lead, onSuccess, products, onProductAdd }: ProposalFormProps) {
-  const { toast } = useToast();
+export default function ProposalForm({ lead, onSuccess, products, onProductAdd, initialData }: ProposalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       leadId: lead.id,
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       discount: 0,
@@ -101,9 +100,9 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
 
     const finalProposal: Proposal = {
       ...data,
-      id: `PROP-${Date.now()}`,
+      id: initialData?.id || `PROP-${Date.now()}`,
       date: new Date().toISOString().split('T')[0],
-      items: data.items.map(item => ({ ...item, id: `pitem-${Date.now()}-${Math.random()}` })),
+      items: data.items.map(item => ({ ...item, id: item.id || `pitem-${Date.now()}-${Math.random()}` })),
     };
     
     console.log("Nova proposta:", finalProposal);
@@ -169,10 +168,10 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
                       />
                     </TableCell>
                     <TableCell>
-                      <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem><FormControl><Input type="number" placeholder="1" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem> )} />
+                      <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem><FormControl><Input type="number" placeholder="1" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))} /></FormControl></FormItem> )} />
                     </TableCell>
                     <TableCell>
-                      <FormField control={form.control} name={`items.${index}.price`} render={({ field }) => ( <FormItem><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl></FormItem> )} />
+                      <FormField control={form.control} name={`items.${index}.price`} render={({ field }) => ( <FormItem><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} /></FormControl></FormItem> )} />
                     </TableCell>
                     <TableCell className="text-right">{( (Number(watchedItems[index]?.quantity) || 0) * (Number(watchedItems[index]?.price) || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                     <TableCell>
@@ -210,13 +209,13 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
                 <FormField control={form.control} name="discount" render={({ field }) => (
                     <FormItem>
                         <FormLabel className="flex items-center gap-1"><Percent className="h-4 w-4" /> Desconto (%)</FormLabel>
-                        <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)}/></FormControl>
+                        <FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}/></FormControl>
                     </FormItem>
                 )} />
                 <FormField control={form.control} name="shipping" render={({ field }) => (
                      <FormItem>
                         <FormLabel className="flex items-center gap-1"><Truck className="h-4 w-4" /> Frete (R$)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
+                        <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} /></FormControl>
                     </FormItem>
                 )} />
             </div>
@@ -235,5 +234,3 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
     </div>
   );
 }
-
-    
