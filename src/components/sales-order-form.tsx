@@ -82,13 +82,11 @@ export default function SalesOrderForm({
   const cameFromLead = !!leadData;
   
   const customerForLead = React.useMemo(() => {
-      if (!leadData) return null;
-      // customerId is now the canonical link
-      if (leadData.customerId) {
-        return customers.find(c => c.id === leadData.customerId);
-      }
-      // Fallback for older leads or customers not yet linked
-      return customers.find(c => c.name.toLowerCase() === leadData.contact.toLowerCase());
+    if (!leadData) return null;
+    if (leadData.customerId) {
+      return customers.find(c => c.id === leadData.customerId);
+    }
+    return null; // Don't guess by name, rely on ID
   }, [leadData, customers]);
 
   const form = useForm<SalesOrderFormValues>({
@@ -104,6 +102,7 @@ export default function SalesOrderForm({
       form.reset(initialData);
     } else if (cameFromLead && leadData) {
       const defaultItems = proposalData?.items?.map((item: ProposalItem) => ({
+        id: `item-${Date.now()}-${Math.random()}`,
         productId: item.productId,
         productName: item.productName,
         quantity: item.quantity,
@@ -209,6 +208,8 @@ export default function SalesOrderForm({
   }
 
   const getCustomerRegistrationInitialData = () => {
+    // This is called when the "+" button is clicked. 
+    // It should only be clickable if the customer doesn't exist.
     if (cameFromLead && !customerForLead && leadData) {
       return { 
         name: leadData.contact, 
@@ -216,7 +217,7 @@ export default function SalesOrderForm({
         phone: leadData.phone 
       };
     }
-    return {};
+    return null;
   };
 
   const selectedCustomerId = form.watch("customerId");
@@ -268,7 +269,7 @@ export default function SalesOrderForm({
                        )}
                       <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" disabled={isEditMode && !!initialData?.customerId}>
+                          <Button variant="outline" size="icon" disabled={isEditMode || (cameFromLead && !!customerForLead)}>
                             <UserPlus className="h-4 w-4" />
                             <span className="sr-only">Novo Cliente</span>
                           </Button>
@@ -353,7 +354,7 @@ export default function SalesOrderForm({
                       render={({ field }) => (
                           <FormItem>
                           <FormControl>
-                              <Input type="number" placeholder="0" {...field} />
+                              <Input type="number" placeholder="0" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)} />
                           </FormControl>
                           <FormMessage className="mt-1 text-xs"/>
                           </FormItem>
@@ -367,7 +368,7 @@ export default function SalesOrderForm({
                       render={({ field }) => (
                           <FormItem>
                           <FormControl>
-                              <Input type="number" step="0.01" placeholder="0,00" {...field} />
+                              <Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
                           </FormControl>
                           <FormMessage className="mt-1 text-xs"/>
                           </FormItem>
@@ -435,3 +436,6 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+
+    
