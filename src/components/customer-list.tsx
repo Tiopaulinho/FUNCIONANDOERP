@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -18,7 +19,7 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { FilePenLine, Trash2 } from "lucide-react";
+import { FilePenLine, Trash2, UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -117,10 +118,30 @@ export default function CustomerList() {
   return (
     <Card className="shadow-2xl">
       <CardHeader>
-        <CardTitle>Clientes Cadastrados</CardTitle>
-        <CardDescription>
-          Visualize e gerencie os clientes cadastrados no sistema.
-        </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+                <CardTitle>Clientes Cadastrados</CardTitle>
+                <CardDescription>
+                  Visualize e gerencie os clientes cadastrados no sistema.
+                </CardDescription>
+            </div>
+            <Dialog>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Cadastrar Cliente
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[800px]">
+                  <DialogHeader>
+                    <DialogTitle className="sr-only">
+                      Cadastro de Cliente
+                    </DialogTitle>
+                  </DialogHeader>
+                  <CustomerRegistrationForm />
+                </DialogContent>
+              </Dialog>
+          </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
               placeholder="Filtrar por nome..."

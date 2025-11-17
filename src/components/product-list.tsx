@@ -19,7 +19,7 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { FilePenLine, Trash2 } from "lucide-react";
+import { FilePenLine, Trash2, Package } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -45,10 +45,11 @@ interface ProductListProps {
     products: (Product & { id: string })[];
     onUpdateProduct: (product: Product & { id: string }) => void;
     onDeleteProduct: (productId: string) => void;
+    onNewProductClick: () => void;
 }
 
 
-export default function ProductList({ products, onUpdateProduct, onDeleteProduct }: ProductListProps) {
+export default function ProductList({ products, onUpdateProduct, onDeleteProduct, onNewProductClick }: ProductListProps) {
   const { toast } = useToast();
   const [nameFilter, setNameFilter] = React.useState("");
   const [filteredProducts, setFilteredProducts] = React.useState(products);
@@ -90,10 +91,18 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
   return (
     <Card className="shadow-2xl">
       <CardHeader>
-        <CardTitle>Produtos Cadastrados</CardTitle>
-        <CardDescription>
-          Visualize e gerencie os produtos cadastrados no sistema.
-        </CardDescription>
+        <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Produtos Cadastrados</CardTitle>
+              <CardDescription>
+                Visualize e gerencie os produtos cadastrados no sistema.
+              </CardDescription>
+            </div>
+            <Button variant="outline" onClick={onNewProductClick}>
+              <Package className="mr-2 h-4 w-4" />
+              Novo Produto
+            </Button>
+        </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
               placeholder="Filtrar por nome do produto..."

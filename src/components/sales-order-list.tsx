@@ -18,7 +18,7 @@ import {
   DialogDescription,
 } from "./ui/dialog";
 import { Separator } from "./ui/separator";
-import { Truck, Package, CheckCircle, Clock, FilePenLine, Trash2 } from "lucide-react";
+import { Truck, Package, CheckCircle, Clock, FilePenLine, Trash2, ShoppingCart } from "lucide-react";
 import { Button } from "./ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -153,9 +153,10 @@ interface SalesOrderListProps {
   setOrders: React.Dispatch<React.SetStateAction<SalesOrder[]>>;
   onEditOrder: (order: SalesOrder) => void;
   onDeleteOrder: (orderId: string) => void;
+  onNewOrderClick: () => void;
 }
 
-export default function SalesOrderList({ orders, setOrders, onEditOrder, onDeleteOrder }: SalesOrderListProps) {
+export default function SalesOrderList({ orders, setOrders, onEditOrder, onDeleteOrder, onNewOrderClick }: SalesOrderListProps) {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = React.useState<SalesOrder | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -214,9 +215,15 @@ export default function SalesOrderList({ orders, setOrders, onEditOrder, onDelet
 
   return (
     <div className="w-full">
-        <div className="mb-6">
-            <h2 className="text-2xl font-bold">Pedidos de Venda</h2>
-            <p className="text-muted-foreground">Visualize e gerencie os pedidos de venda dos clientes.</p>
+        <div className="mb-6 flex justify-between items-center">
+            <div>
+                <h2 className="text-2xl font-bold">Pedidos de Venda</h2>
+                <p className="text-muted-foreground">Visualize e gerencie os pedidos de venda dos clientes.</p>
+            </div>
+            <Button variant="outline" onClick={onNewOrderClick}>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Novo Pedido
+            </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statuses.map((status) => (
