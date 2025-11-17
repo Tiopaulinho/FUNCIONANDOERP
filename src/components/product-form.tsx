@@ -23,6 +23,13 @@ import { Separator } from "./ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import LaborCostCalculator from "./labor-cost-calculator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -230,9 +237,18 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Caneca, Camiseta, Chaveiro" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="VESTUARIOS">Vestuário</SelectItem>
+                          <SelectItem value="PAPELARIA">Papelaria</SelectItem>
+                          <SelectItem value="SERVICOS">Serviços</SelectItem>
+                        </SelectContent>
+                      </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -409,3 +425,5 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     </div>
   );
 }
+
+    

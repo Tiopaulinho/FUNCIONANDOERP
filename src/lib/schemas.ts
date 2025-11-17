@@ -18,7 +18,9 @@ export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: strin
 
 export const productSchema = z.object({
   name: z.string().min(3, "O nome do produto é obrigatório."),
-  category: z.string().min(1, "A categoria é obrigatória."),
+  category: z.enum(["VESTUARIOS", "PAPELARIA", "SERVICOS"], {
+    errorMap: () => ({ message: "Selecione uma categoria válida." }),
+  }),
   type: z.string().optional(),
   material: z.string().optional(),
   color: z.string().optional(),
@@ -108,5 +110,7 @@ export const proposalSchema = z.object({
 
 export type Proposal = z.infer<typeof proposalSchema>;
 export type ProposalItem = z.infer<typeof proposalItemSchema>;
+
+    
 
     
