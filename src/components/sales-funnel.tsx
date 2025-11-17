@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2 } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -41,11 +41,17 @@ import ProposalForm from "./proposal-form";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void }) => {
+const LeadCard = ({ lead, onDragStart, onClick, onNewPurchase }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, onNewPurchase: (lead: Lead) => void }) => {
+  
+  const handleNewPurchaseClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Impede que o modal de detalhes seja aberto
+    onNewPurchase(lead);
+  };
+  
   return (
     <Card 
-      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow" 
-      draggable="true"
+      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card" 
+      draggable={lead.status !== 'Aprovado'}
       onDragStart={(e) => onDragStart(e, lead.id)}
       onClick={onClick}
     >
@@ -75,6 +81,18 @@ const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e:
             </CardDescription>
         )}
       </CardHeader>
+      {lead.status === 'Aprovado' && (
+        <CardContent className="p-4 pt-0">
+          <Button 
+            className="w-full opacity-0 group-hover/lead-card:opacity-100 transition-opacity" 
+            size="sm"
+            onClick={handleNewPurchaseClick}
+          >
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            Nova Compra
+          </Button>
+        </CardContent>
+      )}
     </Card>
   );
 };
@@ -85,7 +103,8 @@ const LeadDetailsModal = ({
   onOpenChange,
   onEdit,
   onDelete,
-  onGenerateProposal
+  onGenerateProposal,
+  onNewPurchase,
 }: { 
   lead: Lead | null; 
   open: boolean; 
@@ -93,12 +112,18 @@ const LeadDetailsModal = ({
   onEdit: (lead: Lead) => void;
   onDelete: (leadId: string) => void;
   onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
+  onNewPurchase: (lead: Lead) => void;
 }) => {
   if (!lead) return null;
 
   const handleGenerateClick = () => {
     onGenerateProposal(lead, !!lead.proposalId);
   }
+
+  const handleNewPurchaseClick = () => {
+    onOpenChange(false);
+    onNewPurchase(lead);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,6 +164,12 @@ const LeadDetailsModal = ({
         </div>
         <Separator />
         <div className="flex justify-end items-center gap-2">
+            {lead.status === 'Aprovado' && (
+              <Button onClick={handleNewPurchaseClick} variant="default">
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Nova Compra
+              </Button>
+            )}
             {(lead.status === 'Proposta' || lead.status === 'Negociação' || lead.proposalId) && (
               <Button onClick={handleGenerateClick}>
                 {lead.proposalId ? <FilePenLine className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
@@ -291,7 +322,7 @@ export default function SalesFunnel({
             return;
         }
 
-        if (newStatus === 'Aprovado') {
+        if (newStatus === 'Aprovado' && lead.status !== 'Aprovado') {
             onOpenNewOrder(lead);
             return; 
         }
@@ -409,6 +440,24 @@ export default function SalesFunnel({
     setSavedProposal(null);
   }
 
+  const handleNewPurchase = (approvedLead: Lead) => {
+    const newLead: Lead = {
+      ...approvedLead,
+      id: `lead-${Date.now()}`,
+      status: 'Proposta',
+      proposalId: undefined, // Reseta a proposta para a nova oportunidade
+      proposalNotes: 'Nova compra para cliente existente.', // Adiciona uma nota padrão
+    };
+    setLeads(prevLeads => [...prevLeads, newLead]);
+    setGenerateProposalLead(newLead);
+    setIsGenerateProposalModalOpen(true);
+
+    toast({
+      title: "Nova Oportunidade Criada!",
+      description: `Inicie a proposta para a nova compra de ${approvedLead.name}.`,
+    });
+  };
+
 
   const leadsByStatus = React.useMemo(() => {
     const grouped: { [key in LeadStatus]?: Lead[] } = {};
@@ -457,6 +506,7 @@ export default function SalesFunnel({
                         lead={lead} 
                         onDragStart={handleDragStart}
                         onClick={() => handleCardClick(lead)}
+                        onNewPurchase={handleNewPurchase}
                       />
                   ))}
                   {leadsByStatus[status]?.length === 0 && (
@@ -477,6 +527,7 @@ export default function SalesFunnel({
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
           onGenerateProposal={handleGenerateProposalClick}
+          onNewPurchase={handleNewPurchase}
         />
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -543,5 +594,7 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
 
     
