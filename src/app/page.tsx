@@ -42,7 +42,7 @@ const initialOrders: SalesOrder[] = [
 const initialLeads: Lead[] = [
   { id: "lead-1", name: "Empresa Alpha", contact: "João", value: 15000, status: "Contato" },
   { id: "lead-2", name: "Startup Beta", contact: "Mariana", value: 8000, status: "Proposta" },
-  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", value: 25000, status: "Negociação" },
+  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", value: 25000, status: "Criar Pedido (Aprovado)" },
   { id: "lead-4", name: "Serviços Delta", contact: "Fernanda", value: 5000, status: "Lista de Leads" },
   { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", value: 50000, status: "Criar Pedido (Aprovado)" },
   { id: "lead-6", name: "Varejo Zeta", contact: "Ana", value: 12000, status: "Reprovado" },
@@ -109,7 +109,6 @@ export default function Home() {
     setEditingOrder(null);
     if(lead) {
       const customer = customers.find(c => c.name.toLowerCase() === lead.contact.toLowerCase());
-      // Pass lead info, if customer exists, pass their ID, otherwise empty string.
       setLeadForOrder({...lead, contact: customer?.id || ""});
     } else {
       setLeadForOrder(null);
@@ -122,6 +121,15 @@ export default function Home() {
     setCustomers(prev => [...prev, newCustomer]);
     return newCustomer;
   }
+  
+  const updateLead = (updatedLead: Lead) => {
+    setLeads(prevLeads => prevLeads.map(l => l.id === updatedLead.id ? updatedLead : l));
+  };
+
+  const deleteLead = (leadId: string) => {
+    setLeads(prevLeads => prevLeads.filter(l => l.id !== leadId));
+  };
+
 
   return (
     <main className="flex min-h-dvh w-full flex-col items-center bg-background p-4 md:p-8">
@@ -145,6 +153,8 @@ export default function Home() {
               onOpenNewOrder={openNewOrderDialog}
               onRegisterCustomer={addCustomer}
               customers={customers}
+              onUpdateLead={updateLead}
+              onDeleteLead={deleteLead}
             />
           </TabsContent>
           <TabsContent value="orders">

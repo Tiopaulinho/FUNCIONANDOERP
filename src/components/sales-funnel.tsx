@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2 } from "lucide-react";
 import type { Lead, LeadStatus, Customer } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -21,16 +21,30 @@ import {
   DialogTitle,
   DialogDescription,
 } from "./ui/dialog";
-import CustomerRegistrationForm from "./customer-registration-form";
+import { Separator } from "./ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
+import LeadForm from "./lead-form";
+
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Criar Pedido (Aprovado)", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void }) => {
+const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void }) => {
   return (
     <Card 
       className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow" 
       draggable="true"
       onDragStart={(e) => onDragStart(e, lead.id)}
+      onClick={onClick}
     >
       <CardHeader className="p-4">
         <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -54,18 +68,101 @@ const LeadCard = ({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
   );
 };
 
+const LeadDetailsModal = ({ 
+  lead, 
+  open, 
+  onOpenChange,
+  onEdit,
+  onDelete
+}: { 
+  lead: Lead | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+  onEdit: (lead: Lead) => void;
+  onDelete: (leadId: string) => void;
+}) => {
+  if (!lead) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Detalhes do Lead: <span className="font-bold text-primary">{lead.name}</span></DialogTitle>
+          <DialogDescription>
+            Contato: {lead.contact}
+          </DialogDescription>
+        </DialogHeader>
+        <Separator />
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                <div>
+                    <p className="text-sm text-muted-foreground">Valor</p>
+                    <p className="font-bold text-lg">{lead.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+                 <Badge variant="secondary">{lead.status}</Badge>
+            </div>
+        </div>
+        <Separator />
+        <div className="flex justify-end items-center gap-2">
+            <Button variant="outline" onClick={() => onEdit(lead)}>
+              <FilePenLine className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o lead.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(lead.id)}>
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
 interface SalesFunnelProps {
   leads: Lead[];
   setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
   onOpenNewOrder: (lead: Lead) => void;
   onRegisterCustomer: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
   customers: (Customer & { id: string })[];
+  onUpdateLead: (lead: Lead) => void;
+  onDeleteLead: (leadId: string) => void;
 }
 
-export default function SalesFunnel({ leads, setLeads, onOpenNewOrder, onRegisterCustomer, customers }: SalesFunnelProps) {
+export default function SalesFunnel({ 
+    leads, 
+    setLeads, 
+    onOpenNewOrder, 
+    onUpdateLead,
+    onDeleteLead,
+}: SalesFunnelProps) {
   const { toast } = useToast();
-  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
-  const [leadToRegister, setLeadToRegister] = React.useState<Lead | null>(null);
+  const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
+  const [editingLead, setEditingLead] = React.useState<Lead | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = React.useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     e.dataTransfer.setData("leadId", leadId);
@@ -82,18 +179,9 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder, onRegiste
 
     if (lead) {
       if (newStatus === 'Criar Pedido (Aprovado)') {
-        const customerExists = customers.some(c => c.name.toLowerCase() === lead.contact.toLowerCase());
-        
-        // Always open the new order dialog
         onOpenNewOrder(lead);
-
-        // Still register the customer if they don't exist, but do it behind the scenes or let the user do it from the order form
-        if (!customerExists) {
-            console.log("Customer does not exist, user can create one from order form.");
-        }
       }
       
-      // Update lead status regardless
       setLeads(prevLeads => 
         prevLeads.map(l => 
           l.id === leadId ? { ...l, status: newStatus } : l
@@ -116,27 +204,35 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder, onRegiste
     })
   }
 
-  const handleCustomerRegistrationSuccess = (customerData: Omit<Customer, 'id'>) => {
-    setIsCustomerDialogOpen(false);
-    if(leadToRegister) {
-      const newCustomer = onRegisterCustomer(customerData);
-      
-      const registeredLead = { ...leadToRegister, contact: newCustomer.name, status: 'Criar Pedido (Aprovado)' } as Lead;
-      
-      setLeads(prevLeads => 
-        prevLeads.map(l => 
-          l.id === leadToRegister.id ? registeredLead : l
-        )
-      );
-      
-       toast({
-        title: "Cliente Cadastrado!",
-        description: "O lead foi movido para 'Criar Pedido' e o cliente foi salvo."
-      });
-      
-      onOpenNewOrder(registeredLead);
-    }
-    setLeadToRegister(null);
+  const handleCardClick = (lead: Lead) => {
+    setSelectedLead(lead);
+    setIsDetailsModalOpen(true);
+  };
+  
+  const handleEditClick = (lead: Lead) => {
+    setEditingLead(lead);
+    setIsDetailsModalOpen(false); // Close details modal
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (leadId: string) => {
+    onDeleteLead(leadId);
+    setIsDetailsModalOpen(false);
+    toast({
+      title: "Lead Excluído!",
+      description: "O lead foi removido com sucesso.",
+      variant: "destructive"
+    });
+  };
+  
+  const handleEditSuccess = (updatedLead: Lead) => {
+    onUpdateLead(updatedLead);
+    setIsEditModalOpen(false);
+    setEditingLead(null);
+    toast({
+      title: "Sucesso!",
+      description: "Lead atualizado com sucesso."
+    });
   }
 
   const leadsByStatus = React.useMemo(() => {
@@ -185,6 +281,7 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder, onRegiste
                         key={lead.id} 
                         lead={lead} 
                         onDragStart={handleDragStart}
+                        onClick={() => handleCardClick(lead)}
                       />
                   ))}
                   {leadsByStatus[status]?.length === 0 && (
@@ -197,24 +294,27 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder, onRegiste
             </div>
         ))}
         </div>
-        <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
-          <DialogContent className="sm:max-w-[800px]">
+        
+        <LeadDetailsModal 
+          lead={selectedLead}
+          open={isDetailsModalOpen}
+          onOpenChange={setIsDetailsModalOpen}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+        />
+
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                  <DialogTitle>Completar Cadastro do Cliente</DialogTitle>
-                  <DialogDescription>
-                    Este é um novo lead. Por favor, complete o cadastro do cliente antes de criar um pedido.
-                  </DialogDescription>
+                <DialogTitle>Editar Lead</DialogTitle>
               </DialogHeader>
-              <CustomerRegistrationForm 
-                initialData={{
-                  name: leadToRegister?.contact || "",
-                  email: "", 
-                  phone: "", 
-                }}
-                onSuccess={handleCustomerRegistrationSuccess}
+              <LeadForm
+                initialData={editingLead}
+                onSuccess={handleEditSuccess}
               />
-          </DialogContent>
-      </Dialog>
+            </DialogContent>
+          </Dialog>
+
     </div>
   );
 }
