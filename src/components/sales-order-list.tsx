@@ -15,9 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogClose,
 } from "./ui/dialog";
 import { Separator } from "./ui/separator";
-import { Truck, Package, CheckCircle, Clock } from "lucide-react";
+import { Truck, Package, CheckCircle, Clock, FilePenLine, Trash2 } from "lucide-react";
+import { Button } from "./ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+
 
 type OrderStatus = "Pendente" | "Processando" | "Enviado" | "Entregue";
 
@@ -85,7 +91,19 @@ const OrderCard = ({ order, onDragStart, onClick }: { order: Order, onDragStart:
   );
 };
 
-const OrderDetailsModal = ({ order, open, onOpenChange }: { order: Order | null; open: boolean; onOpenChange: (open: boolean) => void; }) => {
+const OrderDetailsModal = ({ 
+  order, 
+  open, 
+  onOpenChange,
+  onEdit,
+  onDelete
+}: { 
+  order: Order | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+  onEdit: (order: Order) => void;
+  onDelete: (orderId: string) => void;
+}) => {
   if (!order) return null;
 
   return (
@@ -110,9 +128,39 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: { order: Order | null;
           </div>
         </div>
         <Separator />
-        <div className="flex justify-end font-bold text-lg">
-          <span className="mr-2">Total:</span>
-          <span>{order.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+        <div className="flex justify-between items-center">
+            <div className="text-right">
+                <p className="text-sm text-muted-foreground">Total do Pedido</p>
+                <p className="font-bold text-lg">{order.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+            </div>
+             <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => onEdit(order)}>
+                  <FilePenLine className="mr-2 h-4 w-4" />
+                  Editar
+                </Button>
+                 <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Essa ação não pode ser desfeita. Isso excluirá permanentemente o pedido.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDelete(order.id)}>
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -120,6 +168,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: { order: Order | null;
 };
 
 export default function SalesOrderList() {
+  const { toast } = useToast();
   const [orders, setOrders] = React.useState<Order[]>(allOrders);
   const [selectedOrder, setSelectedOrder] = React.useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -128,6 +177,27 @@ export default function SalesOrderList() {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
+
+  const handleDelete = (orderId: string) => {
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+    setIsModalOpen(false);
+    toast({
+      title: "Pedido Excluído!",
+      description: "O pedido foi removido com sucesso.",
+      variant: "destructive"
+    });
+  }
+
+  const handleEdit = (order: Order) => {
+    // For now, just logs to console and closes modal
+    // In a real app, this would open an edit form
+    console.log("Editing order:", order.id);
+    toast({
+        title: "Em desenvolvimento!",
+        description: "A funcionalidade de edição de pedidos será implementada em breve.",
+    })
+    setIsModalOpen(false);
+  }
   
   const handleDragStart = (e: React.DragEvent, orderId: string) => {
     e.dataTransfer.setData("orderId", orderId);
@@ -198,7 +268,13 @@ export default function SalesOrderList() {
             </div>
         ))}
         </div>
-        <OrderDetailsModal order={selectedOrder} open={isModalOpen} onOpenChange={setIsModalOpen} />
+        <OrderDetailsModal 
+            order={selectedOrder} 
+            open={isModalOpen} 
+            onOpenChange={setIsModalOpen}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+        />
     </div>
   );
 }
