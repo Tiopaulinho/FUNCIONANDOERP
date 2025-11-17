@@ -82,7 +82,7 @@ export default function SalesOrderForm({
 
   const form = useForm<SalesOrderFormValues>({
     resolver: zodResolver(salesOrderSchema),
-    defaultValues: isEditMode && initialData ? initialData : {
+    defaultValues: {
       customerId: "",
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
     },
@@ -117,7 +117,7 @@ export default function SalesOrderForm({
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, leadData, proposalData, cameFromLead, form, isEditMode, customers, customerForLead]);
+  }, [initialData, leadData, proposalData, cameFromLead, form, isEditMode, customerForLead]);
 
 
   const { fields, append, remove, update } = useFieldArray({
@@ -224,7 +224,7 @@ export default function SalesOrderForm({
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.contact || ""}
+                            value={customerForLead?.name || leadData?.name || ""}
                             className="bg-muted/50 cursor-not-allowed"
                           />
                            {!customerForLead && (
@@ -265,7 +265,7 @@ export default function SalesOrderForm({
                             <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
                           </DialogHeader>
                           <CustomerRegistrationForm 
-                             initialData={cameFromLead && !customerForLead ? { name: leadData.name, email: leadData.email, phone: leadData.phone } : {}}
+                             initialData={cameFromLead && !customerForLead ? { name: leadData.contact, email: leadData.email, phone: leadData.phone } : {}}
                              onSuccess={handleNewCustomerSuccess} 
                           />
                         </DialogContent>
