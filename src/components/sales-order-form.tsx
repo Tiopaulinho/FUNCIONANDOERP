@@ -77,7 +77,6 @@ export default function SalesOrderForm({
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
   const isEditMode = !!initialData;
-  const cameFromLead = !!leadData?.id;
 
   const form = useForm<SalesOrderFormValues>({
     resolver: zodResolver(salesOrderSchema),
@@ -93,13 +92,14 @@ export default function SalesOrderForm({
     return customers.find(c => c.id === leadData.contact);
   }, [leadData, customers]);
   
+  const cameFromLead = !!leadData?.id;
 
   React.useEffect(() => {
     if (isEditMode && initialData) {
       form.reset(initialData);
     } else if(cameFromLead && leadData) {
        form.reset({
-        customerId: customerForLead?.id || "",
+        customerId: customerForLead?.id || "", // Set customer ID if found
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     } else {
@@ -149,6 +149,10 @@ export default function SalesOrderForm({
           title: "Cliente Adicionado!",
           description: "O novo cliente já foi selecionado no pedido.",
       });
+       // If coming from a lead, update the leadData in the parent component to reflect the new customer
+       if (leadData) {
+         leadData.contact = newCustomer.id;
+       }
     }
     setIsCustomerDialogOpen(false);
   }
@@ -210,7 +214,7 @@ export default function SalesOrderForm({
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.contact || ""}
+                            value={customerForLead?.name || leadData?.name || ""}
                             className="bg-muted/50 cursor-not-allowed"
                           />
                            {!customerForLead && (
@@ -223,7 +227,7 @@ export default function SalesOrderForm({
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
-                          disabled={cameFromLead}
+                          disabled={isEditMode} // Disable if editing an existing order too
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -241,7 +245,7 @@ export default function SalesOrderForm({
                        )}
                       <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon">
+                          <Button variant="outline" size="icon" disabled={isEditMode}>
                             <UserPlus className="h-4 w-4" />
                             <span className="sr-only">Novo Cliente</span>
                           </Button>
@@ -251,7 +255,7 @@ export default function SalesOrderForm({
                             <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
                           </DialogHeader>
                           <CustomerRegistrationForm 
-                             initialData={cameFromLead && !customerForLead ? { name: leadData.contact } : {}}
+                             initialData={cameFromLead && !customerForLead ? { name: leadData.name } : {}}
                              onSuccess={handleNewCustomerSuccess} 
                           />
                         </DialogContent>
