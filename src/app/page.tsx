@@ -2,7 +2,6 @@
 "use client";
 
 import * as React from "react";
-import CustomerRegistrationForm from "@/components/customer-registration-form";
 import CustomerList from "@/components/customer-list";
 import SalesOrderList from "@/components/sales-order-list";
 import {
@@ -49,6 +48,8 @@ const initialLeads: Lead[] = [
   { id: "lead-6", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado" },
 ];
 
+const initialProposals: Proposal[] = [];
+
 const initialCustomers: (Customer & { id: string })[] = [
   { id: "1", name: "José da Silva", email: "jose.silva@example.com", phone: "(11) 98765-4321", zip: "01001-000", street: "Praça da Sé", number: "s/n", complement: "lado ímpar", neighborhood: "Sé", city: "São Paulo", state: "SP" },
   { id: "2", name: "Maria Oliveira", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ" },
@@ -64,7 +65,7 @@ export default function Home() {
   const [orders, setOrders] = React.useState<SalesOrder[]>(initialOrders);
   const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
   const [customers, setCustomers] = React.useState(initialCustomers);
-  const [proposals, setProposals] = React.useState<Proposal[]>([]);
+  const [proposals, setProposals] = React.useState<Proposal[]>(initialProposals);
 
   const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
   const [leadForOrder, setLeadForOrder] = React.useState<Lead | null>(null);
@@ -138,7 +139,7 @@ export default function Home() {
 
     // If a lead was being processed, update it with the new customer ID
     if (leadForOrder) {
-      const updatedLead = { ...leadForOrder, contact: newCustomer.name, customerId: newCustomer.id };
+      const updatedLead = { ...leadForOrder, customerId: newCustomer.id };
       updateLead(updatedLead);
       setLeadForOrder(updatedLead);
     }
@@ -281,3 +282,5 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
+
+    
