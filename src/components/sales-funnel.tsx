@@ -780,5 +780,3 @@ export default function SalesFunnel({
     </div>
   );
 }
-
-    
