@@ -178,6 +178,7 @@ export default function SalesOrderForm({
         title: "Cliente não encontrado",
         description: "Por favor, cadastre o cliente antes de criar o pedido.",
       });
+      setIsCustomerDialogOpen(true);
       setIsSubmitting(false);
       return;
     }
@@ -252,7 +253,11 @@ export default function SalesOrderForm({
                          </div>
                        ) : (
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            const customer = customers.find(c => c.id === value);
+                            if (customer) form.setValue('customerName', customer.name);
+                          }}
                           value={field.value}
                           disabled={isEditMode}
                         >
@@ -272,7 +277,7 @@ export default function SalesOrderForm({
                        )}
                       <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" disabled={isEditMode}>
+                          <Button variant="outline" size="icon" disabled={isEditMode && !!initialData?.customerId}>
                             <UserPlus className="h-4 w-4" />
                             <span className="sr-only">Novo Cliente</span>
                           </Button>
