@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -23,7 +24,7 @@ type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   initialData?: (Product & { id: string }) | null;
-  onSuccess?: () => void;
+  onSuccess?: (product?: Product & { id: string }) => void;
 }
 
 export default function ProductForm({ initialData, onSuccess }: ProductFormProps) {
@@ -47,10 +48,17 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
 
   async function onSubmit(data: ProductFormValues) {
     setIsSubmitting(true);
-    console.log(isEditMode ? "Produto atualizado:" : "Novo produto:", data);
+    
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
     
+    const newOrUpdatedProduct = {
+      ...data,
+      id: initialData?.id || `prod-${Date.now()}`,
+    };
+
+    console.log(isEditMode ? "Produto atualizado:" : "Novo produto:", newOrUpdatedProduct);
+
     toast({
       title: "Sucesso!",
       description: isEditMode ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!",
@@ -59,10 +67,10 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     setIsSubmitting(false);
     
     if (onSuccess) {
-      onSuccess();
+      onSuccess(newOrUpdatedProduct);
     }
     if (!isEditMode) {
-      form.reset();
+      form.reset({ name: "", price: 0 });
     }
   }
 
@@ -99,7 +107,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                   <FormItem>
                     <FormLabel>Preço (R$)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="Ex: 59,90" {...field} />
+                      <Input type="number" step="0.01" placeholder="Ex: 59,90" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

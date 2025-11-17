@@ -1,3 +1,7 @@
+
+"use client";
+
+import * as React from "react";
 import CustomerRegistrationForm from "@/components/customer-registration-form";
 import CustomerList from "@/components/customer-list";
 import SalesOrderList from "@/components/sales-order-list";
@@ -19,8 +23,27 @@ import { UserPlus, ShoppingCart, Package } from "lucide-react";
 import SalesOrderForm from "@/components/sales-order-form";
 import ProductList from "@/components/product-list";
 import ProductForm from "@/components/product-form";
+import type { Product } from "@/lib/schemas";
+
+const initialProducts: (Product & { id: string })[] = [
+    { id: "prod-1", name: "Notebook Pro", price: 7500 },
+    { id: "prod-2", name: "Mouse Sem Fio", price: 120.50 },
+    { id: "prod-3", name: "Teclado Mecânico", price: 450 },
+    { id: "prod-4", name: "Monitor 4K", price: 2300 },
+];
 
 export default function Home() {
+  const [products, setProducts] = React.useState(initialProducts);
+
+  const addProduct = (newProduct: Product & { id: string }) => {
+    setProducts((prevProducts) => [...prevProducts, newProduct]);
+  };
+
+  const updateProducts = (updatedProducts: (Product & { id: string })[]) => {
+    setProducts(updatedProducts);
+  };
+
+
   return (
     <main className="flex min-h-dvh w-full flex-col items-center bg-accent/30 p-4 md:p-8">
       <div className="w-full max-w-6xl">
@@ -59,7 +82,7 @@ export default function Home() {
                   <DialogHeader>
                     <DialogTitle>Novo Pedido de Venda</DialogTitle>
                   </DialogHeader>
-                  <SalesOrderForm />
+                  <SalesOrderForm products={products} onProductAdd={addProduct} />
                 </DialogContent>
               </Dialog>
                <Dialog>
@@ -73,7 +96,11 @@ export default function Home() {
                   <DialogHeader>
                     <DialogTitle>Novo Produto</DialogTitle>
                   </DialogHeader>
-                  <ProductForm />
+                  <ProductForm onSuccess={(newProduct) => {
+                     if (newProduct) {
+                        addProduct(newProduct as Product & { id: string });
+                      }
+                  }} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -85,7 +112,7 @@ export default function Home() {
             <SalesOrderList />
           </TabsContent>
           <TabsContent value="products">
-            <ProductList />
+            <ProductList products={products} setProducts={updateProducts} />
           </TabsContent>
         </Tabs>
       </div>

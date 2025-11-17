@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -40,19 +41,16 @@ import {
 } from "./ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
-const allProducts: (Product & { id: string })[] = [
-    { id: "prod-1", name: "Notebook Pro", price: 7500 },
-    { id: "prod-2", name: "Mouse Sem Fio", price: 120.50 },
-    { id: "prod-3", name: "Teclado Mecânico", price: 450 },
-    { id: "prod-4", name: "Monitor 4K", price: 2300 },
-];
+interface ProductListProps {
+    products: (Product & { id: string })[];
+    setProducts: (products: (Product & { id: string })[]) => void;
+}
 
 
-export default function ProductList() {
+export default function ProductList({ products, setProducts }: ProductListProps) {
   const { toast } = useToast();
   const [nameFilter, setNameFilter] = React.useState("");
-  const [products, setProducts] = React.useState(allProducts);
-  const [filteredProducts, setFilteredProducts] = React.useState(allProducts);
+  const [filteredProducts, setFilteredProducts] = React.useState(products);
   const [editingProduct, setEditingProduct] = React.useState<(Product & { id: string }) | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
@@ -82,11 +80,12 @@ export default function ProductList() {
       });
   }
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (updatedProduct?: Product & { id: string }) => {
     setIsEditDialogOpen(false);
     setEditingProduct(null);
-    // Here you would refetch the product list from the database
-    // For now, let's just show a toast
+    if (updatedProduct) {
+        setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    }
      toast({
         title: "Sucesso!",
         description: "Lista de produtos atualizada.",
@@ -167,7 +166,7 @@ export default function ProductList() {
               </DialogHeader>
               <ProductForm
                 initialData={editingProduct}
-                onSuccess={handleFormSuccess}
+                onSuccess={(product) => handleFormSuccess(product as Product & { id: string })}
               />
             </DialogContent>
           </Dialog>

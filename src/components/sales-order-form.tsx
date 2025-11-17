@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -36,13 +37,6 @@ const allCustomers: (Customer & { id: string })[] = [
     { id: "2", name: "Maria Oliveira", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ" },
 ];
 
-const allProducts: (Product & { id: string })[] = [
-    { id: "prod-1", name: "Notebook Pro", price: 7500 },
-    { id: "prod-2", name: "Mouse Sem Fio", price: 120.50 },
-    { id: "prod-3", name: "Teclado Mecânico", price: 450 },
-    { id: "prod-4", name: "Monitor 4K", price: 2300 },
-];
-
 const salesOrderSchema = z.object({
   customerId: z.string().min(1, "Selecione um cliente."),
   items: z
@@ -61,13 +55,14 @@ type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
 interface SalesOrderFormProps {
   onSuccess?: () => void;
+  products: (Product & { id: string })[];
+  onProductAdd: (newProduct: Product & { id: string }) => void;
 }
 
-export default function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
+export default function SalesOrderForm({ onSuccess, products, onProductAdd }: SalesOrderFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
-  const [products, setProducts] = React.useState(allProducts);
 
   const form = useForm<SalesOrderFormValues>({
     resolver: zodResolver(salesOrderSchema),
@@ -97,15 +92,15 @@ export default function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
     }
   };
 
-  const handleNewProductSuccess = () => {
-    // In a real app, you'd refetch products. Here we'll just add a mock one.
-    const newProduct = { id: `prod-${Date.now()}`, name: "Novo Produto", price: 10 };
-    setProducts([...products, newProduct]);
+  const handleNewProductSuccess = (newProduct?: Product & { id: string }) => {
+    if (newProduct) {
+        onProductAdd(newProduct);
+        toast({
+          title: "Produto Adicionado!",
+          description: "O novo produto já está disponível para seleção.",
+        });
+    }
     setIsProductDialogOpen(false);
-    toast({
-      title: "Produto Adicionado!",
-      description: "O novo produto já está disponível para seleção.",
-    });
   }
 
 
@@ -205,7 +200,7 @@ export default function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
                                 </SelectContent>
                             </Select>
                              <DialogTrigger asChild>
-                                <Button variant="outline" size="icon" onClick={() => setIsProductDialogOpen(true)}>
+                                <Button variant="outline" size="icon">
                                     <Plus className="h-4 w-4"/>
                                     <span className="sr-only">Adicionar Produto</span>
                                 </Button>
@@ -298,7 +293,7 @@ export default function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
         <DialogHeader>
           <DialogTitle>Novo Produto</DialogTitle>
         </DialogHeader>
-        <ProductForm onSuccess={handleNewProductSuccess} />
+        <ProductForm onSuccess={(product) => handleNewProductSuccess(product as Product & { id: string })} />
       </DialogContent>
     </Dialog>
   );
