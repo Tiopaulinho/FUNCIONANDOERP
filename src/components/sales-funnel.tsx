@@ -11,7 +11,7 @@ import {
 } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { DollarSign, Building, User, Upload } from "lucide-react";
-import type { Lead, LeadStatus } from "@/lib/schemas";
+import type { Lead, LeadStatus, Customer } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -58,9 +58,11 @@ interface SalesFunnelProps {
   leads: Lead[];
   setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
   onOpenNewOrder: (lead: Lead) => void;
+  onRegisterCustomer: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
+  customers: (Customer & { id: string })[];
 }
 
-export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFunnelProps) {
+export default function SalesFunnel({ leads, setLeads, onOpenNewOrder, onRegisterCustomer, customers }: SalesFunnelProps) {
   const { toast } = useToast();
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
   const [leadToRegister, setLeadToRegister] = React.useState<Lead | null>(null);
@@ -79,13 +81,13 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
     const lead = leads.find(l => l.id === leadId);
 
     if (lead && newStatus === 'Criar Pedido (Aprovado)') {
-       if (lead.isNew) {
+       const customerExists = customers.some(c => c.name === lead.contact);
+       if (!customerExists) {
          setLeadToRegister(lead);
          setIsCustomerDialogOpen(true);
        } else {
          onOpenNewOrder(lead);
-         // Move the card only after opening the dialog
-          setLeads(prevLeads => 
+         setLeads(prevLeads => 
             prevLeads.map(l => 
               l.id === leadId ? { ...l, status: newStatus } : l
             )
@@ -102,8 +104,8 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
 
   const simulateImport = () => {
     const newLeads: Lead[] = [
-      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", value: 22000, status: "Lista de Leads", isNew: true },
-      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", value: 33000, status: "Lista de Leads", isNew: true },
+      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", value: 22000, status: "Lista de Leads" },
+      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", value: 33000, status: "Lista de Leads" },
     ];
     
     setLeads(prev => [...prev, ...newLeads]);
@@ -114,11 +116,12 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
     })
   }
 
-  const handleCustomerRegistrationSuccess = () => {
+  const handleCustomerRegistrationSuccess = (customerData: Omit<Customer, 'id'>) => {
     setIsCustomerDialogOpen(false);
     if(leadToRegister) {
-      // Mark lead as registered and move it to the approved column
-      const registeredLead = { ...leadToRegister, isNew: false, status: 'Criar Pedido (Aprovado)' } as Lead;
+      const newCustomer = onRegisterCustomer(customerData);
+      
+      const registeredLead = { ...leadToRegister, contact: newCustomer.name, status: 'Criar Pedido (Aprovado)' } as Lead;
       
       setLeads(prevLeads => 
         prevLeads.map(l => 
@@ -205,9 +208,8 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
               <CustomerRegistrationForm 
                 initialData={{
                   name: leadToRegister?.contact || "",
-                  email: "", // Not available from lead
-                  phone: "", // Not available from lead
-                  // You can add company name to a field if you have one
+                  email: "", 
+                  phone: "", 
                 }}
                 onSuccess={handleCustomerRegistrationSuccess}
               />

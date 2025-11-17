@@ -34,7 +34,7 @@ type CustomerFormValues = z.infer<typeof customerRegistrationSchema>;
 
 interface CustomerRegistrationFormProps {
   initialData?: Partial<Customer> | null;
-  onSuccess?: () => void;
+  onSuccess?: (data: Omit<Customer, 'id'>) => void;
 }
 
 export default function CustomerRegistrationForm({
@@ -43,7 +43,7 @@ export default function CustomerRegistrationForm({
 }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const isEditMode = !!(initialData && initialData.email); // A real ID check would be better
+  const isEditMode = !!(initialData && (initialData.email || initialData.id));
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerRegistrationSchema),
@@ -79,8 +79,6 @@ export default function CustomerRegistrationForm({
   async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
     try {
-      // Here you could differentiate between create and update actions
-      // For now, we use the same action for both
       const result = await registerCustomerAction(data);
       if (result.success) {
         toast({
@@ -90,7 +88,7 @@ export default function CustomerRegistrationForm({
             : result.message,
         });
         if (onSuccess) {
-          onSuccess();
+          onSuccess(data);
         }
         if (!isEditMode) {
           form.reset();

@@ -30,90 +30,53 @@ import {
 import CustomerRegistrationForm from "./customer-registration-form";
 import type { Customer } from "@/lib/schemas";
 
-const allCustomers: (Customer & { id: string })[] = [
-  {
-    id: "1",
-    name: "José da Silva",
-    email: "jose.silva@example.com",
-    phone: "(11) 98765-4321",
-    zip: "01001-000",
-    street: "Praça da Sé",
-    number: "s/n",
-    complement: "lado ímpar",
-    neighborhood: "Sé",
-    city: "São Paulo",
-    state: "SP",
-  },
-  {
-    id: "2",
-    name: "Maria Oliveira",
-    email: "maria.oliveira@example.com",
-    phone: "(21) 91234-5678",
-    zip: "20040-004",
-    street: "Av. Rio Branco",
-    number: "156",
-    complement: "",
-    neighborhood: "Centro",
-    city: "Rio de Janeiro",
-    state: "RJ",
-  },
-  {
-    id: "3",
-    name: "Carlos Pereira",
-    email: "carlos.pereira@example.com",
-    phone: "(31) 95555-4444",
-    zip: "30110-044",
-    street: "Av. do Contorno",
-    number: "6594",
-    complement: "Sala 501",
-    neighborhood: "Savassi",
-    city: "Belo Horizonte",
-    state: "MG",
-  },
-  {
-    id: "4",
-    name: "Ana Costa",
-    email: "ana.costa@example.com",
-    phone: "(71) 99999-8888",
-    zip: "40020-000",
-    street: "Largo do Pelourinho",
-    number: "10",
-    complement: "",
-    neighborhood: "Pelourinho",
-    city: "Salvador",
-    state: "BA",
-  },
-];
+interface CustomerListProps {
+  customers: (Customer & { id: string })[];
+  setCustomers: React.Dispatch<React.SetStateAction<(Customer & { id: string })[]>>;
+  onAddCustomer: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
+}
 
-export default function CustomerList() {
+export default function CustomerList({ customers, setCustomers, onAddCustomer }: CustomerListProps) {
   const [nameFilter, setNameFilter] = React.useState("");
   const [emailFilter, setEmailFilter] = React.useState("");
-  const [filteredCustomers, setFilteredCustomers] = React.useState(allCustomers);
-  const [editingCustomer, setEditingCustomer] = React.useState<Customer | null>(null);
+  const [filteredCustomers, setFilteredCustomers] = React.useState(customers);
+  const [editingCustomer, setEditingCustomer] = React.useState<(Customer & { id: string}) | null>(null);
+  const [isNewCustomerDialogOpen, setIsNewCustomerDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     const lowercasedNameFilter = nameFilter.toLowerCase();
     const lowercasedEmailFilter = emailFilter.toLowerCase();
 
-    const filtered = allCustomers.filter((customer) => {
+    const filtered = customers.filter((customer) => {
       const nameMatch = customer.name.toLowerCase().includes(lowercasedNameFilter);
       const emailMatch = customer.email.toLowerCase().includes(lowercasedEmailFilter);
       return nameMatch && emailMatch;
     });
     setFilteredCustomers(filtered);
-  }, [nameFilter, emailFilter]);
+  }, [nameFilter, emailFilter, customers]);
   
-  const handleEditClick = (customer: Customer) => {
+  const handleEditClick = (customer: Customer & { id: string }) => {
     setEditingCustomer(customer);
     setIsEditDialogOpen(true);
   }
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (customerData: Omit<Customer, 'id'>) => {
+    if (editingCustomer) {
+      // Update existing customer
+      setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...editingCustomer, ...customerData } : c));
+    } else {
+      // Add new customer
+      onAddCustomer(customerData);
+    }
     setIsEditDialogOpen(false);
+    setIsNewCustomerDialogOpen(false);
     setEditingCustomer(null);
-    // Here you would refetch the customer list from the database
   };
+
+  const handleDelete = (id: string) => {
+    setCustomers(prev => prev.filter(c => c.id !== id));
+  }
 
   return (
     <Card className="shadow-lg">
@@ -125,7 +88,7 @@ export default function CustomerList() {
                   Visualize e gerencie os clientes cadastrados no sistema.
                 </CardDescription>
             </div>
-            <Dialog>
+            <Dialog open={isNewCustomerDialogOpen} onOpenChange={setIsNewCustomerDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
                     <UserPlus className="mr-2 h-4 w-4" />
@@ -138,7 +101,7 @@ export default function CustomerList() {
                       Cadastro de Cliente
                     </DialogTitle>
                   </DialogHeader>
-                  <CustomerRegistrationForm />
+                  <CustomerRegistrationForm onSuccess={handleFormSuccess} />
                 </DialogContent>
               </Dialog>
           </div>
@@ -182,7 +145,7 @@ export default function CustomerList() {
                           <FilePenLine className="h-4 w-4" />
                           <span className="sr-only">Editar</span>
                         </Button>
-                      <Button variant="destructive" size="icon">
+                      <Button variant="destructive" size="icon" onClick={() => handleDelete(customer.id)}>
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Excluir</span>
                       </Button>
@@ -200,7 +163,7 @@ export default function CustomerList() {
               </DialogHeader>
               <CustomerRegistrationForm
                 initialData={editingCustomer}
-                onSuccess={handleFormSuccess}
+                onSuccess={(data) => handleFormSuccess(data as Omit<Customer, 'id'>)}
               />
             </DialogContent>
           </Dialog>

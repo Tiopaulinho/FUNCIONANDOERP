@@ -5,7 +5,7 @@ import * as React from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, PlusCircle, Trash2 } from "lucide-react";
+import { Loader2, Plus, PlusCircle, Trash2, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,12 +30,7 @@ import type { Customer, Product, SalesOrder, Lead } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
-
-// Mock data, replace with actual data fetching
-const allCustomers: (Customer & { id: string })[] = [
-    { id: "1", name: "José da Silva", email: "jose.silva@example.com", phone: "(11) 98765-4321", zip: "01001-000", street: "Praça da Sé", number: "s/n", complement: "lado ímpar", neighborhood: "Sé", city: "São Paulo", state: "SP" },
-    { id: "2", name: "Maria Oliveira", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ" },
-];
+import CustomerRegistrationForm from "./customer-registration-form";
 
 const salesOrderItemSchema = z.object({
   id: z.string().optional(),
@@ -63,12 +58,23 @@ interface SalesOrderFormProps {
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
   leadData?: Lead | null;
+  customers: (Customer & { id: string })[];
+  onCustomerAdd: (newCustomer: Customer & { id: string }) => void;
 }
 
-export default function SalesOrderForm({ initialData, onSuccess, products, onProductAdd, leadData }: SalesOrderFormProps) {
+export default function SalesOrderForm({ 
+  initialData, 
+  onSuccess, 
+  products, 
+  onProductAdd, 
+  leadData,
+  customers,
+  onCustomerAdd,
+}: SalesOrderFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
+  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
   const isEditMode = !!initialData;
 
   const form = useForm<SalesOrderFormValues>({
@@ -83,8 +89,7 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
     if (isEditMode && initialData) {
       form.reset(initialData);
     } else if(leadData) {
-      // Find customer by name, ideally we'd have a customer ID on the lead
-      const customer = allCustomers.find(c => c.name === leadData.contact);
+      const customer = customers.find(c => c.name === leadData.contact);
        form.reset({
         customerId: customer?.id || "",
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
@@ -95,7 +100,7 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, leadData, form, isEditMode]);
+  }, [initialData, leadData, form, isEditMode, customers]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -128,13 +133,22 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
     setIsProductDialogOpen(false);
   }
 
+  const handleNewCustomerSuccess = () => {
+    // A lógica de adicionar o cliente já está no componente pai
+    setIsCustomerDialogOpen(false);
+    toast({
+        title: "Cliente Adicionado!",
+        description: "O novo cliente já está disponível para seleção.",
+    });
+  }
+
   async function onSubmit(data: SalesOrderFormValues) {
     setIsSubmitting(true);
 
-    const customer = allCustomers.find(c => c.id === data.customerId);
+    const customer = customers.find(c => c.id === data.customerId);
 
     const finalOrderData: SalesOrder = {
-      ...initialData, // Keeps original id, date, status if editing
+      ...initialData,
       ...data,
       id: initialData?.id || `ORD-${Date.now()}`,
       date: initialData?.date || new Date().toISOString().split('T')[0],
@@ -146,7 +160,6 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
     
     console.log(isEditMode ? "Pedido atualizado:" : "Novo pedido:", finalOrderData);
 
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     onSuccess(finalOrderData);
@@ -160,7 +173,7 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
   }
 
   return (
-    <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+    <div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
@@ -170,24 +183,40 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={!!leadData}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um cliente" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {allCustomers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={!!leadData}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um cliente" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {customers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="icon" disabled={!!leadData}>
+                            <UserPlus className="h-4 w-4" />
+                            <span className="sr-only">Novo Cliente</span>
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[800px]">
+                          <DialogHeader>
+                            <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
+                          </DialogHeader>
+                          <CustomerRegistrationForm onSuccess={handleNewCustomerSuccess} />
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -197,6 +226,7 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Itens do Pedido</h3>
             <Separator />
+            <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
               <Table>
                   <TableHeader>
                       <TableRow>
@@ -296,6 +326,13 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
             ))}
             </TableBody>
             </Table>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                <DialogTitle>Novo Produto</DialogTitle>
+                </DialogHeader>
+                <ProductForm onSuccess={(product) => handleNewProductSuccess(product as Product & { id: string })} />
+            </DialogContent>
+            </Dialog>
             <Button
               type="button"
               variant="outline"
@@ -328,12 +365,6 @@ export default function SalesOrderForm({ initialData, onSuccess, products, onPro
           </div>
         </form>
       </Form>
-       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Novo Produto</DialogTitle>
-        </DialogHeader>
-        <ProductForm onSuccess={(product) => handleNewProductSuccess(product as Product & { id: string })} />
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }
