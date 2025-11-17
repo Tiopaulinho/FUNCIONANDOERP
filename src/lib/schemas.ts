@@ -58,6 +58,7 @@ export type Lead = z.infer<typeof leadSchema> & {
   id: string;
   status: LeadStatus;
   proposalId?: string;
+  email?: string;
 }
 
 

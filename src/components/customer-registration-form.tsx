@@ -43,7 +43,8 @@ export default function CustomerRegistrationForm({
 }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const isEditMode = !!(initialData && (initialData.email || initialData.id));
+  const isEditMode = !!(initialData && initialData.id);
+  const cameFromLead = !!(initialData && !initialData.id && (initialData.name || initialData.email));
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerRegistrationSchema),
@@ -62,18 +63,20 @@ export default function CustomerRegistrationForm({
   });
 
   React.useEffect(() => {
-    form.reset({
-      name: initialData?.name || "",
-      email: initialData?.email || "",
-      phone: initialData?.phone || "",
-      zip: initialData?.zip || "",
-      street: initialData?.street || "",
-      number: initialData?.number || "",
-      complement: initialData?.complement || "",
-      neighborhood: initialData?.neighborhood || "",
-      city: initialData?.city || "",
-      state: initialData?.state || "",
-    });
+    if (initialData) {
+        form.reset({
+            name: initialData.name || "",
+            email: initialData.email || "",
+            phone: initialData.phone || "",
+            zip: initialData.zip || "",
+            street: initialData.street || "",
+            number: initialData.number || "",
+            complement: initialData.complement || "",
+            neighborhood: initialData.neighborhood || "",
+            city: initialData.city || "",
+            state: initialData.state || "",
+        });
+    }
   }, [initialData, form]);
 
   async function onSubmit(data: CustomerFormValues) {
@@ -123,6 +126,8 @@ export default function CustomerRegistrationForm({
         <CardDescription>
           {isEditMode
             ? "Altere os dados abaixo para atualizar o cliente."
+            : cameFromLead 
+            ? "Complete os dados de endereço do cliente para finalizar o cadastro."
             : "Preencha os campos abaixo para adicionar um novo cliente."}
         </CardDescription>
       </CardHeader>
