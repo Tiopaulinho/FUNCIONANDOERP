@@ -139,7 +139,7 @@ const LeadDetailsModal = ({
         </div>
         <Separator />
         <div className="flex justify-end items-center gap-2">
-            {(lead.status === 'Proposta' || lead.proposalId) && (
+            {(lead.status === 'Proposta' || lead.status === 'Negociação' || lead.proposalId) && (
               <Button onClick={handleGenerateClick}>
                 {lead.proposalId ? <FilePenLine className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
                 {lead.proposalId ? 'Ver/Editar Proposta' : 'Gerar Proposta'}
@@ -296,11 +296,7 @@ export default function SalesFunnel({
             return; 
         }
       
-        setLeads(prevLeads => 
-            prevLeads.map(l => 
-            l.id === leadId ? { ...l, status: newStatus } : l
-            )
-        );
+        onUpdateLead({ ...lead, status: newStatus });
     }
   };
 
@@ -374,6 +370,7 @@ export default function SalesFunnel({
   }
 
   const handleProposalFormSuccess = (proposal: Proposal) => {
+    onProposalSave(proposal); // Save immediately
     setSavedProposal(proposal);
     setIsGenerateProposalModalOpen(false);
     setIsPostProposalActionsModalOpen(true);
@@ -381,10 +378,9 @@ export default function SalesFunnel({
   
   const handleFinalizeProposal = () => {
     if (savedProposal) {
-      onProposalSave(savedProposal);
       toast({
         title: "Proposta Salva!",
-        description: `A proposta para ${generateProposalLead?.name} foi salva.`
+        description: `A proposta para ${generateProposalLead?.name} foi salva como rascunho.`
       });
     }
     resetProposalFlow();
@@ -522,7 +518,7 @@ export default function SalesFunnel({
             </DialogContent>
         </Dialog>
 
-        <Dialog open={isPostProposalActionsModalOpen} onOpenChange={setIsPostProposalActionsModalOpen}>
+        <Dialog open={isPostProposalActionsModalOpen} onOpenChange={(open) => { if (!open) resetProposalFlow() }}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Proposta Pronta</DialogTitle>
@@ -537,11 +533,8 @@ export default function SalesFunnel({
                     <Button onClick={handleSendWhatsApp} variant="secondary">
                         <Send className="mr-2 h-4 w-4" /> Salvar e Enviar
                     </Button>
-                    <Button onClick={handleEditProposal} variant="outline">
+                    <Button onClick={handleEditProposal} variant="outline" className="col-span-2">
                         <FilePenLine className="mr-2 h-4 w-4" /> Editar Proposta
-                    </Button>
-                    <Button onClick={resetProposalFlow} variant="ghost">
-                        Cancelar
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -550,3 +543,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
