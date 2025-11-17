@@ -449,8 +449,7 @@ export default function SalesFunnel({
                 });
                 return;
             }
-            // Update status before opening order dialog
-            updateLeadWithHistory(lead, newStatus);
+            // The status will be updated after the order is successfully saved.
             onOpenNewOrder(lead);
             return; 
         }
@@ -530,7 +529,10 @@ export default function SalesFunnel({
   }
 
   const handleProposalFormSuccess = (proposal: Proposal) => {
-    onProposalSave(proposal); // Save immediately
+    onProposalSave(proposal);
+    if(generateProposalLead && !generateProposalLead.proposalId) {
+        onUpdateLead({ ...generateProposalLead, proposalId: proposal.id });
+    }
     setSavedProposal(proposal);
     setIsGenerateProposalModalOpen(false);
     setIsPostProposalActionsModalOpen(true);
@@ -772,5 +774,3 @@ export default function SalesFunnel({
     </div>
   );
 }
-
-    
