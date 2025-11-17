@@ -57,7 +57,7 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="truncate">{lead.name}</span>
             </CardTitle>
-            <div className="flex items-center gap-2 flex-shrink-0">
+             <div className="flex items-center gap-2 flex-shrink-0">
                 {lead.proposalNotes && !lead.proposalId && (
                     <StickyNote className="h-4 w-4 text-amber-500" title="Existem observações para esta proposta" />
                 )}
