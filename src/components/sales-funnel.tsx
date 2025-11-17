@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -41,12 +41,7 @@ import ProposalForm from "./proposal-form";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart, onClick, onNewPurchase }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, onNewPurchase: (lead: Lead) => void }) => {
-  
-  const handleNewPurchaseClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Impede que o modal de detalhes seja aberto
-    onNewPurchase(lead);
-  };
+const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void }) => {
   
   return (
     <Card 
@@ -81,7 +76,40 @@ const LeadCard = ({ lead, onDragStart, onClick, onNewPurchase }: { lead: Lead, o
             </CardDescription>
         )}
       </CardHeader>
-      {lead.status === 'Aprovado' && (
+    </Card>
+  );
+};
+
+
+const GroupedLeadCard = ({ group, onNewPurchase, onView }: { group: Lead[], onNewPurchase: (lead: Lead) => void, onView: (group: Lead[]) => void }) => {
+    const representativeLead = group[0];
+  
+    const handleNewPurchaseClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onNewPurchase(representativeLead);
+    };
+  
+    return (
+      <Card 
+        className="mb-4 cursor-pointer hover:shadow-md transition-shadow group/lead-card"
+        onClick={() => onView(group)}
+      >
+        <CardHeader className="p-4 space-y-2">
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Building className="h-4 w-4 text-muted-foreground" />
+              {representativeLead.name}
+            </CardTitle>
+            <Badge variant="secondary" className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {group.length}
+            </Badge>
+          </div>
+          <CardDescription className="text-sm flex items-center gap-2 pt-1">
+            <User className="h-4 w-4 text-muted-foreground" />
+            {representativeLead.contact}
+          </CardDescription>
+        </CardHeader>
         <CardContent className="p-4 pt-0">
           <Button 
             className="w-full opacity-0 group-hover/lead-card:opacity-100 transition-opacity" 
@@ -92,10 +120,10 @@ const LeadCard = ({ lead, onDragStart, onClick, onNewPurchase }: { lead: Lead, o
             Nova Compra
           </Button>
         </CardContent>
-      )}
-    </Card>
-  );
+      </Card>
+    );
 };
+  
 
 const LeadDetailsModal = ({ 
   lead, 
@@ -208,6 +236,46 @@ const LeadDetailsModal = ({
   );
 };
 
+const GroupedLeadsModal = ({
+    group,
+    open,
+    onOpenChange,
+    onViewLead,
+  }: {
+    group: Lead[] | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onViewLead: (lead: Lead) => void;
+  }) => {
+    if (!group) return null;
+  
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Oportunidades Aprovadas: {group[0].name}</DialogTitle>
+            <DialogDescription>
+              Todas as oportunidades ganhas para este cliente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+            {group.map(lead => (
+              <Card key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onViewLead(lead)}>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-base">Oportunidade #{lead.id.split('-').pop()}</CardTitle>
+                    <p className="font-bold text-lg">{lead.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                  </div>
+                  {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+};
+
 
 const ProposalNotesModal = ({
     lead,
@@ -297,6 +365,8 @@ export default function SalesFunnel({
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isProposalModalOpen, setIsProposalModalOpen] = React.useState(false);
   const [isGenerateProposalModalOpen, setIsGenerateProposalModalOpen] = React.useState(false);
+  const [isGroupedLeadsModalOpen, setIsGroupedLeadsModalOpen] = React.useState(false);
+  const [selectedGroup, setSelectedGroup] = React.useState<Lead[] | null>(null);
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
@@ -323,6 +393,14 @@ export default function SalesFunnel({
         }
 
         if (newStatus === 'Aprovado' && lead.status !== 'Aprovado') {
+            if (!lead.proposalId) {
+                toast({
+                    title: "Ação necessária",
+                    description: "É preciso gerar uma proposta antes de aprovar o lead.",
+                    variant: "destructive"
+                });
+                return;
+            }
             onOpenNewOrder(lead);
             return; 
         }
@@ -445,8 +523,8 @@ export default function SalesFunnel({
       ...approvedLead,
       id: `lead-${Date.now()}`,
       status: 'Proposta',
-      proposalId: undefined, // Reseta a proposta para a nova oportunidade
-      proposalNotes: 'Nova compra para cliente existente.', // Adiciona uma nota padrão
+      proposalId: undefined, 
+      proposalNotes: 'Nova compra para cliente existente.',
     };
     setLeads(prevLeads => [...prevLeads, newLead]);
     setGenerateProposalLead(newLead);
@@ -456,6 +534,16 @@ export default function SalesFunnel({
       title: "Nova Oportunidade Criada!",
       description: `Inicie a proposta para a nova compra de ${approvedLead.name}.`,
     });
+  };
+
+  const handleViewGroup = (group: Lead[]) => {
+    setSelectedGroup(group);
+    setIsGroupedLeadsModalOpen(true);
+  };
+
+  const handleViewSingleLeadFromGroup = (lead: Lead) => {
+    setIsGroupedLeadsModalOpen(false);
+    handleCardClick(lead);
   };
 
 
@@ -471,6 +559,18 @@ export default function SalesFunnel({
     }
     return grouped;
   }, [leads]);
+  
+  const approvedLeadsGrouped = React.useMemo(() => {
+    const approved = leadsByStatus['Aprovado'] || [];
+    return approved.reduce((acc, lead) => {
+      const key = lead.customerId || lead.name;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(lead);
+      return acc;
+    }, {} as Record<string, Lead[]>);
+  }, [leadsByStatus]);
 
   return (
     <div className="w-full">
@@ -495,21 +595,35 @@ export default function SalesFunnel({
               <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-lg capitalize">{status}</h3>
-                    <Badge variant="secondary" className="rounded-full">{leadsByStatus[status]?.length || 0}</Badge>
+                    <Badge variant="secondary" className="rounded-full">
+                        {status === 'Aprovado' ? Object.keys(approvedLeadsGrouped).length : leadsByStatus[status]?.length || 0}
+                    </Badge>
                   </div>
               </div>
               <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
-                  {leadsByStatus[status]?.map((lead) => (
-                      <LeadCard 
-                        key={lead.id} 
-                        lead={lead} 
-                        onDragStart={handleDragStart}
-                        onClick={() => handleCardClick(lead)}
-                        onNewPurchase={handleNewPurchase}
-                      />
-                  ))}
-                  {leadsByStatus[status]?.length === 0 && (
+                  {status === 'Aprovado' ? (
+                     Object.values(approvedLeadsGrouped).map((group, index) => (
+                        <GroupedLeadCard 
+                          key={index} 
+                          group={group}
+                          onNewPurchase={handleNewPurchase}
+                          onView={handleViewGroup}
+                        />
+                      ))
+                  ) : (
+                    leadsByStatus[status]?.map((lead) => (
+                        <LeadCard 
+                          key={lead.id} 
+                          lead={lead} 
+                          onDragStart={handleDragStart}
+                          onClick={() => handleCardClick(lead)}
+                        />
+                    ))
+                  )}
+
+                  {((status === 'Aprovado' && Object.keys(approvedLeadsGrouped).length === 0) ||
+                    (status !== 'Aprovado' && leadsByStatus[status]?.length === 0)) && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                           Arraste um lead aqui
                       </div>
@@ -590,6 +704,13 @@ export default function SalesFunnel({
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <GroupedLeadsModal
+            group={selectedGroup}
+            open={isGroupedLeadsModalOpen}
+            onOpenChange={setIsGroupedLeadsModalOpen}
+            onViewLead={handleViewSingleLeadFromGroup}
+        />
 
     </div>
   );

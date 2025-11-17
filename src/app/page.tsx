@@ -43,9 +43,9 @@ const initialOrders: SalesOrder[] = [
 const initialLeads: Lead[] = [
   { id: "lead-1", name: "Empresa Alpha", contact: "João", phone: "(11) 91111-1111", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X." },
   { id: "lead-2", name: "Startup Beta", contact: "Mariana", phone: "(21) 92222-2222", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile." },
-  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado" },
+  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1" },
   { id: "lead-4", name: "Serviços Delta", contact: "Fernanda", phone: "(41) 94444-4444", value: 5000, status: "Lista de Leads" },
-  { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado" },
+  { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1" },
   { id: "lead-6", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado" },
 ];
 
@@ -54,6 +54,8 @@ const initialCustomers: (Customer & { id: string })[] = [
   { id: "2", name: "Maria Oliveira", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ" },
   { id: "3", name: "Carlos Pereira", email: "carlos.pereira@example.com", phone: "(31) 95555-4444", zip: "30110-044", street: "Av. do Contorno", number: "6594", complement: "Sala 501", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG" },
   { id: "4", name: "Ana Costa", email: "ana.costa@example.com", phone: "(71) 99999-8888", zip: "40020-000", street: "Largo do Pelourinho", number: "10", complement: "", neighborhood: "Pelourinho", city: "Salvador", state: "BA" },
+  { id: "cust-gama-1", name: "Comércio Gama", email: "contato@comerciogama.com", phone: "(31) 93333-3333", zip: "30110-044", street: "Av. do Contorno", number: "7000", complement: "", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG" },
+  { id: "cust-epsilon-1", name: "Indústria Epsilon", email: "contato@industriaepsilon.com", phone: "(51) 95555-5555", zip: "90010-000", street: "Av. Borges de Medeiros", number: "500", complement: "", neighborhood: "Centro Histórico", city: "Porto Alegre", state: "RS" },
 ];
 
 
@@ -243,12 +245,12 @@ const handleProposalSent = (proposal: Proposal) => {
         </Tabs>
         
         <Dialog open={isSalesOrderDialogOpen} onOpenChange={(isOpen) => {
-            setIsSalesOrderDialogOpen(isOpen);
             if (!isOpen) {
               setEditingOrder(null);
               setLeadForOrder(null);
               setProposalForOrder(null);
             }
+            setIsSalesOrderDialogOpen(isOpen);
         }}>
             <DialogContent className="sm:max-w-4xl">
               <DialogHeader>
