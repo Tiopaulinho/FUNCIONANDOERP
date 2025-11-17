@@ -68,13 +68,15 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
     name: "items",
   });
   
-  const watchedFields = form.watch(["items", "discount", "shipping"]);
-  const watchedItems = watchedFields[0];
-  const watchedDiscount = watchedFields[1];
-  const watchedShipping = watchedFields[2];
+  const { 
+    items: watchedItems, 
+    discount: watchedDiscount, 
+    shipping: watchedShipping 
+  } = form.watch();
+
 
   const {subtotal, total} = React.useMemo(() => {
-    const sub = watchedItems.reduce((acc, item) => {
+    const sub = (watchedItems || []).reduce((acc, item) => {
       const quantity = Number(item.quantity) || 0;
       const price = Number(item.price) || 0;
       return acc + quantity * price;
@@ -92,7 +94,7 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
     const product = products.find(p => p.id === productId);
     if (product) {
       update(index, {
-        ...watchedItems[index],
+        ...(watchedItems?.[index] || {}),
         productId: product.id,
         productName: product.name,
         price: product.price,
