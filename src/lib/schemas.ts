@@ -101,3 +101,5 @@ export const proposalSchema = z.object({
 
 export type Proposal = z.infer<typeof proposalSchema>;
 export type ProposalItem = z.infer<typeof proposalItemSchema>;
+
+    
