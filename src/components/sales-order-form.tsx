@@ -98,6 +98,18 @@ export default function SalesOrderForm({
   });
 
   React.useEffect(() => {
+    let defaultItems = [{ productId: "", productName: "", quantity: 1, price: 0 }];
+
+    if (proposalData?.items && proposalData.items.length > 0) {
+        defaultItems = proposalData.items.map((item: ProposalItem) => ({
+            id: `item-${Date.now()}-${Math.random()}`,
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+        }));
+    }
+
     if (isEditMode && initialData) {
       form.reset({
         ...initialData,
@@ -107,17 +119,7 @@ export default function SalesOrderForm({
           price: item.price || 0,
         }))
       });
-    } else if (cameFromLead && leadData) {
-      const defaultItems = proposalData?.items && proposalData.items.length > 0
-        ? proposalData.items.map((item: ProposalItem) => ({
-            id: `item-${Date.now()}-${Math.random()}`,
-            productId: item.productId,
-            productName: item.productName,
-            quantity: item.quantity || 1,
-            price: item.price || 0,
-          }))
-        : [{ productId: "", productName: "", quantity: 1, price: 0 }];
-
+    } else if (cameFromLead) {
       form.reset({
         customerId: customerForLead?.id || "",
         items: defaultItems,
@@ -125,7 +127,7 @@ export default function SalesOrderForm({
     } else {
       form.reset({
         customerId: "",
-        items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+        items: defaultItems,
       });
     }
   }, [initialData, leadData, proposalData, cameFromLead, isEditMode, customerForLead, form]);
@@ -219,7 +221,7 @@ export default function SalesOrderForm({
   const getCustomerRegistrationInitialData = () => {
     if (cameFromLead && !customerForLead && leadData) {
       return { 
-        name: leadData.name, 
+        name: leadData.contact, 
         email: leadData.email || "", 
         phone: leadData.phone || "" 
       };
@@ -245,7 +247,7 @@ export default function SalesOrderForm({
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.name || ""}
+                            value={customerForLead?.name || leadData?.contact || ""}
                             className="bg-muted/50"
                           />
                           {!customerForLead && (
@@ -383,7 +385,7 @@ export default function SalesOrderForm({
                       />
                   </TableCell>
                   <TableCell className="text-right">
-                      {(watchedItems[index]?.quantity * watchedItems[index]?.price || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      {((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.price || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                   </TableCell>
                   <TableCell>
                       <Button
