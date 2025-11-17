@@ -118,19 +118,20 @@ export default function SalesFunnel({ leads, setLeads, onOpenNewOrder }: SalesFu
     setIsCustomerDialogOpen(false);
     if(leadToRegister) {
       // Mark lead as registered and move it to the approved column
+      const registeredLead = { ...leadToRegister, isNew: false, status: 'Criar Pedido (Aprovado)' } as Lead;
+      
       setLeads(prevLeads => 
         prevLeads.map(l => 
-          l.id === leadToRegister.id ? { ...l, status: "Criar Pedido (Aprovado)", isNew: false } : l
+          l.id === leadToRegister.id ? registeredLead : l
         )
       );
+      
        toast({
         title: "Cliente Cadastrado!",
         description: "O lead foi movido para 'Criar Pedido' e o cliente foi salvo."
       });
       
-      const registeredLead = {...leadToRegister, isNew: false, status: 'Criar Pedido (Aprovado)' } as Lead;
       onOpenNewOrder(registeredLead);
-
     }
     setLeadToRegister(null);
   }
