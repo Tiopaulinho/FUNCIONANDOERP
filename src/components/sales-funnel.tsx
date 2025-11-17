@@ -52,19 +52,19 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
       onClick={onClick}
     >
       <CardHeader className="p-4 space-y-2">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Building className="h-4 w-4 text-muted-foreground" />
-                {lead.name}
+        <div className="flex items-start justify-between gap-4">
+            <CardTitle className="text-base font-bold flex items-center gap-2 flex-1 min-w-0">
+                <Building className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">{lead.name}</span>
             </CardTitle>
-             <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
                 {lead.proposalNotes && !lead.proposalId && (
                     <StickyNote className="h-4 w-4 text-amber-500" title="Existem observações para esta proposta" />
                 )}
-                 {proposal && (
+                {proposal && (
                     <Badge variant="secondary" className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        <DollarSign className="h-3 w-3" />
+                        {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                     </Badge>
                 )}
             </div>
@@ -555,12 +555,13 @@ export default function SalesFunnel({
   
   const handleSendWhatsApp = () => {
     if (savedProposal && generateProposalLead) {
-      onProposalSent(savedProposal);
-      updateLeadWithHistory(generateProposalLead, 'Negociação', { proposalId: savedProposal.id });
-      toast({
-        title: "Proposta Enviada!",
-        description: `Lead movido para Negociação.`
-      });
+        const leadWithProposal = { ...generateProposalLead, proposalId: savedProposal.id };
+        onProposalSent(savedProposal);
+        updateLeadWithHistory(leadWithProposal, 'Negociação');
+        toast({
+            title: "Proposta Enviada!",
+            description: `Lead movido para Negociação.`
+        });
     }
     resetProposalFlow();
   }
