@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { productSchema, type Product } from "@/lib/schemas";
 import { Separator } from "./ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import LaborCostCalculator from "./labor-cost-calculator";
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -157,6 +157,15 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
       shouldDirty: true,
       shouldValidate: true,
     });
+    // Recalculate labor cost if cost per minute is already set
+    const costPerMinute = form.getValues('laborCost') / (form.getValues('productionMinutes') || 1);
+     if (costPerMinute > 0 && isFinite(costPerMinute)) {
+        const newLaborCost = costPerMinute * minutes;
+        form.setValue("laborCost", parseFloat(newLaborCost.toFixed(2)), {
+        shouldDirty: true,
+        shouldValidate: true,
+        });
+    }
   };
 
   return (
@@ -230,6 +239,9 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-xl">
+                                    <DialogHeader>
+                                        <DialogTitle className="sr-only">Calculadora de Custo de Mão de Obra</DialogTitle>
+                                    </DialogHeader>
                                     <LaborCostCalculator onApplyCost={handleApplyCostPerMinute} />
                                 </DialogContent>
                             </Dialog>
