@@ -52,6 +52,7 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
       shipping: 0,
       observations: lead.proposalNotes || "",
       paymentMethods: "",
+      date: new Date().toISOString().split('T')[0],
     },
   });
 
@@ -61,12 +62,27 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
   });
   
   const watchedItems = form.watch("items");
-  const watchedDiscount = form.watch("discount") || 0;
-  const watchedShipping = form.watch("shipping") || 0;
+  const watchedDiscount = form.watch("discount");
+  const watchedShipping = form.watch("shipping");
   
-  const subtotal = watchedItems.reduce((acc, item) => acc + (item.quantity || 0) * (item.price || 0), 0);
-  const discountAmount = subtotal * (watchedDiscount / 100);
-  const total = subtotal - discountAmount + watchedShipping;
+  const subtotal = React.useMemo(() => 
+    watchedItems.reduce((acc, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const price = Number(item.price) || 0;
+      return acc + (quantity * price);
+    }, 0),
+  [watchedItems]);
+
+  const discountAmount = React.useMemo(() => {
+    const discountValue = Number(watchedDiscount) || 0;
+    return subtotal * (discountValue / 100);
+  }, [subtotal, watchedDiscount]);
+
+  const total = React.useMemo(() => {
+    const shippingValue = Number(watchedShipping) || 0;
+    return subtotal - discountAmount + shippingValue;
+  }, [subtotal, discountAmount, watchedShipping]);
+
 
   const handleProductSelect = (productId: string, index: number) => {
     const product = products.find(p => p.id === productId);
@@ -153,12 +169,12 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
                       />
                     </TableCell>
                     <TableCell>
-                      <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem><FormControl><Input type="number" placeholder="1" {...field} /></FormControl></FormItem> )} />
+                      <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem><FormControl><Input type="number" placeholder="1" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem> )} />
                     </TableCell>
                     <TableCell>
-                      <FormField control={form.control} name={`items.${index}.price`} render={({ field }) => ( <FormItem><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem> )} />
+                      <FormField control={form.control} name={`items.${index}.price`} render={({ field }) => ( <FormItem><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl></FormItem> )} />
                     </TableCell>
-                    <TableCell className="text-right">{(watchedItems[index]?.quantity * watchedItems[index]?.price || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
+                    <TableCell className="text-right">{( (Number(watchedItems[index]?.quantity) || 0) * (Number(watchedItems[index]?.price) || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                     <TableCell>
                       <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
@@ -194,13 +210,13 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
                 <FormField control={form.control} name="discount" render={({ field }) => (
                     <FormItem>
                         <FormLabel className="flex items-center gap-1"><Percent className="h-4 w-4" /> Desconto (%)</FormLabel>
-                        <FormControl><Input type="number" placeholder="0" {...field} /></FormControl>
+                        <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)}/></FormControl>
                     </FormItem>
                 )} />
                 <FormField control={form.control} name="shipping" render={({ field }) => (
                      <FormItem>
                         <FormLabel className="flex items-center gap-1"><Truck className="h-4 w-4" /> Frete (R$)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} /></FormControl>
+                        <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
                     </FormItem>
                 )} />
             </div>
@@ -219,3 +235,5 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd }
     </div>
   );
 }
+
+    
