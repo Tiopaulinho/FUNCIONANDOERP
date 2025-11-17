@@ -12,3 +12,5 @@ export const customerRegistrationSchema = z.object({
   city: z.string().min(3, { message: "A cidade é obrigatória." }),
   state: z.string().min(2, { message: "O estado é obrigatório." }).max(2, { message: "Use a sigla do estado (ex: SP)." }),
 });
+
+export type Customer = z.infer<typeof customerRegistrationSchema>;

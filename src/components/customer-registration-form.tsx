@@ -25,19 +25,28 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { customerRegistrationSchema } from "@/lib/schemas";
+import { customerRegistrationSchema, type Customer } from "@/lib/schemas";
 import { registerCustomerAction } from "@/app/actions";
 import { Separator } from "./ui/separator";
 
 type CustomerFormValues = z.infer<typeof customerRegistrationSchema>;
 
-export default function CustomerRegistrationForm() {
+interface CustomerRegistrationFormProps {
+  initialData?: Customer | null;
+  onSuccess?: () => void;
+}
+
+export default function CustomerRegistrationForm({
+  initialData,
+  onSuccess,
+}: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isEditMode = !!initialData;
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerRegistrationSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       name: "",
       email: "",
       phone: "",
@@ -51,20 +60,35 @@ export default function CustomerRegistrationForm() {
     },
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
   async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
     try {
+      // Here you could differentiate between create and update actions
+      // For now, we use the same action for both
       const result = await registerCustomerAction(data);
       if (result.success) {
         toast({
           title: "Sucesso!",
-          description: result.message,
+          description: isEditMode
+            ? "Cliente atualizado com sucesso!"
+            : result.message,
         });
-        form.reset();
+        if (onSuccess) {
+          onSuccess();
+        }
+        if (!isEditMode) {
+          form.reset();
+        }
       } else {
         toast({
           variant: "destructive",
-          title: "Erro no cadastro",
+          title: isEditMode ? "Erro na atualização" : "Erro no cadastro",
           description: result.message || "Ocorreu um erro. Tente novamente.",
         });
       }
@@ -85,9 +109,13 @@ export default function CustomerRegistrationForm() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
           <UserPlus className="h-8 w-8 text-primary" />
         </div>
-        <CardTitle className="text-3xl font-bold">Cadastro de Cliente</CardTitle>
+        <CardTitle className="text-3xl font-bold">
+          {isEditMode ? "Editar Cliente" : "Cadastro de Cliente"}
+        </CardTitle>
         <CardDescription>
-          Preencha os campos abaixo para adicionar um novo cliente.
+          {isEditMode
+            ? "Altere os dados abaixo para atualizar o cliente."
+            : "Preencha os campos abaixo para adicionar um novo cliente."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -123,6 +151,7 @@ export default function CustomerRegistrationForm() {
                           type="email"
                           placeholder="Ex: joao.silva@email.com"
                           {...field}
+                          disabled={isEditMode}
                         />
                       </FormControl>
                       <FormMessage />
@@ -261,8 +290,10 @@ export default function CustomerRegistrationForm() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Cadastrando...
+                    {isEditMode ? "Salvando..." : "Cadastrando..."}
                   </>
+                ) : isEditMode ? (
+                  "Salvar Alterações"
                 ) : (
                   "Cadastrar Cliente"
                 )}

@@ -19,12 +19,20 @@ import {
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { FilePenLine, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import CustomerRegistrationForm from "./customer-registration-form";
+import type { Customer } from "@/lib/schemas";
 
-const allCustomers = [
+const allCustomers: Customer[] = [
   {
     name: "José da Silva",
     email: "jose.silva@example.com",
     phone: "(11) 98765-4321",
+    zip: "01001-000",
+    street: "Praça da Sé",
+    number: "s/n",
+    complement: "lado ímpar",
+    neighborhood: "Sé",
     city: "São Paulo",
     state: "SP",
   },
@@ -32,6 +40,11 @@ const allCustomers = [
     name: "Maria Oliveira",
     email: "maria.oliveira@example.com",
     phone: "(21) 91234-5678",
+    zip: "20040-004",
+    street: "Av. Rio Branco",
+    number: "156",
+    complement: "",
+    neighborhood: "Centro",
     city: "Rio de Janeiro",
     state: "RJ",
   },
@@ -39,6 +52,11 @@ const allCustomers = [
     name: "Carlos Pereira",
     email: "carlos.pereira@example.com",
     phone: "(31) 95555-4444",
+    zip: "30110-044",
+    street: "Av. do Contorno",
+    number: "6594",
+    complement: "Sala 501",
+    neighborhood: "Savassi",
     city: "Belo Horizonte",
     state: "MG",
   },
@@ -46,6 +64,11 @@ const allCustomers = [
     name: "Ana Costa",
     email: "ana.costa@example.com",
     phone: "(71) 99999-8888",
+    zip: "40020-000",
+    street: "Largo do Pelourinho",
+    number: "10",
+    complement: "",
+    neighborhood: "Pelourinho",
     city: "Salvador",
     state: "BA",
   },
@@ -55,6 +78,7 @@ export default function CustomerList() {
   const [nameFilter, setNameFilter] = React.useState("");
   const [emailFilter, setEmailFilter] = React.useState("");
   const [filteredCustomers, setFilteredCustomers] = React.useState(allCustomers);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     const lowercasedNameFilter = nameFilter.toLowerCase();
@@ -67,6 +91,10 @@ export default function CustomerList() {
     });
     setFilteredCustomers(filtered);
   }, [nameFilter, emailFilter]);
+
+  const handleFormSuccess = () => {
+    setIsEditDialogOpen(false);
+  };
 
   return (
     <Card className="shadow-2xl">
@@ -110,10 +138,23 @@ export default function CustomerList() {
                 <TableCell>{customer.state}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon">
-                      <FilePenLine className="h-4 w-4" />
-                      <span className="sr-only">Editar</span>
-                    </Button>
+                    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                      <DialogTrigger asChild>
+                         <Button variant="outline" size="icon">
+                            <FilePenLine className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                          </Button>
+                      </DialogTrigger>
+                       <DialogContent className="sm:max-w-[800px]">
+                        <DialogHeader>
+                          <DialogTitle className="sr-only">Editar Cliente</DialogTitle>
+                        </DialogHeader>
+                        <CustomerRegistrationForm
+                          initialData={customer}
+                          onSuccess={handleFormSuccess}
+                        />
+                      </DialogContent>
+                    </Dialog>
                     <Button variant="destructive" size="icon">
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Excluir</span>
