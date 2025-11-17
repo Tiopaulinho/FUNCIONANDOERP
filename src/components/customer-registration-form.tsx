@@ -80,7 +80,7 @@ export default function CustomerRegistrationForm() {
   }
 
   return (
-    <Card className="w-full max-w-4xl shadow-2xl">
+    <Card className="w-full shadow-none border-0">
       <CardHeader className="text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
           <UserPlus className="h-8 w-8 text-primary" />

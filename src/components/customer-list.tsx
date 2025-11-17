@@ -6,7 +6,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardDescription } from "./ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 
 const dummyCustomers = [
   {
@@ -41,35 +41,37 @@ const dummyCustomers = [
 
 export default function CustomerList() {
   return (
-    <Card>
+    <Card className="shadow-2xl">
       <CardHeader>
         <CardTitle>Clientes Cadastrados</CardTitle>
         <CardDescription>
           Visualize e gerencie os clientes cadastrados no sistema.
         </CardDescription>
       </CardHeader>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Telefone</TableHead>
-            <TableHead>Cidade</TableHead>
-            <TableHead>Estado</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {dummyCustomers.map((customer) => (
-            <TableRow key={customer.email}>
-              <TableCell className="font-medium">{customer.name}</TableCell>
-              <TableCell>{customer.email}</TableCell>
-              <TableCell>{customer.phone}</TableCell>
-              <TableCell>{customer.city}</TableCell>
-              <TableCell>{customer.state}</TableCell>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>Cidade</TableHead>
+              <TableHead>Estado</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {dummyCustomers.map((customer) => (
+              <TableRow key={customer.email}>
+                <TableCell className="font-medium">{customer.name}</TableCell>
+                <TableCell>{customer.email}</TableCell>
+                <TableCell>{customer.phone}</TableCell>
+                <TableCell>{customer.city}</TableCell>
+                <TableCell>{customer.state}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
     </Card>
   );
 }
