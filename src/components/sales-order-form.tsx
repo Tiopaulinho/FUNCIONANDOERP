@@ -5,7 +5,7 @@ import * as React from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, PlusCircle, Trash2, UserPlus } from "lucide-react";
+import { Loader2, Plus, PlusCircle, Trash2, UserPlus, FileDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -97,47 +97,63 @@ export default function SalesOrderForm({
     },
   });
 
-  React.useEffect(() => {
-    let defaultItems: (Omit<ProposalItem, 'id'> & {id?: string})[] = [{ productId: "", productName: "", quantity: 1, price: 0 }];
-
-    if (proposalData?.items && proposalData.items.length > 0) {
-        defaultItems = proposalData.items.map((item: ProposalItem) => ({
-            id: item.id || `item-${Date.now()}-${Math.random()}`,
-            productId: item.productId,
-            productName: item.productName,
-            quantity: item.quantity || 1,
-            price: item.price || 0,
-        }));
-    }
-
-    if (isEditMode && initialData) {
-      form.reset({
-        ...initialData,
-        items: initialData.items.map(item => ({
-          ...item,
-          quantity: item.quantity || 1,
-          price: item.price || 0,
-        }))
-      });
-    } else if (cameFromLead) {
-      form.reset({
-        customerId: customerForLead?.id || "",
-        items: defaultItems,
-      });
-    } else {
-      form.reset({
-        customerId: "",
-        items: defaultItems,
-      });
-    }
-  }, [initialData, leadData, proposalData, cameFromLead, isEditMode, customerForLead, form]);
-
-
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "items",
   });
+
+  const loadProposalData = React.useCallback(() => {
+    if (proposalData?.items && proposalData.items.length > 0) {
+      const proposalItems = proposalData.items.map((item: ProposalItem) => ({
+        id: item.id || `item-${Date.now()}-${Math.random()}`,
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+      }));
+      form.setValue('items', proposalItems);
+      toast({
+        title: "Dados carregados!",
+        description: "Os itens da proposta foram carregados no pedido.",
+      });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Nenhum item encontrado",
+            description: "A proposta não contém itens para carregar.",
+        });
+    }
+  }, [proposalData, form, toast]);
+
+
+  React.useEffect(() => {
+    const resetForm = () => {
+      if (isEditMode && initialData) {
+        form.reset({
+          ...initialData,
+          items: initialData.items.map(item => ({
+            ...item,
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+          }))
+        });
+      } else if (cameFromLead) {
+        form.reset({
+          customerId: customerForLead?.id || "",
+          items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+        });
+      } else {
+        form.reset({
+          customerId: "",
+          items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+        });
+      }
+    };
   
+    resetForm();
+  }, [initialData, leadData, proposalData, isEditMode, cameFromLead, customerForLead, form]);
+
+
   const watchedItems = form.watch("items");
   const total = watchedItems.reduce((acc, item) => acc + (item.quantity || 0) * (item.price || 0), 0);
 
@@ -221,7 +237,7 @@ export default function SalesOrderForm({
   const getCustomerRegistrationInitialData = () => {
     if (cameFromLead && !customerForLead && leadData) {
       return { 
-        name: leadData.contact, 
+        name: leadData.name || leadData.contact, 
         email: leadData.email || "", 
         phone: leadData.phone || "" 
       };
@@ -247,7 +263,7 @@ export default function SalesOrderForm({
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.contact || ""}
+                            value={customerForLead?.name || leadData?.name || ''}
                             className="bg-muted/50"
                           />
                           {!customerForLead && (
@@ -298,6 +314,12 @@ export default function SalesOrderForm({
                   </FormItem>
                 )}
               />
+               {proposalData && (
+                <Button type="button" variant="outline" size="sm" onClick={loadProposalData}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Carregar Dados da Proposta
+                </Button>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -445,9 +467,3 @@ export default function SalesOrderForm({
     </div>
   );
 }
-
-
-    
-
-    
-
