@@ -128,7 +128,7 @@ export default function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
   }
 
   return (
-    <Dialog>
+    <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
@@ -294,7 +294,7 @@ export default function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
           </div>
         </form>
       </Form>
-       <DialogContent open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen} className="sm:max-w-md">
+       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Novo Produto</DialogTitle>
         </DialogHeader>
