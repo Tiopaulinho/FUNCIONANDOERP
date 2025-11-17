@@ -54,10 +54,15 @@ const statusConfig: { [key in OrderStatus]: { variant: "destructive" | "outline"
   Entregue: { variant: "default", icon: CheckCircle },
 };
 
-const OrderCard = ({ order, onClick }: { order: Order, onClick: () => void }) => {
+const OrderCard = ({ order, onDragStart, onClick }: { order: Order, onDragStart: (e: React.DragEvent, orderId: string) => void, onClick: () => void }) => {
   const { icon: Icon } = statusConfig[order.status];
   return (
-    <Card className="mb-4 cursor-pointer hover:bg-accent" onClick={onClick}>
+    <Card 
+      className="mb-4 cursor-grab active:cursor-grabbing hover:bg-accent" 
+      onClick={onClick}
+      draggable="true"
+      onDragStart={(e) => onDragStart(e, order.id)}
+    >
       <CardHeader className="p-4">
         <div className="flex justify-between items-start">
           <div>
@@ -123,6 +128,25 @@ export default function SalesOrderList() {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
+  
+  const handleDragStart = (e: React.DragEvent, orderId: string) => {
+    e.dataTransfer.setData("orderId", orderId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: OrderStatus) => {
+    e.preventDefault();
+    const orderId = e.dataTransfer.getData("orderId");
+    
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId ? { ...order, status: newStatus } : order
+      )
+    );
+  };
 
   const ordersByStatus = React.useMemo(() => {
     const grouped: { [key in OrderStatus]?: Order[] } = {};
@@ -145,23 +169,32 @@ export default function SalesOrderList() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statuses.map((status) => (
-            <div key={status}>
-            <div className="flex items-center mb-4">
-                <h3 className="font-semibold text-lg capitalize">{status}</h3>
-                <Badge variant="secondary" className="ml-2">{ordersByStatus[status]?.length || 0}</Badge>
-            </div>
-            <Card className="bg-muted/40 border-dashed">
-                <CardContent className="p-4 min-h-[200px]">
-                {ordersByStatus[status]?.map((order) => (
-                    <OrderCard key={order.id} order={order} onClick={() => handleCardClick(order)} />
-                ))}
-                {ordersByStatus[status]?.length === 0 && (
-                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                        Nenhum pedido aqui.
-                    </div>
-                )}
-                </CardContent>
-            </Card>
+            <div 
+              key={status}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, status)}
+            >
+              <div className="flex items-center mb-4">
+                  <h3 className="font-semibold text-lg capitalize">{status}</h3>
+                  <Badge variant="secondary" className="ml-2">{ordersByStatus[status]?.length || 0}</Badge>
+              </div>
+              <Card className="bg-muted/40 border-dashed">
+                  <CardContent className="p-4 min-h-[200px]">
+                  {ordersByStatus[status]?.map((order) => (
+                      <OrderCard 
+                        key={order.id} 
+                        order={order} 
+                        onClick={() => handleCardClick(order)}
+                        onDragStart={handleDragStart}
+                      />
+                  ))}
+                  {ordersByStatus[status]?.length === 0 && (
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                          Nenhum pedido aqui.
+                      </div>
+                  )}
+                  </CardContent>
+              </Card>
             </div>
         ))}
         </div>
