@@ -1,3 +1,6 @@
+"use client";
+
+import * as React from "react";
 import {
   Table,
   TableHeader,
@@ -6,9 +9,16 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "./ui/card";
+import { Input } from "./ui/input";
 
-const dummyCustomers = [
+const allCustomers = [
   {
     name: "José da Silva",
     email: "jose.silva@example.com",
@@ -40,6 +50,22 @@ const dummyCustomers = [
 ];
 
 export default function CustomerList() {
+  const [nameFilter, setNameFilter] = React.useState("");
+  const [emailFilter, setEmailFilter] = React.useState("");
+  const [filteredCustomers, setFilteredCustomers] = React.useState(allCustomers);
+
+  React.useEffect(() => {
+    const lowercasedNameFilter = nameFilter.toLowerCase();
+    const lowercasedEmailFilter = emailFilter.toLowerCase();
+
+    const filtered = allCustomers.filter((customer) => {
+      const nameMatch = customer.name.toLowerCase().includes(lowercasedNameFilter);
+      const emailMatch = customer.email.toLowerCase().includes(lowercasedEmailFilter);
+      return nameMatch && emailMatch;
+    });
+    setFilteredCustomers(filtered);
+  }, [nameFilter, emailFilter]);
+
   return (
     <Card className="shadow-2xl">
       <CardHeader>
@@ -47,6 +73,18 @@ export default function CustomerList() {
         <CardDescription>
           Visualize e gerencie os clientes cadastrados no sistema.
         </CardDescription>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Input
+              placeholder="Filtrar por nome..."
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+            />
+            <Input
+              placeholder="Filtrar por email..."
+              value={emailFilter}
+              onChange={(e) => setEmailFilter(e.target.value)}
+            />
+          </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -60,7 +98,7 @@ export default function CustomerList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dummyCustomers.map((customer) => (
+            {filteredCustomers.map((customer) => (
               <TableRow key={customer.email}>
                 <TableCell className="font-medium">{customer.name}</TableCell>
                 <TableCell>{customer.email}</TableCell>
