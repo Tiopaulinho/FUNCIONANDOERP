@@ -79,6 +79,17 @@ export default function SalesOrderForm({
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
   const isEditMode = !!initialData;
+  const cameFromLead = !!leadData;
+  
+  const customerForLead = React.useMemo(() => {
+      if (!leadData) return null;
+      // customerId is now the canonical link
+      if (leadData.customerId) {
+        return customers.find(c => c.id === leadData.customerId);
+      }
+      // Fallback for older leads or customers not yet linked
+      return customers.find(c => c.name.toLowerCase() === leadData.contact.toLowerCase());
+  }, [leadData, customers]);
 
   const form = useForm<SalesOrderFormValues>({
     resolver: zodResolver(salesOrderSchema),
@@ -87,14 +98,6 @@ export default function SalesOrderForm({
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
     },
   });
-  
-  const customerForLead = React.useMemo(() => {
-    if (!leadData?.contact) return null;
-    // In sales-funnel, if a customer exists, its ID is put into lead.contact
-    return customers.find(c => c.id === leadData.contact || c.name.toLowerCase() === leadData.contact.toLowerCase());
-  }, [leadData, customers]);
-  
-  const cameFromLead = !!leadData?.id;
 
   React.useEffect(() => {
     if (isEditMode && initialData) {
@@ -117,7 +120,7 @@ export default function SalesOrderForm({
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, leadData, proposalData, cameFromLead, form, isEditMode, customerForLead]);
+  }, [initialData, leadData, proposalData, cameFromLead, isEditMode, customerForLead, form]);
 
 
   const { fields, append, remove, update } = useFieldArray({
@@ -159,10 +162,6 @@ export default function SalesOrderForm({
           title: "Cliente Adicionado!",
           description: "O novo cliente já foi selecionado no pedido.",
       });
-       // If coming from a lead, update the leadData in the parent component to reflect the new customer
-       if (leadData) {
-         leadData.contact = newCustomer.id;
-       }
     }
     setIsCustomerDialogOpen(false);
   }
@@ -220,6 +219,8 @@ export default function SalesOrderForm({
     return {};
   };
 
+  const selectedCustomerId = form.watch("customerId");
+
   return (
     <div>
       <Form {...form}>
@@ -232,32 +233,22 @@ export default function SalesOrderForm({
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
                     <div className="flex items-center gap-2">
-                       {cameFromLead && customerForLead ? (
+                       {cameFromLead ? (
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || ""}
-                            className="bg-muted/50 cursor-not-allowed"
+                            value={customerForLead?.name || leadData?.contact || ""}
+                            className="bg-muted/50"
                           />
-                         </div>
-                       ) : cameFromLead && !customerForLead ? (
-                         <div className="flex-grow">
-                            <Input
-                              readOnly
-                              value={leadData?.contact || ""}
-                              className="bg-muted/50"
-                            />
+                          {!customerForLead && (
                             <CardDescription className="text-xs text-destructive mt-1">
                                 Este cliente não tem cadastro. Clique no botão `+` para completar.
                             </CardDescription>
+                          )}
                          </div>
                        ) : (
                         <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            const customer = customers.find(c => c.id === value);
-                            if (customer) form.setValue('customerName', customer.name);
-                          }}
+                          onValueChange={field.onChange}
                           value={field.value}
                           disabled={isEditMode}
                         >

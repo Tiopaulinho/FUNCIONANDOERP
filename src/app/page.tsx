@@ -94,6 +94,10 @@ export default function Home() {
     } else {
       setOrders(prevOrders => [...prevOrders, { ...savedOrder, id: `ORD-${Date.now()}` }]);
     }
+    // After saving order, move lead to a final state if it came from a lead
+    if (leadForOrder) {
+      updateLead({ ...leadForOrder, status: 'Negociação' }); // Or a new "Completed" status
+    }
     setIsSalesOrderDialogOpen(false);
     setEditingOrder(null);
     setLeadForOrder(null);
@@ -112,9 +116,7 @@ export default function Home() {
   const openNewOrderDialog = (lead?: Lead) => {
     setEditingOrder(null);
     if (lead) {
-      const customer = customers.find(c => c.name.toLowerCase() === lead.contact.toLowerCase());
-      setLeadForOrder({ ...lead, contact: customer?.id || "" });
-      
+      setLeadForOrder(lead);
       if (lead.proposalId) {
         const proposal = proposals.find(p => p.id === lead.proposalId);
         setProposalForOrder(proposal || null);
@@ -131,6 +133,12 @@ export default function Home() {
   const addCustomer = (customerData: Omit<Customer, 'id'>): Customer & { id: string } => {
     const newCustomer = { ...customerData, id: `cust-${Date.now()}` };
     setCustomers(prev => [...prev, newCustomer]);
+
+    // If a lead was being processed, update it with the new customer ID
+    if (leadForOrder) {
+      setLeads(prevLeads => prevLeads.map(l => l.id === leadForOrder.id ? { ...l, contact: newCustomer.name, customerId: newCustomer.id } : l));
+      setLeadForOrder(prev => prev ? { ...prev, contact: newCustomer.name, customerId: newCustomer.id } : null);
+    }
     return newCustomer;
   }
   
@@ -214,7 +222,7 @@ const handleProposalSent = (proposal: Proposal) => {
               setOrders={setOrders}
               onEditOrder={handleEditOrder}
               onDeleteOrder={handleDeleteOrder}
-              onNewOrderClick={openNewOrderDialog}
+              onNewOrderClick={() => openNewOrderDialog()}
             />
           </TabsContent>
           <TabsContent value="products">
@@ -227,7 +235,14 @@ const handleProposalSent = (proposal: Proposal) => {
           </TabsContent>
         </Tabs>
         
-        <Dialog open={isSalesOrderDialogOpen} onOpenChange={setIsSalesOrderDialogOpen}>
+        <Dialog open={isSalesOrderDialogOpen} onOpenChange={(isOpen) => {
+            setIsSalesOrderDialogOpen(isOpen);
+            if (!isOpen) {
+              setEditingOrder(null);
+              setLeadForOrder(null);
+              setProposalForOrder(null);
+            }
+        }}>
             <DialogContent className="sm:max-w-4xl">
               <DialogHeader>
                 <DialogTitle>{editingOrder ? "Editar Pedido de Venda" : "Novo Pedido de Venda"}</DialogTitle>
