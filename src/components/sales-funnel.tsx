@@ -39,7 +39,7 @@ import { Textarea } from "./ui/textarea";
 import ProposalForm from "./proposal-form";
 
 
-const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Criar Pedido (Aprovado)", "Reprovado"];
+const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
 const LeadCard = ({ lead, onDragStart, onClick }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void }) => {
   return (
@@ -291,7 +291,7 @@ export default function SalesFunnel({
             return;
         }
 
-        if (newStatus === 'Criar Pedido (Aprovado)') {
+        if (newStatus === 'Aprovado') {
             onOpenNewOrder(lead);
             return; 
         }

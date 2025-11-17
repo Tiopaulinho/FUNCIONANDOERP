@@ -52,7 +52,7 @@ export const leadSchema = z.object({
   proposalNotes: z.string().optional(),
 });
 
-export type LeadStatus = "Lista de Leads" | "Contato" | "Proposta" | "Negociação" | "Criar Pedido (Aprovado)" | "Reprovado";
+export type LeadStatus = "Lista de Leads" | "Contato" | "Proposta" | "Negociação" | "Aprovado" | "Reprovado";
 
 export type Lead = z.infer<typeof leadSchema> & {
   id: string;
