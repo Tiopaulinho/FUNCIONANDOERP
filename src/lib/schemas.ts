@@ -81,7 +81,7 @@ export const proposalSchema = z.object({
   shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
   observations: z.string().optional(),
   paymentMethods: z.string().optional(),
-  total: z.number().optional(), // Will be calculated
+  total: z.coerce.number().optional(),
 });
 
 export type Proposal = z.infer<typeof proposalSchema>;

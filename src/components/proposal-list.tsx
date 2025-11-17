@@ -95,7 +95,7 @@ export default function ProposalList({ proposals, leads, customers, onDeleteProp
                       </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {(proposal.total || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    {(proposal.total ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">

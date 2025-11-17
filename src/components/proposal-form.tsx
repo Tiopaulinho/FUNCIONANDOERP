@@ -202,13 +202,13 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
             <FormField control={form.control} name="observations" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Observações</FormLabel>
-                    <FormControl><Textarea placeholder="Detalhes importantes, termos, etc." {...field} /></FormControl>
+                    <FormControl><Textarea placeholder="Detalhes importantes, termos, etc." {...field} value={field.value ?? ''} /></FormControl>
                 </FormItem>
             )} />
              <FormField control={form.control} name="paymentMethods" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Formas de Pagamento</FormLabel>
-                    <FormControl><Textarea placeholder="Ex: 50% de entrada, 50% na entrega." {...field} /></FormControl>
+                    <FormControl><Textarea placeholder="Ex: 50% de entrada, 50% na entrega." {...field} value={field.value ?? ''} /></FormControl>
                 </FormItem>
             )} />
           </div>
