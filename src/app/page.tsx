@@ -108,14 +108,15 @@ export default function Home() {
   const openNewOrderDialog = (lead?: Lead) => {
     setEditingOrder(null);
     if(lead) {
-      setLeadForOrder(lead);
+      const customer = customers.find(c => c.name === lead.contact);
+      setLeadForOrder({...lead, contact: customer?.id || ""});
     } else {
       setLeadForOrder(null);
     }
     setIsSalesOrderDialogOpen(true);
   }
 
-  const addCustomer = (customerData: Omit<Customer, 'id'>) => {
+  const addCustomer = (customerData: Omit<Customer, 'id'>): Customer & { id: string } => {
     const newCustomer = { ...customerData, id: `cust-${Date.now()}` };
     setCustomers(prev => [...prev, newCustomer]);
     return newCustomer;
@@ -176,7 +177,7 @@ export default function Home() {
                 initialData={editingOrder}
                 leadData={leadForOrder}
                 customers={customers}
-                onCustomerAdd={() => {}}
+                onCustomerAdd={addCustomer}
               />
             </DialogContent>
         </Dialog>

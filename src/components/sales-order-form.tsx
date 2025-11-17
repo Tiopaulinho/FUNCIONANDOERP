@@ -59,7 +59,7 @@ interface SalesOrderFormProps {
   onProductAdd: (newProduct: Product & { id: string }) => void;
   leadData?: Lead | null;
   customers: (Customer & { id: string })[];
-  onCustomerAdd: (newCustomer: Customer & { id: string }) => void;
+  onCustomerAdd: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
 }
 
 export default function SalesOrderForm({ 
@@ -89,9 +89,9 @@ export default function SalesOrderForm({
     if (isEditMode && initialData) {
       form.reset(initialData);
     } else if(leadData) {
-      const customer = customers.find(c => c.name === leadData.contact);
-       form.reset({
-        customerId: customer?.id || "",
+      // leadData.contact holds the customer ID in this context
+      form.reset({
+        customerId: leadData.contact || "",
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     } else {
@@ -100,7 +100,7 @@ export default function SalesOrderForm({
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, leadData, form, isEditMode, customers]);
+  }, [initialData, leadData, form, isEditMode]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -133,13 +133,16 @@ export default function SalesOrderForm({
     setIsProductDialogOpen(false);
   }
 
-  const handleNewCustomerSuccess = () => {
-    // A lógica de adicionar o cliente já está no componente pai
+  const handleNewCustomerSuccess = (customerData: Omit<Customer, 'id'>) => {
+    const newCustomer = onCustomerAdd(customerData);
+    if (newCustomer) {
+      form.setValue('customerId', newCustomer.id);
+      toast({
+          title: "Cliente Adicionado!",
+          description: "O novo cliente já foi selecionado no pedido.",
+      });
+    }
     setIsCustomerDialogOpen(false);
-    toast({
-        title: "Cliente Adicionado!",
-        description: "O novo cliente já está disponível para seleção.",
-    });
   }
 
   async function onSubmit(data: SalesOrderFormValues) {
