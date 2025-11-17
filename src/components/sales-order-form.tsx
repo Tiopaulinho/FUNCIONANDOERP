@@ -86,21 +86,20 @@ export default function SalesOrderForm({
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
     },
   });
-
+  
   const customerForLead = React.useMemo(() => {
-    if (!leadData) return null;
+    if (!leadData?.contact) return null;
+    // In sales-funnel, if a customer exists, its ID is put into lead.contact
     return customers.find(c => c.id === leadData.contact);
   }, [leadData, customers]);
+  
 
   React.useEffect(() => {
     if (isEditMode && initialData) {
       form.reset(initialData);
-    } else if(leadData) {
-      // leadData.contact can be a customer ID or a name.
-      // If a customer exists, their ID is in leadData.contact.
-      const customer = customers.find(c => c.id === leadData.contact || c.name === leadData.contact);
-      form.reset({
-        customerId: customer?.id || "",
+    } else if(cameFromLead && leadData) {
+       form.reset({
+        customerId: customerForLead?.id || "",
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     } else {
@@ -109,7 +108,7 @@ export default function SalesOrderForm({
         items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       });
     }
-  }, [initialData, leadData, form, isEditMode, customers]);
+  }, [initialData, leadData, cameFromLead, form, isEditMode, customers, customerForLead]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -145,7 +144,7 @@ export default function SalesOrderForm({
   const handleNewCustomerSuccess = (customerData: Omit<Customer, 'id'>) => {
     const newCustomer = onCustomerAdd(customerData);
     if (newCustomer) {
-      form.setValue('customerId', newCustomer.id);
+      form.setValue('customerId', newCustomer.id, { shouldValidate: true });
       toast({
           title: "Cliente Adicionado!",
           description: "O novo cliente já foi selecionado no pedido.",
@@ -216,7 +215,7 @@ export default function SalesOrderForm({
                           />
                            {!customerForLead && (
                               <CardDescription className="text-xs text-destructive mt-1">
-                                Este cliente não tem cadastro. Complete o cadastro para prosseguir.
+                                Este cliente não tem cadastro. Clique no botão `+` para completar.
                               </CardDescription>
                            )}
                          </div>
@@ -224,6 +223,7 @@ export default function SalesOrderForm({
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
+                          disabled={cameFromLead}
                         >
                           <FormControl>
                             <SelectTrigger>
