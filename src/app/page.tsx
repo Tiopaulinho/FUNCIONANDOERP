@@ -99,7 +99,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center bg-muted/40 p-4 md:p-8">
+    <main className="flex min-h-dvh w-full flex-col items-center bg-background p-4 md:p-8">
       <div className="w-full max-w-7xl">
         <Tabs defaultValue="customers" className="w-full">
           <div className="mb-4 flex items-center justify-between gap-4">
