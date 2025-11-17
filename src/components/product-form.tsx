@@ -36,15 +36,15 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     resolver: zodResolver(productSchema),
     defaultValues: initialData || {
       name: "",
-      price: undefined, // Use undefined for empty state
+      price: 0,
     },
   });
 
   React.useEffect(() => {
     if (initialData) {
-      form.reset(initialData);
+      form.reset({ ...initialData, price: initialData.price ?? 0 });
     } else {
-      form.reset({ name: "", price: undefined });
+      form.reset({ name: "", price: 0 });
     }
   }, [initialData, form]);
 
@@ -71,7 +71,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     }
     
     if (!isEditMode) {
-      form.reset({ name: "", price: undefined });
+      form.reset({ name: "", price: 0 });
     }
     
     setIsSubmitting(false);

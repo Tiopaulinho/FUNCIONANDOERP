@@ -45,7 +45,7 @@ export default function LeadForm({ initialData, onSuccess }: LeadFormProps) {
       name: "",
       contact: "",
       phone: "",
-      value: undefined,
+      value: 0,
       proposalNotes: "",
     },
   });
@@ -56,6 +56,7 @@ export default function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         ...initialData,
         phone: initialData.phone || "",
         proposalNotes: initialData.proposalNotes || "",
+        value: initialData.value ?? 0,
       });
     }
   }, [initialData, form]);
