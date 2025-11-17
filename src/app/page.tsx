@@ -40,12 +40,12 @@ const initialOrders: SalesOrder[] = [
 ];
 
 const initialLeads: Lead[] = [
-  { id: "lead-1", name: "Empresa Alpha", contact: "João", phone: "(11) 91111-1111", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X." },
-  { id: "lead-2", name: "Startup Beta", contact: "Mariana", phone: "(21) 92222-2222", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile." },
-  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1" },
-  { id: "lead-4", name: "Serviços Delta", contact: "Fernanda", phone: "(41) 94444-4444", value: 5000, status: "Lista de Leads" },
-  { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1" },
-  { id: "lead-6", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado" },
+  { id: "lead-1", name: "Empresa Alpha", contact: "João", phone: "(11) 91111-1111", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X.", statusHistory: [{ status: "Contato", date: "2024-07-20"}] },
+  { id: "lead-2", name: "Startup Beta", contact: "Mariana", phone: "(21) 92222-2222", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile.", statusHistory: [{ status: "Proposta", date: "2024-07-21"}] },
+  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1", statusHistory: [{ status: "Aprovado", date: "2024-07-22"}] },
+  { id: "lead-4", name: "Serviços Delta", contact: "Fernanda", phone: "(41) 94444-4444", value: 5000, status: "Lista de Leads", statusHistory: [{ status: "Lista de Leads", date: "2024-07-23"}] },
+  { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1", statusHistory: [{ status: "Aprovado", date: "2024-07-24"}] },
+  { id: "lead-6", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado", statusHistory: [{ status: "Reprovado", date: "2024-07-25"}] },
 ];
 
 const initialProposals: Proposal[] = [];
@@ -172,7 +172,10 @@ const handleProposalSent = (proposal: Proposal) => {
     handleProposalSave({ ...proposal, status: 'Sent' });
     const leadToUpdate = leads.find(l => l.id === proposal.leadId);
     if (leadToUpdate) {
-      updateLead({ ...leadToUpdate, status: 'Negociação' });
+      const today = new Date().toISOString();
+      const newHistoryEntry = { status: 'Negociação' as const, date: today };
+      const newHistory = [...(leadToUpdate.statusHistory || []), newHistoryEntry];
+      updateLead({ ...leadToUpdate, status: 'Negociação', statusHistory: newHistory });
     }
 };
 

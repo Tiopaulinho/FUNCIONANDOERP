@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -194,6 +194,19 @@ const LeadDetailsModal = ({
                  <div className="space-y-2">
                     <h4 className="text-sm font-semibold flex items-center gap-2"><StickyNote className="h-4 w-4" /> Observações da Proposta</h4>
                     <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border">{lead.proposalNotes}</p>
+                </div>
+            )}
+            {lead.statusHistory && lead.statusHistory.length > 0 && (
+                 <div className="space-y-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> Histórico de Status</h4>
+                    <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border space-y-2">
+                        {lead.statusHistory.map((history, index) => (
+                             <div key={index} className="flex justify-between items-center">
+                                <span>{history.status}</span>
+                                <span className="text-xs">{new Date(history.date).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
@@ -390,6 +403,17 @@ export default function SalesFunnel({
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
 
+  const updateLeadWithHistory = (lead: Lead, newStatus: LeadStatus, notes?: string) => {
+    const today = new Date().toISOString();
+    const newHistoryEntry = { status: newStatus, date: today };
+    const newHistory = [...(lead.statusHistory || []), newHistoryEntry];
+    onUpdateLead({ 
+        ...lead, 
+        status: newStatus, 
+        statusHistory: newHistory,
+        ...(notes !== undefined && { proposalNotes: notes })
+    });
+  }
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     e.dataTransfer.setData("leadId", leadId);
@@ -404,14 +428,14 @@ export default function SalesFunnel({
     const leadId = e.dataTransfer.getData("leadId");
     const lead = leads.find(l => l.id === leadId);
 
-    if (lead) {
-        if (newStatus === 'Proposta' && lead.status !== 'Proposta') {
+    if (lead && lead.status !== newStatus) {
+        if (newStatus === 'Proposta') {
             setProposalLead(lead);
             setIsProposalModalOpen(true);
             return;
         }
 
-        if (newStatus === 'Aprovado' && lead.status !== 'Aprovado') {
+        if (newStatus === 'Aprovado') {
             if (!lead.proposalId) {
                 toast({
                     title: "Ação necessária",
@@ -420,17 +444,19 @@ export default function SalesFunnel({
                 });
                 return;
             }
+            // Update status before opening order dialog
+            updateLeadWithHistory(lead, newStatus);
             onOpenNewOrder(lead);
             return; 
         }
       
-        onUpdateLead({ ...lead, status: newStatus });
+        updateLeadWithHistory(lead, newStatus);
     }
   };
 
   const handleSaveProposalNotes = (notes: string) => {
     if (proposalLead) {
-        onUpdateLead({ ...proposalLead, status: 'Proposta', proposalNotes: notes });
+        updateLeadWithHistory(proposalLead, 'Proposta', notes);
         toast({
             title: "Proposta Atualizada!",
             description: "As observações foram salvas e o lead movido.",
@@ -441,9 +467,10 @@ export default function SalesFunnel({
   }
 
   const simulateImport = () => {
+    const today = new Date().toISOString();
     const newLeads: Lead[] = [
-      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000, status: "Lista de Leads" },
-      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000, status: "Lista de Leads" },
+      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000, status: "Lista de Leads", statusHistory: [{ status: 'Lista de Leads', date: today }] },
+      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000, status: "Lista de Leads", statusHistory: [{ status: 'Lista de Leads', date: today }] },
     ];
     
     setLeads(prev => [...prev, ...newLeads]);
@@ -515,8 +542,9 @@ export default function SalesFunnel({
   };
   
   const handleSendWhatsApp = () => {
-    if (savedProposal) {
+    if (savedProposal && generateProposalLead) {
       onProposalSent(savedProposal);
+      updateLeadWithHistory(generateProposalLead, 'Negociação');
       toast({
         title: "Proposta Enviada!",
         description: `Lead movido para Negociação. O envio via WhatsApp será implementado em breve.`
@@ -538,10 +566,12 @@ export default function SalesFunnel({
   }
 
   const handleNewPurchase = (approvedLead: Lead) => {
+    const today = new Date().toISOString();
     const newLead: Lead = {
       ...approvedLead,
       id: `lead-${Date.now()}`,
       status: 'Proposta',
+      statusHistory: [{ status: 'Proposta', date: today }],
       proposalId: undefined, 
       proposalNotes: 'Nova compra para cliente existente.',
     };
@@ -736,13 +766,3 @@ export default function SalesFunnel({
     </div>
   );
 }
-
-    
-
-    
-
-
-
-    
-
-    

@@ -49,6 +49,16 @@ export type SalesOrder = {
   items: OrderItem[];
 };
 
+export const leadStatusSchema = z.enum(["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"]);
+export type LeadStatus = z.infer<typeof leadStatusSchema>;
+
+export const leadStatusHistoryEntrySchema = z.object({
+    status: leadStatusSchema,
+    date: z.string(),
+});
+export type LeadStatusHistoryEntry = z.infer<typeof leadStatusHistoryEntrySchema>;
+
+
 export const leadSchema = z.object({
   name: z.string().min(3, "O nome da empresa deve ter pelo menos 3 caracteres."),
   contact: z.string().min(3, "O nome do contato deve ter pelo menos 3 caracteres."),
@@ -58,11 +68,10 @@ export const leadSchema = z.object({
   proposalNotes: z.string().optional(),
 });
 
-export type LeadStatus = "Lista de Leads" | "Contato" | "Proposta" | "Negociação" | "Aprovado" | "Reprovado";
-
 export type Lead = z.infer<typeof leadSchema> & {
   id: string;
   status: LeadStatus;
+  statusHistory?: LeadStatusHistoryEntry[];
   proposalId?: string;
   customerId?: string;
   email?: string;
