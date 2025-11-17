@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -15,41 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
 } from "./ui/dialog";
 import { Separator } from "./ui/separator";
 import { Truck, Package, CheckCircle, Clock, FilePenLine, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-
-
-type OrderStatus = "Pendente" | "Processando" | "Enviado" | "Entregue";
-
-type OrderItem = {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-};
-
-type Order = {
-  id: string;
-  customerName: string;
-  date: string;
-  total: number;
-  status: OrderStatus;
-  items: OrderItem[];
-};
-
-const allOrders: Order[] = [
-  { id: "ORD-001", customerName: "José da Silva", date: "2024-07-28", total: 150.50, status: "Entregue", items: [ {id: "1", name: "Notebook Pro", quantity: 1, price: 150.50} ] },
-  { id: "ORD-002", customerName: "Maria Oliveira", date: "2024-07-27", total: 299.99, status: "Enviado", items: [ {id: "2", name: "Mouse Sem Fio", quantity: 2, price: 120}, {id: "3", name: "Teclado", quantity: 1, price: 59.99} ] },
-  { id: "ORD-003", customerName: "Carlos Pereira", date: "2024-07-26", total: 75.00, status: "Processando", items: [ {id: "4", name: "Monitor 4K", quantity: 1, price: 75.00} ] },
-  { id: "ORD-004", customerName: "Ana Costa", date: "2024-07-25", total: 500.00, status: "Pendente", items: [ {id: "1", name: "Notebook Pro", quantity: 1, price: 500} ] },
-  { id: "ORD-005", customerName: "José da Silva", date: "2024-07-24", total: 99.90, status: "Entregue", items: [ {id: "2", name: "Mouse Sem Fio", quantity: 1, price: 99.90} ] },
-];
+import type { SalesOrder, OrderStatus } from "@/lib/schemas";
 
 const statuses: OrderStatus[] = ["Pendente", "Processando", "Enviado", "Entregue"];
 
@@ -60,7 +33,7 @@ const statusConfig: { [key in OrderStatus]: { variant: "destructive" | "outline"
   Entregue: { variant: "default", icon: CheckCircle },
 };
 
-const OrderCard = ({ order, onDragStart, onClick }: { order: Order, onDragStart: (e: React.DragEvent, orderId: string) => void, onClick: () => void }) => {
+const OrderCard = ({ order, onDragStart, onClick }: { order: SalesOrder, onDragStart: (e: React.DragEvent, orderId: string) => void, onClick: () => void }) => {
   const { icon: Icon } = statusConfig[order.status];
   return (
     <Card 
@@ -98,13 +71,21 @@ const OrderDetailsModal = ({
   onEdit,
   onDelete
 }: { 
-  order: Order | null; 
+  order: SalesOrder | null; 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
-  onEdit: (order: Order) => void;
+  onEdit: (order: SalesOrder) => void;
   onDelete: (orderId: string) => void;
 }) => {
   if (!order) return null;
+
+  const handleDeleteClick = () => {
+    onDelete(order.id);
+  }
+
+  const handleEditClick = () => {
+    onEdit(order);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,7 +102,7 @@ const OrderDetailsModal = ({
           <div className="space-y-2">
             {order.items.map(item => (
               <div key={item.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-muted/50">
-                <span>{item.quantity}x {item.name}</span>
+                <span>{item.quantity}x {item.productName}</span>
                 <span>{(item.price * item.quantity).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
               </div>
             ))}
@@ -134,7 +115,7 @@ const OrderDetailsModal = ({
                 <p className="font-bold text-lg">{order.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
             </div>
              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => onEdit(order)}>
+                <Button variant="outline" onClick={handleEditClick}>
                   <FilePenLine className="mr-2 h-4 w-4" />
                   Editar
                 </Button>
@@ -154,7 +135,7 @@ const OrderDetailsModal = ({
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(order.id)}>
+                      <AlertDialogAction onClick={handleDeleteClick}>
                         Excluir
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -167,19 +148,25 @@ const OrderDetailsModal = ({
   );
 };
 
-export default function SalesOrderList() {
+interface SalesOrderListProps {
+  orders: SalesOrder[];
+  setOrders: React.Dispatch<React.SetStateAction<SalesOrder[]>>;
+  onEditOrder: (order: SalesOrder) => void;
+  onDeleteOrder: (orderId: string) => void;
+}
+
+export default function SalesOrderList({ orders, setOrders, onEditOrder, onDeleteOrder }: SalesOrderListProps) {
   const { toast } = useToast();
-  const [orders, setOrders] = React.useState<Order[]>(allOrders);
-  const [selectedOrder, setSelectedOrder] = React.useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = React.useState<SalesOrder | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const handleCardClick = (order: Order) => {
+  const handleCardClick = (order: SalesOrder) => {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
 
   const handleDelete = (orderId: string) => {
-    setOrders(prev => prev.filter(o => o.id !== orderId));
+    onDeleteOrder(orderId);
     setIsModalOpen(false);
     toast({
       title: "Pedido Excluído!",
@@ -188,15 +175,9 @@ export default function SalesOrderList() {
     });
   }
 
-  const handleEdit = (order: Order) => {
-    // For now, just logs to console and closes modal
-    // In a real app, this would open an edit form
-    console.log("Editing order:", order.id);
-    toast({
-        title: "Em desenvolvimento!",
-        description: "A funcionalidade de edição de pedidos será implementada em breve.",
-    })
+  const handleEdit = (order: SalesOrder) => {
     setIsModalOpen(false);
+    onEditOrder(order);
   }
   
   const handleDragStart = (e: React.DragEvent, orderId: string) => {
@@ -219,7 +200,7 @@ export default function SalesOrderList() {
   };
 
   const ordersByStatus = React.useMemo(() => {
-    const grouped: { [key in OrderStatus]?: Order[] } = {};
+    const grouped: { [key in OrderStatus]?: SalesOrder[] } = {};
     for (const status of statuses) {
         grouped[status] = [];
     }

@@ -23,7 +23,7 @@ import { UserPlus, ShoppingCart, Package } from "lucide-react";
 import SalesOrderForm from "@/components/sales-order-form";
 import ProductList from "@/components/product-list";
 import ProductForm from "@/components/product-form";
-import type { Product } from "@/lib/schemas";
+import type { Product, SalesOrder } from "@/lib/schemas";
 
 const initialProducts: (Product & { id: string })[] = [
     { id: "prod-1", name: "Notebook Pro", price: 7500 },
@@ -32,13 +32,27 @@ const initialProducts: (Product & { id: string })[] = [
     { id: "prod-4", name: "Monitor 4K", price: 2300 },
 ];
 
+const initialOrders: SalesOrder[] = [
+  { id: "ORD-001", customerId: "1", customerName: "José da Silva", date: "2024-07-28", total: 150.50, status: "Entregue", items: [ {id: "item-1", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 150.50} ] },
+  { id: "ORD-002", customerId: "2", customerName: "Maria Oliveira", date: "2024-07-27", total: 299.99, status: "Enviado", items: [ {id: "item-2", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 2, price: 120}, {id: "item-3", productId: "prod-3", productName: "Teclado", quantity: 1, price: 59.99} ] },
+  { id: "ORD-003", customerId: "1", customerName: "Carlos Pereira", date: "2024-07-26", total: 75.00, status: "Processando", items: [ {id: "item-4", productId: "prod-4", productName: "Monitor 4K", quantity: 1, price: 75.00} ] },
+  { id: "ORD-004", customerId: "2", customerName: "Ana Costa", date: "2024-07-25", total: 500.00, status: "Pendente", items: [ {id: "item-5", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 500} ] },
+  { id: "ORD-005", customerId: "1", customerName: "José da Silva", date: "2024-07-24", total: 99.90, status: "Entregue", items: [ {id: "item-6", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 1, price: 99.90} ] },
+];
+
+
 export default function Home() {
   const [products, setProducts] = React.useState(initialProducts);
+  const [orders, setOrders] = React.useState<SalesOrder[]>(initialOrders);
+  const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
+  
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = React.useState(false);
+  const [isSalesOrderDialogOpen, setIsSalesOrderDialogOpen] = React.useState(false);
+
 
   const addProduct = (newProduct: Product & { id: string }) => {
     setProducts((prevProducts) => [...prevProducts, newProduct]);
-    setIsNewProductDialogOpen(false); // Close dialog on success
+    setIsNewProductDialogOpen(false);
   };
   
   const updateProduct = (updatedProduct: Product & { id: string }) => {
@@ -50,6 +64,31 @@ export default function Home() {
   const deleteProduct = (productId: string) => {
     setProducts((prevProducts) => prevProducts.filter((p) => p.id !== productId));
   };
+  
+  const handleOrderSave = (savedOrder: SalesOrder) => {
+    const isEditing = !!savedOrder.id;
+    if (isEditing) {
+      setOrders(prevOrders => prevOrders.map(o => o.id === savedOrder.id ? savedOrder : o));
+    } else {
+      setOrders(prevOrders => [...prevOrders, { ...savedOrder, id: `ORD-${Date.now()}` }]);
+    }
+    setIsSalesOrderDialogOpen(false);
+    setEditingOrder(null);
+  }
+
+  const handleEditOrder = (order: SalesOrder) => {
+    setEditingOrder(order);
+    setIsSalesOrderDialogOpen(true);
+  };
+
+  const handleDeleteOrder = (orderId: string) => {
+    setOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
+  }
+
+  const openNewOrderDialog = () => {
+    setEditingOrder(null);
+    setIsSalesOrderDialogOpen(true);
+  }
 
 
   return (
@@ -79,20 +118,10 @@ export default function Home() {
                   <CustomerRegistrationForm />
                 </DialogContent>
               </Dialog>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Novo Pedido
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-4xl">
-                  <DialogHeader>
-                    <DialogTitle>Novo Pedido de Venda</DialogTitle>
-                  </DialogHeader>
-                  <SalesOrderForm products={products} onProductAdd={addProduct} />
-                </DialogContent>
-              </Dialog>
+              <Button variant="outline" onClick={openNewOrderDialog}>
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Novo Pedido
+              </Button>
                <Dialog open={isNewProductDialogOpen} onOpenChange={setIsNewProductDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline">
@@ -113,7 +142,12 @@ export default function Home() {
             <CustomerList />
           </TabsContent>
           <TabsContent value="orders">
-            <SalesOrderList />
+             <SalesOrderList 
+              orders={orders}
+              setOrders={setOrders}
+              onEditOrder={handleEditOrder}
+              onDeleteOrder={handleDeleteOrder}
+            />
           </TabsContent>
           <TabsContent value="products">
             <ProductList 
@@ -123,6 +157,21 @@ export default function Home() {
             />
           </TabsContent>
         </Tabs>
+        
+        <Dialog open={isSalesOrderDialogOpen} onOpenChange={setIsSalesOrderDialogOpen}>
+            <DialogContent className="sm:max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>{editingOrder ? "Editar Pedido de Venda" : "Novo Pedido de Venda"}</DialogTitle>
+              </DialogHeader>
+              <SalesOrderForm
+                products={products}
+                onProductAdd={addProduct}
+                onSuccess={handleOrderSave}
+                initialData={editingOrder}
+              />
+            </DialogContent>
+        </Dialog>
+
       </div>
     </main>
   );

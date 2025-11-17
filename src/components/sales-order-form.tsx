@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
-import type { Customer, Product } from "@/lib/schemas";
+import type { Customer, Product, SalesOrder } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
@@ -37,40 +37,57 @@ const allCustomers: (Customer & { id: string })[] = [
     { id: "2", name: "Maria Oliveira", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ" },
 ];
 
-const salesOrderSchema = z.object({
-  customerId: z.string().min(1, "Selecione um cliente."),
-  items: z
-    .array(
-      z.object({
-        productId: z.string().min(1, "Selecione um produto."),
-        productName: z.string(), // To display name
-        quantity: z.coerce.number().min(1, "A quantidade deve ser no mínimo 1."),
-        price: z.coerce.number().min(0.01, "O preço deve ser positivo."),
-      })
-    )
-    .min(1, "Adicione pelo menos um item ao pedido."),
+const salesOrderItemSchema = z.object({
+  id: z.string().optional(),
+  productId: z.string().min(1, "Selecione um produto."),
+  productName: z.string(), // To display name
+  quantity: z.coerce.number().min(1, "A quantidade deve ser no mínimo 1."),
+  price: z.coerce.number().min(0.01, "O preço deve ser positivo."),
 });
+
+const salesOrderSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "Selecione um cliente."),
+  customerName: z.string().optional(), // For data handling
+  date: z.string().optional(), // For data handling
+  status: z.enum(["Pendente", "Processando", "Enviado", "Entregue"]).optional(),
+  items: z.array(salesOrderItemSchema).min(1, "Adicione pelo menos um item ao pedido."),
+});
+
 
 type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
 interface SalesOrderFormProps {
-  onSuccess?: () => void;
+  initialData?: SalesOrder | null;
+  onSuccess: (order: SalesOrder) => void;
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
 }
 
-export default function SalesOrderForm({ onSuccess, products, onProductAdd }: SalesOrderFormProps) {
+export default function SalesOrderForm({ initialData, onSuccess, products, onProductAdd }: SalesOrderFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
+  const isEditMode = !!initialData;
 
   const form = useForm<SalesOrderFormValues>({
     resolver: zodResolver(salesOrderSchema),
-    defaultValues: {
+    defaultValues: isEditMode && initialData ? initialData : {
       customerId: "",
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
     },
   });
+
+  React.useEffect(() => {
+    if (isEditMode && initialData) {
+      form.reset(initialData);
+    } else {
+      form.reset({
+        customerId: "",
+        items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+      });
+    }
+  }, [initialData, form, isEditMode]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -103,23 +120,35 @@ export default function SalesOrderForm({ onSuccess, products, onProductAdd }: Sa
     setIsProductDialogOpen(false);
   }
 
-
   async function onSubmit(data: SalesOrderFormValues) {
     setIsSubmitting(true);
-    console.log("Novo pedido:", data);
+
+    const customer = allCustomers.find(c => c.id === data.customerId);
+
+    const finalOrderData: SalesOrder = {
+      ...initialData, // Keeps original id, date, status if editing
+      ...data,
+      id: initialData?.id || `ORD-${Date.now()}`,
+      date: initialData?.date || new Date().toISOString().split('T')[0],
+      status: initialData?.status || 'Pendente',
+      customerName: customer?.name || 'Cliente Desconhecido',
+      total: total,
+      items: data.items.map(item => ({...item, id: item.id || `item-${Date.now()}-${Math.random()}`})),
+    };
+    
+    console.log(isEditMode ? "Pedido atualizado:" : "Novo pedido:", finalOrderData);
+
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    onSuccess(finalOrderData);
 
     toast({
       title: "Sucesso!",
-      description: "Pedido de venda criado com sucesso!",
+      description: isEditMode ? "Pedido atualizado com sucesso!" : "Pedido de venda criado com sucesso!",
     });
-
-    if (onSuccess) {
-      onSuccess();
-    }
-    form.reset();
+    
+    setIsSubmitting(false);
   }
 
   return (
@@ -135,7 +164,7 @@ export default function SalesOrderForm({ onSuccess, products, onProductAdd }: Sa
                     <FormLabel>Cliente</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -184,7 +213,7 @@ export default function SalesOrderForm({ onSuccess, products, onProductAdd }: Sa
                                     field.onChange(value);
                                     handleProductSelect(value, index);
                                 }}
-                                defaultValue={field.value}
+                                value={field.value}
                             >
                                 <FormControl>
                                 <SelectTrigger>
@@ -267,6 +296,7 @@ export default function SalesOrderForm({ onSuccess, products, onProductAdd }: Sa
               <PlusCircle className="mr-2 h-4 w-4" />
               Adicionar Item
             </Button>
+            {form.formState.errors.items?.root && <p className="text-sm font-medium text-destructive">{form.formState.errors.items.root.message}</p>}
           </div>
 
           <Separator />
@@ -283,7 +313,7 @@ export default function SalesOrderForm({ onSuccess, products, onProductAdd }: Sa
                       Salvando...
                   </>
                   ) : (
-                  "Criar Pedido"
+                    isEditMode ? "Salvar Alterações" : "Criar Pedido"
                   )}
               </Button>
           </div>
