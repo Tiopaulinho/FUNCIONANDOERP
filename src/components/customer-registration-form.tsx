@@ -49,16 +49,17 @@ export default function CustomerRegistrationForm({
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerRegistrationSchema),
     defaultValues: {
-      name: initialData?.name || "",
-      email: initialData?.email || "",
-      phone: initialData?.phone || "",
-      zip: initialData?.zip || "",
-      street: initialData?.street || "",
-      number: initialData?.number || "",
-      complement: initialData?.complement || "",
-      neighborhood: initialData?.neighborhood || "",
-      city: initialData?.city || "",
-      state: initialData?.state || "",
+      name: "",
+      email: "",
+      phone: "",
+      zip: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+      ...initialData,
     },
   });
 

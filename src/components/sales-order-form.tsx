@@ -91,7 +91,7 @@ export default function SalesOrderForm({
   const customerForLead = React.useMemo(() => {
     if (!leadData?.contact) return null;
     // In sales-funnel, if a customer exists, its ID is put into lead.contact
-    return customers.find(c => c.id === leadData.contact);
+    return customers.find(c => c.id === leadData.contact || c.name.toLowerCase() === leadData.contact.toLowerCase());
   }, [leadData, customers]);
   
   const cameFromLead = !!leadData?.id;
@@ -208,6 +208,17 @@ export default function SalesOrderForm({
     setIsSubmitting(false);
   }
 
+  const getCustomerRegistrationInitialData = () => {
+    if (cameFromLead && !customerForLead && leadData) {
+      return { 
+        name: leadData.contact, 
+        email: leadData.email, 
+        phone: leadData.phone 
+      };
+    }
+    return {};
+  };
+
   return (
     <div>
       <Form {...form}>
@@ -220,24 +231,30 @@ export default function SalesOrderForm({
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
                     <div className="flex items-center gap-2">
-                       {cameFromLead ? (
+                       {cameFromLead && customerForLead ? (
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.name || ""}
+                            value={customerForLead?.name || ""}
                             className="bg-muted/50 cursor-not-allowed"
                           />
-                           {!customerForLead && (
-                              <CardDescription className="text-xs text-destructive mt-1">
+                         </div>
+                       ) : cameFromLead && !customerForLead ? (
+                         <div className="flex-grow">
+                            <Input
+                              readOnly
+                              value={leadData?.contact || ""}
+                              className="bg-muted/50"
+                            />
+                            <CardDescription className="text-xs text-destructive mt-1">
                                 Este cliente não tem cadastro. Clique no botão `+` para completar.
-                              </CardDescription>
-                           )}
+                            </CardDescription>
                          </div>
                        ) : (
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
-                          disabled={isEditMode} // Disable if editing an existing order too
+                          disabled={isEditMode}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -265,7 +282,7 @@ export default function SalesOrderForm({
                             <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
                           </DialogHeader>
                           <CustomerRegistrationForm 
-                             initialData={cameFromLead && !customerForLead ? { name: leadData.contact, email: leadData.email, phone: leadData.phone } : {}}
+                             initialData={getCustomerRegistrationInitialData()}
                              onSuccess={handleNewCustomerSuccess} 
                           />
                         </DialogContent>
