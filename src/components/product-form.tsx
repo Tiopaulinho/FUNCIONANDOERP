@@ -1,11 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { Loader2, PackagePlus, DollarSign, Percent } from "lucide-react";
+import { Loader2, PackagePlus, Calculator } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { productSchema, type Product } from "@/lib/schemas";
 import { Separator } from "./ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import LaborCostCalculator from "./labor-cost-calculator";
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -32,6 +33,7 @@ interface ProductFormProps {
 export default function ProductForm({ initialData, onSuccess }: ProductFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = React.useState(false);
   const isEditMode = !!initialData;
 
   const form = useForm<ProductFormValues>({
@@ -127,6 +129,11 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     setIsSubmitting(false);
   }
 
+  const handleApplyLaborCost = (cost: number) => {
+    form.setValue("laborCost", parseFloat(cost.toFixed(2)), { shouldDirty: true, shouldValidate: true });
+    setIsCalculatorOpen(false);
+  }
+
   return (
     <div className="w-full">
       <div className="mb-4 text-center">
@@ -162,7 +169,25 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                     <FormItem><FormLabel>Custo da Matéria Prima (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="laborCost" render={({ field }) => (
-                    <FormItem><FormLabel>Custo de Mão de Obra (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel>Custo de Mão de Obra (R$)</FormLabel>
+                        <div className="flex items-center gap-2">
+                            <FormControl>
+                                <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                            </FormControl>
+                            <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="icon" type="button">
+                                        <Calculator className="h-4 w-4" />
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-xl">
+                                    <LaborCostCalculator onApplyCost={handleApplyLaborCost} />
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                        <FormMessage />
+                    </FormItem>
                 )} />
                  <FormField control={form.control} name="suppliesCost" render={({ field }) => (
                     <FormItem><FormLabel>Custo de Insumos (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
