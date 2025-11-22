@@ -236,8 +236,8 @@ const LeadDetailsModal = ({
         <div className="flex flex-wrap justify-end items-center gap-2">
             {lead.status === 'Contato' && (
                 <Button onClick={handleOpenContactModalClick} variant="outline">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Registrar Contato
+                    <Send className="mr-2 h-4 w-4" />
+                    Enviar Mensagem
                 </Button>
             )}
             {lead.status === 'Aprovado' && (
@@ -405,27 +405,41 @@ const ContactModal = ({
     onOpenChange: (open: boolean) => void;
     onRegisterActivity: (activity: LeadActivity) => void;
 }) => {
-    const defaultMessage = `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`;
-    const [message, setMessage] = React.useState(defaultMessage);
+    const [selectedMethod, setSelectedMethod] = React.useState<"whatsapp" | "email" | null>(null);
+    const [message, setMessage] = React.useState("");
+
+    const templates = {
+        whatsapp: `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`,
+        email: `Olá ${lead?.contact || '[Nome do Contato]'},\n\nEspero que esteja tudo bem.\n\nMeu nome é [Seu Nome] e sou da [Sua Empresa]. Vi que você tem interesse em nossos produtos e gostaria de me colocar à disposição para uma conversa.\n\nAtenciosamente,\n[Seu Nome]`
+    };
 
     React.useEffect(() => {
-        if (lead) {
-            const newMessage = `Olá ${lead.contact}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`;
-            setMessage(newMessage);
+        if (open) {
+            // Reset state when modal opens
+            setSelectedMethod(null);
+            setMessage("");
         }
-    }, [lead]);
+    }, [open]);
 
     if (!lead) return null;
 
-    const handleActivity = (activity: LeadActivity) => {
-        if (activity === 'WhatsApp' || activity === 'Email') {
-            console.log(`Simulando envio de ${activity} para: ${activity === 'Email' ? lead.email : lead.phone}`);
-            console.log("Mensagem:", message);
-        } else {
-            console.log(`Simulando ${activity} para: ${lead.phone}`);
-        }
-        onRegisterActivity(activity);
+    const handleMethodSelect = (method: "whatsapp" | "email") => {
+        setSelectedMethod(method);
+        setMessage(templates[method]);
     };
+
+    const handleRegisterCall = () => {
+        onRegisterActivity('Ligação');
+    };
+
+    const handleSend = () => {
+        if (selectedMethod) {
+            console.log(`Simulando envio de ${selectedMethod} para: ${selectedMethod === 'email' ? lead.email : lead.phone}`);
+            console.log("Mensagem:", message);
+            onRegisterActivity(selectedMethod === 'whatsapp' ? 'WhatsApp' : 'Email');
+        }
+    };
+
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -435,29 +449,37 @@ const ContactModal = ({
                         <Phone className="h-5 w-5" /> Registrar Contato com {lead.contact}
                     </DialogTitle>
                     <DialogDescription>
-                        Edite a mensagem, se necessário, e registre a atividade de contato.
+                        Selecione o método de contato e registre a atividade.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    <Textarea
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        rows={10}
-                        className="text-base"
-                        placeholder="Mensagem para WhatsApp ou Email..."
-                    />
+
+                <div className="grid grid-cols-3 gap-2 pt-4">
+                     <Button onClick={handleRegisterCall} variant="outline">
+                        <Phone className="mr-2 h-4 w-4" /> Ligação
+                    </Button>
+                    <Button onClick={() => handleMethodSelect('whatsapp')} variant={selectedMethod === 'whatsapp' ? 'default' : 'outline'}>
+                        <Send className="mr-2 h-4 w-4" /> WhatsApp
+                    </Button>
+                     <Button onClick={() => handleMethodSelect('email')} variant={selectedMethod === 'email' ? 'default' : 'outline'}>
+                        <Mail className="mr-2 h-4 w-4" /> Email
+                    </Button>
                 </div>
-                <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <Button onClick={() => handleActivity('Ligação')} variant="outline">
-                        <Phone className="mr-2 h-4 w-4" /> Registrar Ligação
-                    </Button>
-                    <Button onClick={() => handleActivity('WhatsApp')}>
-                        <Send className="mr-2 h-4 w-4" /> Enviar por WhatsApp
-                    </Button>
-                     <Button onClick={() => handleActivity('Email')} variant="secondary">
-                        <Mail className="mr-2 h-4 w-4" /> Enviar por Email
-                    </Button>
-                </DialogFooter>
+                
+                {selectedMethod && (
+                    <div className="py-4 space-y-4">
+                        <Textarea
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            rows={10}
+                            className="text-base"
+                            placeholder="Mensagem..."
+                        />
+                         <Button onClick={handleSend} className="w-full">
+                            <Send className="mr-2 h-4 w-4" />
+                            Enviar e Registrar
+                        </Button>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );
