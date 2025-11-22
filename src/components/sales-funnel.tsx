@@ -52,6 +52,7 @@ const LeadCard = ({
     onGenerateProposal,
     isReactivation,
     onReactivate,
+    status,
 }: { 
     lead: Lead;
     onDragStart: (e: React.DragEvent, leadId: string) => void;
@@ -60,6 +61,7 @@ const LeadCard = ({
     onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
     isReactivation?: boolean;
     onReactivate: (lead: Lead) => void;
+    status: LeadStatus;
 }) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
@@ -92,7 +94,7 @@ const LeadCard = ({
             <User className="h-4 w-4 text-muted-foreground" />
             {lead.contact}
         </CardDescription>
-         {lead.phone && (
+         {lead.phone && status === 'Contato' && (
             <CardDescription className="text-sm flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 {lead.phone}
@@ -273,27 +275,29 @@ const GroupedLeadsModal = ({
     onOpenChange,
     onViewLead,
     proposals,
+    title,
   }: {
     group: Lead[] | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onViewLead: (lead: Lead) => void;
     proposals: Proposal[];
+    title: string;
   }) => {
     if (!group) return null;
     
     const getProposalValue = (lead: Lead) => {
         const proposal = proposals.find(p => p.id === lead.proposalId);
-        return proposal?.total ?? 0;
+        return proposal?.total ?? lead.value ?? 0;
     }
   
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Oportunidades Aprovadas: {group[0].name}</DialogTitle>
+            <DialogTitle>{title}: {group[0].name}</DialogTitle>
             <DialogDescription>
-              Todas as oportunidades ganhas para este cliente.
+              Todas as oportunidades para este cliente.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
@@ -301,10 +305,15 @@ const GroupedLeadsModal = ({
               <Card key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onViewLead(lead)}>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">Oportunidade #{lead.id.slice(-4)}</CardTitle>
-                    <p className="font-bold text-lg">{(getProposalValue(lead) ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                    <div>
+                        <CardTitle className="text-base">Oportunidade #{lead.id.slice(-4)}</CardTitle>
+                        {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
+                    </div>
+                    <div className="text-right">
+                        <p className="font-bold text-lg">{(getProposalValue(lead)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                        <Badge variant="secondary">{lead.status}</Badge>
+                    </div>
                   </div>
-                  {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
                 </CardHeader>
               </Card>
             ))}
@@ -413,6 +422,7 @@ export default function SalesFunnel({
   const [isGenerateProposalModalOpen, setIsGenerateProposalModalOpen] = React.useState(false);
   const [isGroupedLeadsModalOpen, setIsGroupedLeadsModalOpen] = React.useState(false);
   const [selectedGroup, setSelectedGroup] = React.useState<Lead[] | null>(null);
+  const [groupedModalTitle, setGroupedModalTitle] = React.useState("");
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
@@ -554,15 +564,12 @@ export default function SalesFunnel({
     })
   }
 
-  const handleCardClick = (lead: Lead) => {
-    if (lead.status === 'Aprovado') {
-        const approvedGroup = Object.values(groupedApprovedLeads).find(group => group.some(l => l.id === lead.id));
-        if (approvedGroup && approvedGroup.length > 1) {
-            handleViewGroup(approvedGroup);
-        } else {
-            setSelectedLead(lead);
-            setIsDetailsModalOpen(true);
-        }
+  const handleCardClick = (lead: Lead, group?: Lead[]) => {
+    if (group && group.length > 1) {
+        const title = lead.status === "Aprovado" ? "Oportunidades Aprovadas" : "Oportunidades Reprovadas";
+        setGroupedModalTitle(title);
+        setSelectedGroup(group);
+        setIsGroupedLeadsModalOpen(true);
     } else {
         setSelectedLead(lead);
         setIsDetailsModalOpen(true);
@@ -658,18 +665,17 @@ export default function SalesFunnel({
     const newLead: Lead = {
       ...approvedLead,
       id: `lead-${Date.now()}`,
-      status: 'Proposta',
-      statusHistory: [{ status: 'Proposta', date: today }],
+      status: 'Contato',
+      statusHistory: [{ status: 'Contato', date: today }],
       proposalId: undefined, 
-      proposalNotes: 'Nova compra para cliente existente.',
+      proposalNotes: 'Oportunidade de reativação.',
+      value: 0,
     };
     onAddLead(newLead);
-    setGenerateProposalLead(newLead);
-    setIsGenerateProposalModalOpen(true);
 
     toast({
       title: "Nova Oportunidade Criada!",
-      description: `Inicie a proposta para a nova compra de ${approvedLead.name}.`,
+      description: `Inicie o contato para a nova compra de ${approvedLead.name}.`,
     });
   };
 
@@ -684,7 +690,6 @@ export default function SalesFunnel({
       proposalId: undefined,
     };
     
-    // Use the main onAddLead function
     const newLeadId = `lead-${Date.now()}`;
     const newLeadWithStatus: Lead = {
         ...newOpportunity,
@@ -705,7 +710,8 @@ export default function SalesFunnel({
 };
 
 
-  const handleViewGroup = (group: Lead[]) => {
+  const handleViewGroup = (group: Lead[], title: string) => {
+    setGroupedModalTitle(title);
     setSelectedGroup(group);
     setIsGroupedLeadsModalOpen(true);
   };
@@ -737,7 +743,7 @@ export default function SalesFunnel({
     });
 }, [leads, nameFilter, contactFilter]);
 
-  const { leadsByStatus, groupedApprovedLeads } = React.useMemo(() => {
+  const { leadsByStatus, groupedApprovedLeads, groupedRejectedLeads } = React.useMemo(() => {
     const groupedByStatus: { [key in LeadStatus]?: Lead[] } = {};
     for (const status of funnelStatuses) {
         groupedByStatus[status] = [];
@@ -748,17 +754,22 @@ export default function SalesFunnel({
       }
     }
     
-    const groupedApproved = (groupedByStatus['Aprovado'] || []).reduce((acc, lead) => {
-        if (lead.customerId) {
-            if (!acc[lead.customerId]) {
-                acc[lead.customerId] = [];
+    const groupLeadsByName = (leads: Lead[]): { [key: string]: Lead[] } => {
+        return leads.reduce((acc, lead) => {
+            const key = lead.name; // Group by company/person name
+            if (!acc[key]) {
+                acc[key] = [];
             }
-            acc[lead.customerId].push(lead);
-        }
-        return acc;
-    }, {} as { [key: string]: Lead[] });
+            acc[key].push(lead);
+            return acc;
+        }, {} as { [key: string]: Lead[] });
+    }
 
-    return { leadsByStatus: groupedByStatus, groupedApprovedLeads: groupedApproved };
+    const groupedApproved = groupLeadsByName(groupedByStatus['Aprovado'] || []);
+    const groupedRejected = groupLeadsByName(groupedByStatus['Reprovado'] || []);
+
+
+    return { leadsByStatus: groupedByStatus, groupedApprovedLeads: groupedApproved, groupedRejectedLeads: groupedRejected };
   }, [filteredLeads]);
   
 
@@ -804,7 +815,9 @@ export default function SalesFunnel({
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-lg capitalize">{status}</h3>
                     <Badge variant="secondary" className="rounded-full">
-                       {status === 'Aprovado' ? Object.keys(groupedApprovedLeads).length : leadsByStatus[status]?.length || 0}
+                       {status === 'Aprovado' ? Object.keys(groupedApprovedLeads).length 
+                        : status === 'Reprovado' ? Object.keys(groupedRejectedLeads).length
+                        : leadsByStatus[status]?.length || 0}
                     </Badge>
                   </div>
               </div>
@@ -815,7 +828,7 @@ export default function SalesFunnel({
                             const firstLead = group[0];
                             if (group.length > 1) {
                                 return (
-                                    <Card key={`group-${index}`} className="mb-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleViewGroup(group)}>
+                                    <Card key={`group-approved-${index}`} className="mb-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleViewGroup(group, "Oportunidades Aprovadas")}>
                                         <CardHeader className="p-4">
                                             <CardTitle className="text-base font-bold flex items-center gap-2">
                                                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -837,6 +850,38 @@ export default function SalesFunnel({
                                     proposals={proposals}
                                     onGenerateProposal={handleGenerateProposalClick}
                                     onReactivate={handleReactivate}
+                                    status={status}
+                                />
+                            );
+                        })
+                    ) : status === 'Reprovado' ? (
+                         Object.values(groupedRejectedLeads).map((group, index) => {
+                            const firstLead = group[0];
+                             if (group.length > 1) {
+                                return (
+                                    <Card key={`group-rejected-${index}`} className="mb-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleViewGroup(group, "Oportunidades Reprovadas")}>
+                                        <CardHeader className="p-4">
+                                            <CardTitle className="text-base font-bold flex items-center gap-2">
+                                                <Users className="h-4 w-4 text-muted-foreground" />
+                                                {firstLead.name}
+                                            </CardTitle>
+                                            <CardDescription>
+                                                {group.length} oportunidades perdidas
+                                            </CardDescription>
+                                        </CardHeader>
+                                    </Card>
+                                );
+                            }
+                            return (
+                                <LeadCard
+                                    key={firstLead.id}
+                                    lead={firstLead}
+                                    onDragStart={handleDragStart}
+                                    onClick={() => handleCardClick(firstLead)}
+                                    proposals={proposals}
+                                    onGenerateProposal={handleGenerateProposalClick}
+                                    onReactivate={handleReactivate}
+                                    status={status}
                                 />
                             );
                         })
@@ -851,10 +896,11 @@ export default function SalesFunnel({
                                 onGenerateProposal={handleGenerateProposalClick}
                                 isReactivation={status === 'Reativar'}
                                 onReactivate={handleReactivate}
+                                status={status}
                             />
                         ))
                     )}
-                  {(leadsByStatus[status]?.length === 0 && status !== 'Aprovado') && (
+                  {((status !== 'Aprovado' && status !== 'Reprovado') && (leadsByStatus[status]?.length || 0) === 0) && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                           {filteredLeads.length > 0 && leads.length > filteredLeads.length ? 'Nenhum lead encontrado com este filtro' : 'Arraste um lead aqui'}
                       </div>
@@ -864,7 +910,11 @@ export default function SalesFunnel({
                           Arraste um lead aqui
                       </div>
                   )}
-
+                  {(status === 'Reprovado' && Object.keys(groupedRejectedLeads).length === 0) && (
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                          Arraste um lead aqui
+                      </div>
+                  )}
                   </CardContent>
               </Card>
             </div>
@@ -970,10 +1020,9 @@ export default function SalesFunnel({
             onOpenChange={setIsGroupedLeadsModalOpen}
             onViewLead={handleViewSingleLeadFromGroup}
             proposals={proposals}
+            title={groupedModalTitle}
         />
 
     </div>
   );
 }
-
-    
