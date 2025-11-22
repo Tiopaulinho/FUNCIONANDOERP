@@ -221,10 +221,10 @@ const LeadDetailsModal = ({
             {lead.statusHistory && lead.statusHistory.length > 0 && (
                  <div className="space-y-2">
                     <h4 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> Histórico de Status</h4>
-                    <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border space-y-2">
-                        {lead.statusHistory.map((history, index) => (
+                    <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border space-y-2 max-h-40 overflow-y-auto">
+                        {[...lead.statusHistory].reverse().map((history, index) => (
                              <div key={index} className="flex justify-between items-center">
-                                <span>{history.activity}</span>
+                                <span>{history.status}</span>
                                 <span className="text-xs">{new Date(history.date).toLocaleDateString('pt-BR')}</span>
                             </div>
                         ))}
@@ -452,15 +452,15 @@ const ContactModal = ({
                         Selecione o método de contato e registre a atividade.
                     </DialogDescription>
                 </DialogHeader>
-
+                
                 <div className="grid grid-cols-3 gap-2 pt-4">
-                     <Button onClick={handleRegisterCall} variant="outline">
+                     <Button onClick={handleRegisterCall} variant="outline" className="w-full">
                         <Phone className="mr-2 h-4 w-4" /> Ligação
                     </Button>
-                    <Button onClick={() => handleMethodSelect('whatsapp')} variant={selectedMethod === 'whatsapp' ? 'default' : 'outline'}>
+                    <Button onClick={() => handleMethodSelect('whatsapp')} variant={selectedMethod === 'whatsapp' ? 'default' : 'outline'} className="w-full">
                         <Send className="mr-2 h-4 w-4" /> WhatsApp
                     </Button>
-                     <Button onClick={() => handleMethodSelect('email')} variant={selectedMethod === 'email' ? 'default' : 'outline'}>
+                     <Button onClick={() => handleMethodSelect('email')} variant={selectedMethod === 'email' ? 'default' : 'outline'} className="w-full">
                         <Mail className="mr-2 h-4 w-4" /> Email
                     </Button>
                 </div>
@@ -470,8 +470,8 @@ const ContactModal = ({
                         <Textarea
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            rows={10}
-                            className="text-base"
+                            rows={8}
+                            className="text-sm"
                             placeholder="Mensagem..."
                         />
                          <Button onClick={handleSend} className="w-full">
@@ -546,7 +546,7 @@ export default function SalesFunnel({
         // Find the latest approval date for each customer based on their approved leads
         leads.forEach(lead => {
             if (lead.status === 'Aprovado' && lead.customerId) {
-                const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.activity === 'Aprovado');
+                const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
                 if (approvedEntry) {
                     if (!customerLastApproval[lead.customerId] || new Date(approvedEntry.date) > new Date(customerLastApproval[lead.customerId])) {
                         customerLastApproval[lead.customerId] = approvedEntry.date;
@@ -567,7 +567,7 @@ export default function SalesFunnel({
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
             if (diffDays > shippingSettings.reactivationPeriodDays) {
-                const originalLead = leads.find(l => l.customerId === customerId);
+                const originalLead = leads.find(l => l.customerId === customerId && l.status === 'Aprovado');
                 if (originalLead) {
                     const today = new Date().toISOString();
                      const totalCount = leads.length + 1;
@@ -579,7 +579,7 @@ export default function SalesFunnel({
                         ...originalLead,
                         id: `${totalCount}-${customerLeadCount}`,
                         status: 'Reativar',
-                        statusHistory: [{ activity: 'Reativar', date: today }],
+                        statusHistory: [{ status: 'Reativar', date: today }],
                         proposalId: undefined, 
                         proposalNotes: 'Oportunidade de reativação.',
                         value: 0,
@@ -598,12 +598,12 @@ export default function SalesFunnel({
 
   const updateLeadWithHistory = (lead: Lead, newStatus: LeadStatus, updates?: Partial<Lead>) => {
     const today = new Date().toISOString();
-    const newHistoryEntry = { activity: newStatus, date: today };
+    const newHistoryEntry = { status: newStatus, date: today };
     // Avoid duplicating the last status in history
     const lastHistory = lead.statusHistory?.[lead.statusHistory.length - 1];
     
     let newHistory = [...(lead.statusHistory || [])];
-    if (lastHistory?.activity !== newStatus) {
+    if (lastHistory?.status !== newStatus) {
         newHistory.push(newHistoryEntry);
     }
 
@@ -695,7 +695,7 @@ export default function SalesFunnel({
             ...leadData,
             id: `${totalCount}-${customerLeadCount}`,
             status: "Lista de Leads",
-            statusHistory: [{ activity: 'Lista de Leads', date: today }]
+            statusHistory: [{ status: 'Lista de Leads', date: today }]
         }
     });
     
@@ -808,11 +808,23 @@ export default function SalesFunnel({
   }
 
   const handleNewPurchase = (approvedLead: Lead) => {
-    updateLeadWithHistory(approvedLead, 'Contato', {
-        proposalId: undefined,
-        proposalNotes: 'Oportunidade de reativação.',
-        value: 0,
-    });
+    const today = new Date().toISOString();
+    const totalCount = leads.length + 1;
+    const customerLeadCount = leads.filter(
+        (l) => l.name.toLowerCase() === approvedLead.name.toLowerCase()
+    ).length + 1;
+
+     const newLead: Lead = {
+      ...approvedLead,
+      id: `${totalCount}-${customerLeadCount}`,
+      status: "Contato",
+      statusHistory: [{ status: "Contato", date: today }],
+      proposalId: undefined, 
+      proposalNotes: 'Oportunidade de reativação.',
+      value: 0,
+    };
+    
+    setLeads(prev => [...prev, newLead]);
     
     toast({
       title: "Nova Oportunidade Criada!",
@@ -859,7 +871,7 @@ export default function SalesFunnel({
     if (!contactLead) return;
 
     const today = new Date().toISOString();
-    const newHistoryEntry: LeadHistoryEntry = { activity, date: today };
+    const newHistoryEntry: LeadHistoryEntry = { status: activity, date: today };
     const newHistory = [...(contactLead.statusHistory || []), newHistoryEntry];
 
     onUpdateLead({ ...contactLead, statusHistory: newHistory });

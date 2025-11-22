@@ -86,7 +86,7 @@ export const leadActivitySchema = z.enum(["Ligação", "WhatsApp", "Email"]);
 export type LeadActivity = z.infer<typeof leadActivitySchema>;
 
 export const leadHistoryEntrySchema = z.object({
-    activity: z.union([leadStatusSchema, leadActivitySchema]),
+    status: z.union([leadStatusSchema, leadActivitySchema]),
     date: z.string(),
 });
 export type LeadHistoryEntry = z.infer<typeof leadHistoryEntrySchema>;
