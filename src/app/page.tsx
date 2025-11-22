@@ -233,7 +233,12 @@ const handleProposalSent = (proposal: Proposal) => {
             </TabsList>
           </div>
           <TabsContent value="customers">
-            <CustomerList customers={customers} setCustomers={setCustomers} onAddCustomer={addCustomer} />
+            <CustomerList 
+                customers={customers} 
+                setCustomers={setCustomers} 
+                onAddCustomer={addCustomer} 
+                shippingSettings={shippingSettings}
+            />
           </TabsContent>
           <TabsContent value="funnel">
             <SalesFunnel 

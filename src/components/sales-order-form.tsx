@@ -350,6 +350,7 @@ export default function SalesOrderForm({
                 <CustomerRegistrationForm 
                     onSuccess={handleCustomerFormSuccess}
                     initialData={leadCustomerData}
+                    shippingSettings={shippingSettings}
                 />
               </DialogContent>
             </Dialog>
@@ -533,5 +534,3 @@ export default function SalesOrderForm({
     </div>
   );
 }
-
-    

@@ -5,7 +5,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, UserPlus, Truck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { customerRegistrationSchema, type Customer } from "@/lib/schemas";
+import { customerRegistrationSchema, type Customer, type ShippingSettings, type ShippingTier } from "@/lib/schemas";
 import { registerCustomerAction } from "@/app/actions";
 import { Separator } from "./ui/separator";
 
@@ -35,15 +35,18 @@ type CustomerFormValues = z.infer<typeof customerRegistrationSchema>;
 interface CustomerRegistrationFormProps {
   initialData?: Partial<Customer> | null;
   onSuccess?: (data: Omit<Customer, 'id'>) => void;
+  shippingSettings: ShippingSettings;
 }
 
 export default function CustomerRegistrationForm({
   initialData,
   onSuccess,
+  shippingSettings
 }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isFetchingAddress, setIsFetchingAddress] = React.useState(false);
+  const [shippingTier, setShippingTier] = React.useState<ShippingTier | null>(null);
   const isEditMode = !!(initialData && 'id' in initialData && initialData.id);
   const cameFromLead = !!(initialData && (!('id' in initialData) || !initialData.id));
 
@@ -85,6 +88,20 @@ export default function CustomerRegistrationForm({
         });
     }
   }, [initialData, reset]);
+
+  const watchedDistance = form.watch("distance");
+
+  React.useEffect(() => {
+    if (typeof watchedDistance === 'number' && shippingSettings?.tiers?.length) {
+      const tier = shippingSettings.tiers.find(t => 
+        watchedDistance >= t.minDistance && watchedDistance <= t.maxDistance
+      );
+      setShippingTier(tier || null);
+    } else {
+        setShippingTier(null);
+    }
+  }, [watchedDistance, shippingSettings]);
+
 
   const handleZipBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const zipCode = e.target.value.replace(/\D/g, '');
@@ -328,7 +345,7 @@ export default function CustomerRegistrationForm({
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3 items-end">
                 <FormField
                   control={form.control}
                   name="neighborhood"
@@ -368,7 +385,9 @@ export default function CustomerRegistrationForm({
                     </FormItem>
                   )}
                 />
-                <FormField
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-3 items-end gap-6">
+                 <FormField
                   control={form.control}
                   name="distance"
                   render={({ field }) => (
@@ -381,7 +400,17 @@ export default function CustomerRegistrationForm({
                     </FormItem>
                   )}
                 />
-              </div>
+                 <div className="md:col-span-2 flex items-center h-10 text-sm text-muted-foreground">
+                  {shippingTier ? (
+                     <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border">
+                        <Truck className="h-4 w-4 text-primary" />
+                        <span>Faixa de frete: {shippingTier.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                  ) : watchedDistance > 0 ? (
+                    <span className="text-destructive">Nenhuma faixa de frete encontrada para esta distância.</span>
+                  ) : null}
+                </div>
+               </div>
             </div>
             <CardFooter className="p-0 pt-4">
               <Button

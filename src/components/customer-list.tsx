@@ -28,15 +28,16 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import CustomerRegistrationForm from "./customer-registration-form";
-import type { Customer } from "@/lib/schemas";
+import type { Customer, ShippingSettings } from "@/lib/schemas";
 
 interface CustomerListProps {
   customers: (Customer & { id: string })[];
   setCustomers: React.Dispatch<React.SetStateAction<(Customer & { id: string })[]>>;
   onAddCustomer: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
+  shippingSettings: ShippingSettings;
 }
 
-export default function CustomerList({ customers, setCustomers, onAddCustomer }: CustomerListProps) {
+export default function CustomerList({ customers, setCustomers, onAddCustomer, shippingSettings }: CustomerListProps) {
   const [nameFilter, setNameFilter] = React.useState("");
   const [emailFilter, setEmailFilter] = React.useState("");
   const [filteredCustomers, setFilteredCustomers] = React.useState(customers);
@@ -101,7 +102,10 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer }:
                       Cadastro de Cliente
                     </DialogTitle>
                   </DialogHeader>
-                  <CustomerRegistrationForm onSuccess={handleFormSuccess} />
+                  <CustomerRegistrationForm 
+                    onSuccess={handleFormSuccess} 
+                    shippingSettings={shippingSettings}
+                   />
                 </DialogContent>
               </Dialog>
           </div>
@@ -166,6 +170,7 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer }:
               <CustomerRegistrationForm
                 initialData={editingCustomer}
                 onSuccess={(data) => handleFormSuccess(data as Omit<Customer, 'id'>)}
+                shippingSettings={shippingSettings}
               />
             </DialogContent>
           </Dialog>
