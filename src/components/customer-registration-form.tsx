@@ -82,7 +82,7 @@ export default function CustomerRegistrationForm({
             distance: initialData.distance || 0,
         });
     }
-  }, [initialData, form]);
+  }, [initialData, form.reset]);
 
   const handleZipBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const zipCode = e.target.value.replace(/\D/g, '');
