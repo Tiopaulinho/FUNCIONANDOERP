@@ -11,8 +11,8 @@ import {
   CardFooter,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw } from "lucide-react";
-import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings } from "@/lib/schemas";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail } from "lucide-react";
+import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings, LeadActivity, LeadHistoryEntry } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -145,7 +145,7 @@ const LeadDetailsModal = ({
   onGenerateProposal,
   onNewPurchase,
   proposals,
-  onSendMessage,
+  onOpenContactModal,
 }: { 
   lead: Lead | null; 
   open: boolean; 
@@ -155,7 +155,7 @@ const LeadDetailsModal = ({
   onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
   onNewPurchase: (lead: Lead) => void;
   proposals: Proposal[];
-  onSendMessage: (lead: Lead) => void;
+  onOpenContactModal: (lead: Lead) => void;
 }) => {
   if (!lead) return null;
 
@@ -170,9 +170,9 @@ const LeadDetailsModal = ({
     onNewPurchase(lead);
   };
   
-  const handleSendMessageClick = () => {
+  const handleOpenContactModalClick = () => {
     onOpenChange(false);
-    onSendMessage(lead);
+    onOpenContactModal(lead);
   };
 
   return (
@@ -224,7 +224,7 @@ const LeadDetailsModal = ({
                     <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border space-y-2">
                         {lead.statusHistory.map((history, index) => (
                              <div key={index} className="flex justify-between items-center">
-                                <span>{history.status}</span>
+                                <span>{history.activity}</span>
                                 <span className="text-xs">{new Date(history.date).toLocaleDateString('pt-BR')}</span>
                             </div>
                         ))}
@@ -235,9 +235,9 @@ const LeadDetailsModal = ({
         <Separator />
         <div className="flex flex-wrap justify-end items-center gap-2">
             {lead.status === 'Contato' && (
-                <Button onClick={handleSendMessageClick} variant="outline">
-                    <Send className="mr-2 h-4 w-4" />
-                    Enviar Mensagem
+                <Button onClick={handleOpenContactModalClick} variant="outline">
+                    <Phone className="mr-2 h-4 w-4" />
+                    Registrar Contato
                 </Button>
             )}
             {lead.status === 'Aprovado' && (
@@ -394,16 +394,16 @@ const ProposalNotesModal = ({
     );
   };
   
-const SendMessageModal = ({
+const ContactModal = ({
     lead,
     open,
     onOpenChange,
-    onSend,
+    onRegisterActivity,
 }: {
     lead: Lead | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSend: () => void;
+    onRegisterActivity: (activity: LeadActivity) => void;
 }) => {
     const defaultMessage = `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`;
     const [message, setMessage] = React.useState(defaultMessage);
@@ -417,11 +417,14 @@ const SendMessageModal = ({
 
     if (!lead) return null;
 
-    const handleSend = () => {
-        // Here you would integrate with a messaging service like WhatsApp
-        console.log("Enviando para:", lead.phone);
-        console.log("Mensagem:", message);
-        onSend();
+    const handleActivity = (activity: LeadActivity) => {
+        if (activity === 'WhatsApp' || activity === 'Email') {
+            console.log(`Simulando envio de ${activity} para: ${activity === 'Email' ? lead.email : lead.phone}`);
+            console.log("Mensagem:", message);
+        } else {
+            console.log(`Simulando ${activity} para: ${lead.phone}`);
+        }
+        onRegisterActivity(activity);
     };
 
     return (
@@ -429,10 +432,10 @@ const SendMessageModal = ({
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Send className="h-5 w-5" /> Enviar Mensagem para {lead.contact}
+                        <Phone className="h-5 w-5" /> Registrar Contato com {lead.contact}
                     </DialogTitle>
                     <DialogDescription>
-                        Revise e edite a mensagem de primeiro contato abaixo.
+                        Edite a mensagem, se necessário, e registre a atividade de contato.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
@@ -441,11 +444,18 @@ const SendMessageModal = ({
                         onChange={(e) => setMessage(e.target.value)}
                         rows={10}
                         className="text-base"
+                        placeholder="Mensagem para WhatsApp ou Email..."
                     />
                 </div>
-                <DialogFooter>
-                    <Button onClick={handleSend} className="w-full">
-                        Simular Envio
+                <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <Button onClick={() => handleActivity('Ligação')} variant="outline">
+                        <Phone className="mr-2 h-4 w-4" /> Registrar Ligação
+                    </Button>
+                    <Button onClick={() => handleActivity('WhatsApp')}>
+                        <Send className="mr-2 h-4 w-4" /> Enviar por WhatsApp
+                    </Button>
+                     <Button onClick={() => handleActivity('Email')} variant="secondary">
+                        <Mail className="mr-2 h-4 w-4" /> Enviar por Email
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -500,8 +510,8 @@ export default function SalesFunnel({
   const [isGroupedLeadsModalOpen, setIsGroupedLeadsModalOpen] = React.useState(false);
   const [selectedGroup, setSelectedGroup] = React.useState<Lead[] | null>(null);
   const [groupedModalTitle, setGroupedModalTitle] = React.useState("");
-  const [messageLead, setMessageLead] = React.useState<Lead | null>(null);
-  const [isSendMessageModalOpen, setIsSendMessageModalOpen] = React.useState(false);
+  const [contactLead, setContactLead] = React.useState<Lead | null>(null);
+  const [isContactModalOpen, setIsContactModalOpen] = React.useState(false);
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
@@ -514,7 +524,7 @@ export default function SalesFunnel({
         // Find the latest approval date for each customer based on their approved leads
         leads.forEach(lead => {
             if (lead.status === 'Aprovado' && lead.customerId) {
-                const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
+                const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.activity === 'Aprovado');
                 if (approvedEntry) {
                     if (!customerLastApproval[lead.customerId] || new Date(approvedEntry.date) > new Date(customerLastApproval[lead.customerId])) {
                         customerLastApproval[lead.customerId] = approvedEntry.date;
@@ -547,7 +557,7 @@ export default function SalesFunnel({
                         ...originalLead,
                         id: `${totalCount}-${customerLeadCount}`,
                         status: 'Reativar',
-                        statusHistory: [{ status: 'Reativar', date: today }],
+                        statusHistory: [{ activity: 'Reativar', date: today }],
                         proposalId: undefined, 
                         proposalNotes: 'Oportunidade de reativação.',
                         value: 0,
@@ -566,12 +576,12 @@ export default function SalesFunnel({
 
   const updateLeadWithHistory = (lead: Lead, newStatus: LeadStatus, updates?: Partial<Lead>) => {
     const today = new Date().toISOString();
-    const newHistoryEntry = { status: newStatus, date: today };
+    const newHistoryEntry = { activity: newStatus, date: today };
     // Avoid duplicating the last status in history
     const lastHistory = lead.statusHistory?.[lead.statusHistory.length - 1];
     
     let newHistory = [...(lead.statusHistory || [])];
-    if (lastHistory?.status !== newStatus) {
+    if (lastHistory?.activity !== newStatus) {
         newHistory.push(newHistoryEntry);
     }
 
@@ -663,7 +673,7 @@ export default function SalesFunnel({
             ...leadData,
             id: `${totalCount}-${customerLeadCount}`,
             status: "Lista de Leads",
-            statusHistory: [{ status: 'Lista de Leads', date: today }]
+            statusHistory: [{ activity: 'Lista de Leads', date: today }]
         }
     });
     
@@ -776,23 +786,11 @@ export default function SalesFunnel({
   }
 
   const handleNewPurchase = (approvedLead: Lead) => {
-    const today = new Date().toISOString();
-    const totalCount = leads.length + 1;
-    const customerLeadCount = leads.filter(
-        (l) => l.name.toLowerCase() === approvedLead.name.toLowerCase()
-    ).length + 1;
-    
-    const newLead: Lead = {
-        ...approvedLead,
-        id: `${totalCount}-${customerLeadCount}`,
-        status: 'Contato',
-        statusHistory: [{ status: 'Contato', date: today }],
+    updateLeadWithHistory(approvedLead, 'Contato', {
         proposalId: undefined,
         proposalNotes: 'Oportunidade de reativação.',
         value: 0,
-    };
-
-    onAddLead(newLead);
+    });
     
     toast({
       title: "Nova Oportunidade Criada!",
@@ -830,17 +828,25 @@ export default function SalesFunnel({
     });
   };
 
-  const handleSendMessage = (lead: Lead) => {
-    setMessageLead(lead);
-    setIsSendMessageModalOpen(true);
+  const handleOpenContactModal = (lead: Lead) => {
+    setContactLead(lead);
+    setIsContactModalOpen(true);
   };
   
-  const handleSendSuccess = () => {
-    setIsSendMessageModalOpen(false);
-    setMessageLead(null);
+  const handleContactActivity = (activity: LeadActivity) => {
+    if (!contactLead) return;
+
+    const today = new Date().toISOString();
+    const newHistoryEntry: LeadHistoryEntry = { activity, date: today };
+    const newHistory = [...(contactLead.statusHistory || []), newHistoryEntry];
+
+    onUpdateLead({ ...contactLead, statusHistory: newHistory });
+    
+    setIsContactModalOpen(false);
+    setContactLead(null);
     toast({
-        title: "Mensagem Enviada!",
-        description: "A mensagem foi enviada com sucesso (simulação).",
+        title: "Atividade Registrada!",
+        description: `A atividade "${activity}" foi registrada para ${contactLead.name}.`,
     });
   };
 
@@ -1028,7 +1034,7 @@ export default function SalesFunnel({
           onGenerateProposal={handleGenerateProposalClick}
           onNewPurchase={handleNewPurchase}
           proposals={proposals}
-          onSendMessage={handleSendMessage}
+          onOpenContactModal={handleOpenContactModal}
         />
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -1122,17 +1128,13 @@ export default function SalesFunnel({
             title={groupedModalTitle}
         />
         
-        <SendMessageModal 
-            lead={messageLead}
-            open={isSendMessageModalOpen}
-            onOpenChange={setIsSendMessageModalOpen}
-            onSend={handleSendSuccess}
+        <ContactModal 
+            lead={contactLead}
+            open={isContactModalOpen}
+            onOpenChange={setIsContactModalOpen}
+            onRegisterActivity={handleContactActivity}
         />
 
     </div>
   );
 }
-
-    
-
-    

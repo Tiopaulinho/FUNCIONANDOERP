@@ -82,11 +82,14 @@ export type SalesOrder = z.infer<typeof salesOrderSchema> & {
 export const leadStatusSchema = z.enum(["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reativar", "Reprovado"]);
 export type LeadStatus = z.infer<typeof leadStatusSchema>;
 
-export const leadStatusHistoryEntrySchema = z.object({
-    status: leadStatusSchema,
+export const leadActivitySchema = z.enum(["Ligação", "WhatsApp", "Email"]);
+export type LeadActivity = z.infer<typeof leadActivitySchema>;
+
+export const leadHistoryEntrySchema = z.object({
+    activity: z.union([leadStatusSchema, leadActivitySchema]),
     date: z.string(),
 });
-export type LeadStatusHistoryEntry = z.infer<typeof leadStatusHistoryEntrySchema>;
+export type LeadHistoryEntry = z.infer<typeof leadHistoryEntrySchema>;
 
 
 export const leadSchema = z.object({
@@ -128,7 +131,7 @@ export const newLeadSchema = z.object({
 export type Lead = z.infer<typeof leadSchema> & {
   id: string;
   status: LeadStatus;
-  statusHistory?: LeadStatusHistoryEntry[];
+  statusHistory?: LeadHistoryEntry[];
   proposalId?: string;
   customerId?: string;
   email?: string;
@@ -172,5 +175,3 @@ export interface ShippingSettings {
   tiers: ShippingTier[];
   reactivationPeriodDays: number;
 }
-
-    
