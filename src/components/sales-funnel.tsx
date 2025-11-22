@@ -8,6 +8,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle } from "lucide-react";
@@ -43,23 +44,35 @@ import NewLeadForm from "./new-lead-form";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, proposals: Proposal[]}) => {
+const LeadCard = ({ 
+    lead, 
+    onDragStart, 
+    onClick, 
+    proposals,
+    onGenerateProposal,
+}: { 
+    lead: Lead;
+    onDragStart: (e: React.DragEvent, leadId: string) => void;
+    onClick: () => void;
+    proposals: Proposal[];
+    onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
+}) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
-  const handleButtonClick = (e: React.MouseEvent, action: (lead: Lead) => void) => {
+  const handleGenerateClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    action(lead);
+    onGenerateProposal(lead, false);
   };
 
 
   return (
     <Card 
-      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card" 
+      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card flex flex-col" 
       draggable={lead.status !== 'Aprovado'}
       onDragStart={(e) => onDragStart(e, lead.id)}
       onClick={onClick}
     >
-      <CardHeader className="p-4 space-y-2">
+      <CardHeader className="p-4 space-y-2 flex-grow">
         <div className="flex items-start justify-between gap-4">
             <CardTitle className="text-base font-bold flex items-start gap-2 flex-1 min-w-0">
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
@@ -85,8 +98,18 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
             </CardDescription>
         )}
       </CardHeader>
+      
+      {lead.status === 'Proposta' && !lead.proposalId && (
+        <CardFooter className="p-4 pt-0">
+            <Button size="sm" className="w-full" onClick={handleGenerateClick}>
+                <FileText className="mr-2 h-4 w-4"/>
+                Gerar Proposta
+            </Button>
+        </CardFooter>
+      )}
+
       {lead.status === 'Aprovado' && (
-         <CardContent className="p-4 pt-0">
+         <CardFooter className="p-4 pt-0">
             <Button 
                 className="w-full" 
                 size="sm"
@@ -95,7 +118,7 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 Nova Compra
             </Button>
-        </CardContent>
+        </CardFooter>
       )}
     </Card>
   );
@@ -682,6 +705,7 @@ export default function SalesFunnel({
                           onDragStart={handleDragStart}
                           onClick={status === 'Aprovado' ? () => handleNewPurchase(lead) : () => handleCardClick(lead)}
                           proposals={proposals}
+                          onGenerateProposal={handleGenerateProposalClick}
                       />
                   ))}
 
