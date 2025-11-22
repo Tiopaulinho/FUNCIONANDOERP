@@ -11,7 +11,7 @@ import {
   CardFooter,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +42,7 @@ import { Input } from "./ui/input";
 import NewLeadForm from "./new-lead-form";
 
 
-const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
+const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reativar", "Reprovado"];
 
 const LeadCard = ({ 
     lead, 
@@ -50,14 +50,16 @@ const LeadCard = ({
     onClick, 
     proposals,
     onGenerateProposal,
-    isApproved,
+    isReactivation,
+    onReactivate,
 }: { 
     lead: Lead;
     onDragStart: (e: React.DragEvent, leadId: string) => void;
     onClick: () => void;
     proposals: Proposal[];
     onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
-    isApproved?: boolean;
+    isReactivation?: boolean;
+    onReactivate: (lead: Lead) => void;
 }) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
@@ -66,11 +68,16 @@ const LeadCard = ({
     onGenerateProposal(lead, false);
   };
 
+  const handleReactivateClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onReactivate(lead);
+  };
+
 
   return (
     <Card 
       className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card flex flex-col" 
-      draggable={lead.status !== 'Aprovado'}
+      draggable={lead.status !== 'Aprovado' && lead.status !== 'Reativar'}
       onDragStart={(e) => onDragStart(e, lead.id)}
       onClick={onClick}
     >
@@ -110,15 +117,16 @@ const LeadCard = ({
         </CardFooter>
       )}
 
-      {isApproved && (
+      {isReactivation && (
          <CardFooter className="p-4 pt-0">
             <Button 
                 className="w-full" 
                 size="sm"
-                onClick={(e) => { e.stopPropagation(); onClick() }}
+                variant="default"
+                onClick={handleReactivateClick}
             >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Nova Compra
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reativar Cliente
             </Button>
         </CardFooter>
       )}
@@ -409,6 +417,41 @@ export default function SalesFunnel({
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    const checkReactivation = () => {
+      const now = new Date();
+      const leadsToUpdate: Lead[] = [];
+      leads.forEach(lead => {
+        if (lead.status === 'Aprovado') {
+          const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
+          if (approvedEntry) {
+            const approvedDate = new Date(approvedEntry.date);
+            const diffTime = Math.abs(now.getTime() - approvedDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > shippingSettings.reactivationPeriodDays) {
+              leadsToUpdate.push(lead);
+            }
+          }
+        }
+      });
+
+      if (leadsToUpdate.length > 0) {
+        setLeads(prevLeads => prevLeads.map(l => {
+          if (leadsToUpdate.some(lu => lu.id === l.id)) {
+            return { ...l, status: 'Reativar' };
+          }
+          return l;
+        }));
+      }
+    };
+
+    const interval = setInterval(checkReactivation, 1000 * 60 * 60); // Check every hour
+    checkReactivation(); 
+
+    return () => clearInterval(interval);
+  }, [leads, shippingSettings.reactivationPeriodDays, setLeads]);
+
   const updateLeadWithHistory = (lead: Lead, newStatus: LeadStatus, updates?: Partial<Lead>) => {
     const today = new Date().toISOString();
     const newHistoryEntry = { status: newStatus, date: today };
@@ -501,6 +544,10 @@ export default function SalesFunnel({
   }
 
   const handleCardClick = (lead: Lead) => {
+    if (lead.status === 'Aprovado') {
+        handleNewPurchase(lead);
+        return;
+    }
     setSelectedLead(lead);
     setIsDetailsModalOpen(true);
   };
@@ -609,6 +656,31 @@ export default function SalesFunnel({
     });
   };
 
+  const handleReactivate = (lead: Lead) => {
+    const today = new Date().toISOString();
+    // Create a new lead for the new opportunity
+    const newOpportunityLead: Lead = {
+      ...lead,
+      id: `lead-${Date.now()}`,
+      status: 'Proposta',
+      statusHistory: [{ status: 'Proposta', date: today }],
+      proposalId: undefined,
+      proposalNotes: 'Oportunidade de reativação.',
+    };
+    onAddLead(newOpportunityLead);
+    setGenerateProposalLead(newOpportunityLead);
+    setIsGenerateProposalModalOpen(true);
+    
+    // Update the old lead back to 'Aprovado' with a new history entry
+    updateLeadWithHistory(lead, 'Aprovado');
+
+    toast({
+        title: "Cliente Reativado!",
+        description: `Uma nova oportunidade foi criada para ${lead.name}.`,
+    });
+  };
+
+
   const handleViewGroup = (group: Lead[]) => {
     setSelectedGroup(group);
     setIsGroupedLeadsModalOpen(true);
@@ -616,7 +688,8 @@ export default function SalesFunnel({
 
   const handleViewSingleLeadFromGroup = (lead: Lead) => {
     setIsGroupedLeadsModalOpen(false);
-    handleCardClick(lead);
+    setSelectedLead(lead);
+    setIsDetailsModalOpen(true);
   };
   
   const handleNewLeadSuccess = (data: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => {
@@ -684,7 +757,7 @@ export default function SalesFunnel({
                 onChange={(e) => setContactFilter(e.target.value)}
             />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-6">
         {funnelStatuses.map((status) => (
             <div 
               key={status}
@@ -710,7 +783,8 @@ export default function SalesFunnel({
                           onClick={() => handleCardClick(lead)}
                           proposals={proposals}
                           onGenerateProposal={handleGenerateProposalClick}
-                          isApproved={status === 'Aprovado'}
+                          isReactivation={status === 'Reativar'}
+                          onReactivate={handleReactivate}
                       />
                   ))}
 

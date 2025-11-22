@@ -23,6 +23,7 @@ import type { Product, SalesOrder, Lead, Customer, Proposal, ShippingSettings } 
 import SalesFunnel from "@/components/sales-funnel";
 import ProposalList from "@/components/proposal-list";
 import ShippingSettingsComponent from "@/components/shipping-settings";
+import ReactivationSettings from "@/components/reactivation-settings";
 
 
 const initialProducts: (Product & { id: string })[] = [
@@ -66,7 +67,8 @@ const initialShippingSettings: ShippingSettings = {
     { minDistance: 0, maxDistance: 50, cost: 10 },
     { minDistance: 51, maxDistance: 200, cost: 25 },
     { minDistance: 201, maxDistance: 1000, cost: 50 },
-  ]
+  ],
+  reactivationPeriodDays: 14,
 };
 
 
@@ -230,6 +232,7 @@ const handleProposalSent = (proposal: Proposal) => {
               <TabsTrigger value="orders">Pedidos de Venda</TabsTrigger>
               <TabsTrigger value="products">Produtos</TabsTrigger>
               <TabsTrigger value="shipping">Frete</TabsTrigger>
+              <TabsTrigger value="reactivation">Reativação</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="customers">
@@ -284,6 +287,12 @@ const handleProposalSent = (proposal: Proposal) => {
           </TabsContent>
           <TabsContent value="shipping">
             <ShippingSettingsComponent
+              settings={shippingSettings}
+              onSave={setShippingSettings}
+            />
+          </TabsContent>
+          <TabsContent value="reactivation">
+            <ReactivationSettings
               settings={shippingSettings}
               onSave={setShippingSettings}
             />

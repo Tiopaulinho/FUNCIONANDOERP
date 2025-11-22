@@ -78,7 +78,7 @@ export type SalesOrder = z.infer<typeof salesOrderSchema> & {
 };
 
 
-export const leadStatusSchema = z.enum(["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"]);
+export const leadStatusSchema = z.enum(["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reativar", "Reprovado"]);
 export type LeadStatus = z.infer<typeof leadStatusSchema>;
 
 export const leadStatusHistoryEntrySchema = z.object({
@@ -169,4 +169,5 @@ export interface ShippingTier {
 export interface ShippingSettings {
   originZip: string;
   tiers: ShippingTier[];
+  reactivationPeriodDays: number;
 }
