@@ -380,7 +380,7 @@ export default function SalesOrderForm({
                        </DialogTrigger>
                     </div>
                      { (cameFromLead && !customerForLead) && (
-                        <CardDescription className="text-xs text-muted-foreground mt-1">
+                        <CardDescription className="text-xs text-destructive mt-1 font-semibold">
                             Este lead ainda não é um cliente. Clique no botão '+' para completar o cadastro.
                         </CardDescription>
                       )}
@@ -595,5 +595,7 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    
 
     
