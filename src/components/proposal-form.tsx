@@ -61,6 +61,7 @@ export default function ProposalForm({
 }: ProposalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [shippingOptions, setShippingOptions] = React.useState<ShippingOption[]>([]);
+  const [currentLead, setCurrentLead] = React.useState<Lead>(lead);
   const isEditMode = !!initialData;
 
   const form = useForm<ProposalFormValues>({
@@ -113,17 +114,21 @@ export default function ProposalForm({
 
   const handleDistanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const distance = parseFloat(e.target.value);
-    onUpdateLead({ ...lead, distance: isNaN(distance) ? undefined : distance });
+    setCurrentLead(prev => ({ ...prev, distance: isNaN(distance) ? undefined : distance }));
+  };
+  
+  const handleDistanceBlur = () => {
+    onUpdateLead(currentLead);
   };
   
   const openMaps = () => {
-    if (shippingSettings?.originZip && lead.zip) {
-        const url = `https://www.google.com/maps/dir/?api=1&origin=${shippingSettings.originZip}&destination=${lead.zip}`;
+    if (shippingSettings?.originZip && currentLead.zip) {
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${shippingSettings.originZip}&destination=${currentLead.zip}`;
         window.open(url, "_blank");
     }
   };
 
-  const setupShippingOptions = React.useCallback((currentLead: Lead) => {
+  const setupShippingOptions = React.useCallback((leadForShipping: Lead) => {
     const baseOptions: ShippingOption[] = [
         { value: 'Retirada', label: 'Retirada no local', cost: 0 },
         { value: 'A Combinar', label: 'A Combinar (valor a definir)', cost: 0 },
@@ -131,9 +136,9 @@ export default function ProposalForm({
     
     let calculatedOption: ShippingOption | null = null;
     
-    if (currentLead.distance && shippingSettings?.tiers?.length) {
+    if (leadForShipping.distance && shippingSettings?.tiers?.length) {
         const tier = shippingSettings.tiers.find(t => 
-          currentLead.distance! >= t.minDistance && currentLead.distance! <= t.maxDistance
+          leadForShipping.distance! >= t.minDistance && leadForShipping.distance! <= t.maxDistance
         );
         
         if (tier) {
@@ -165,8 +170,13 @@ export default function ProposalForm({
     if (initialData) {
         form.reset(initialData);
     }
+    setCurrentLead(lead);
     setupShippingOptions(lead);
   }, [initialData, lead, form, setupShippingOptions]);
+
+  React.useEffect(() => {
+    setupShippingOptions(currentLead);
+  }, [currentLead, setupShippingOptions]);
 
   const handleShippingMethodChange = (value: string) => {
       const selectedOption = shippingOptions.find(opt => opt.value === value);
@@ -178,6 +188,7 @@ export default function ProposalForm({
 
   async function onSubmit(data: ProposalFormValues) {
     setIsSubmitting(true);
+    onUpdateLead(currentLead);
 
     const finalTotal = total;
 
@@ -297,15 +308,16 @@ export default function ProposalForm({
                     <Input 
                         type="number" 
                         placeholder="0" 
-                        value={lead.distance || ""}
+                        value={currentLead.distance || ""}
                         onChange={handleDistanceChange}
+                        onBlur={handleDistanceBlur}
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
                       onClick={openMaps}
-                      disabled={!lead.zip || !shippingSettings?.originZip}
+                      disabled={!currentLead.zip || !shippingSettings?.originZip}
                     >
                       <MapPin className="h-4 w-4" />
                       <span className="sr-only">Calcular no Maps</span>
