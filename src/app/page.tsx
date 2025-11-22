@@ -74,6 +74,8 @@ export default function Home() {
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = React.useState(false);
   const [isSalesOrderDialogOpen, setIsSalesOrderDialogOpen] = React.useState(false);
 
+  const [activeTab, setActiveTab] = React.useState("funnel");
+
 
   const addProduct = (newProduct: Product & { id: string }) => {
     setProducts((prevProducts) => [...prevProducts, newProduct]);
@@ -204,11 +206,16 @@ const handleProposalSent = (proposal: Proposal) => {
     }
   };
 
+  const handleSwitchToCustomersTab = () => {
+    setIsSalesOrderDialogOpen(false);
+    setActiveTab("customers");
+  }
+
 
   return (
     <main className="flex min-h-dvh w-full flex-col items-center bg-background p-4 md:p-8">
       <div className="w-full max-w-7xl">
-        <Tabs defaultValue="funnel" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="mb-4 flex items-center justify-between gap-4">
             <TabsList>
               <TabsTrigger value="funnel">Funil de Venda</TabsTrigger>
@@ -285,6 +292,7 @@ const handleProposalSent = (proposal: Proposal) => {
                 proposalData={proposalForOrder}
                 customers={customers}
                 onCustomerAdd={addCustomer}
+                onSwitchToCustomers={handleSwitchToCustomersTab}
               />
             </DialogContent>
         </Dialog>
@@ -301,5 +309,3 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
-
-    

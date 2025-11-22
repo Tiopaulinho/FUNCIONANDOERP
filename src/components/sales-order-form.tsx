@@ -30,7 +30,6 @@ import type { Customer, Product, SalesOrder, Lead, Proposal, ProposalItem } from
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
-import CustomerRegistrationForm from "./customer-registration-form";
 import { CardDescription } from "./ui/card";
 
 const salesOrderItemSchema = z.object({
@@ -62,6 +61,7 @@ interface SalesOrderFormProps {
   proposalData?: Proposal | null;
   customers: (Customer & { id: string })[];
   onCustomerAdd: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
+  onSwitchToCustomers: () => void;
 }
 
 export default function SalesOrderForm({ 
@@ -73,11 +73,11 @@ export default function SalesOrderForm({
   proposalData,
   customers,
   onCustomerAdd,
+  onSwitchToCustomers,
 }: SalesOrderFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
-  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
   const isEditMode = !!initialData;
   const cameFromLead = !!leadData;
   
@@ -186,17 +186,6 @@ export default function SalesOrderForm({
     setIsProductDialogOpen(false);
   }
 
-  const handleNewCustomerSuccess = (customerData: Omit<Customer, 'id'>) => {
-    const newCustomer = onCustomerAdd(customerData);
-    if (newCustomer) {
-      form.setValue('customerId', newCustomer.id, { shouldValidate: true });
-      toast({
-          title: "Cliente Adicionado!",
-          description: "O novo cliente já foi selecionado no pedido.",
-      });
-    }
-    setIsCustomerDialogOpen(false);
-  }
 
   async function onSubmit(data: SalesOrderFormValues) {
     setIsSubmitting(true);
@@ -209,7 +198,6 @@ export default function SalesOrderForm({
         title: "Cliente não encontrado",
         description: "Por favor, cadastre o cliente antes de criar o pedido.",
       });
-      setIsCustomerDialogOpen(true);
       setIsSubmitting(false);
       return;
     }
@@ -240,17 +228,6 @@ export default function SalesOrderForm({
     setIsSubmitting(false);
   }
 
-  const getCustomerRegistrationInitialData = () => {
-    if (cameFromLead && !customerForLead && leadData) {
-      return { 
-        name: leadData.contact,
-        companyName: leadData.name !== leadData.contact ? leadData.name : "",
-        email: leadData.email || "", 
-        phone: leadData.phone || "" 
-      };
-    }
-    return null;
-  };
 
   const selectedCustomerId = form.watch("customerId");
 
@@ -273,11 +250,6 @@ export default function SalesOrderForm({
                             value={customerForLead?.companyName || customerForLead?.name || leadData?.name || ''}
                             className="bg-muted/50"
                           />
-                          {!customerForLead && (
-                            <CardDescription className="text-xs text-destructive mt-1">
-                                Este cliente não tem cadastro. Clique no botão `+` para completar.
-                            </CardDescription>
-                          )}
                          </div>
                        ) : (
                         <Select
@@ -299,24 +271,21 @@ export default function SalesOrderForm({
                           </SelectContent>
                         </Select>
                        )}
-                      <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" disabled={isEditMode || (cameFromLead && !!customerForLead)}>
-                            <UserPlus className="h-4 w-4" />
-                            <span className="sr-only">Novo Cliente</span>
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[800px]">
-                          <DialogHeader>
-                            <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
-                          </DialogHeader>
-                          <CustomerRegistrationForm 
-                             initialData={getCustomerRegistrationInitialData()}
-                             onSuccess={handleNewCustomerSuccess} 
-                          />
-                        </DialogContent>
-                      </Dialog>
+                      <Button variant="outline" size="icon" disabled={isEditMode || (cameFromLead && !!customerForLead)} onClick={onSwitchToCustomers} type="button">
+                        <UserPlus className="h-4 w-4" />
+                        <span className="sr-only">Novo Cliente</span>
+                      </Button>
                     </div>
+                     { (cameFromLead && !customerForLead) && (
+                        <CardDescription className="text-xs text-muted-foreground mt-1">
+                            Este lead ainda não é um cliente. Feche este modal e cadastre-o na aba 'Clientes'.
+                        </CardDescription>
+                      )}
+                      {!cameFromLead && (
+                         <CardDescription className="text-xs text-muted-foreground mt-1">
+                            Não encontrou o cliente? Cadastre-o primeiro na aba 'Clientes'.
+                        </CardDescription>
+                      )}
                     <FormMessage />
                   </FormItem>
                 )}
