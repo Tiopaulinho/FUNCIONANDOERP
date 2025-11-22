@@ -254,6 +254,7 @@ const handleProposalSent = (proposal: Proposal) => {
               proposals={proposals}
               onProposalSave={handleProposalSave}
               onProposalSent={handleProposalSent}
+              shippingSettings={shippingSettings}
             />
           </TabsContent>
            <TabsContent value="proposals">

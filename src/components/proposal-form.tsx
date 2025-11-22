@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "./ui/separator";
-import type { Product, Lead, Proposal } from "@/lib/schemas";
+import type { Product, Lead, Proposal, Customer, ShippingSettings } from "@/lib/schemas";
 import { proposalSchema } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Textarea } from "./ui/textarea";
@@ -37,10 +37,20 @@ interface ProposalFormProps {
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
   initialData?: Proposal | null;
+  customers: (Customer & { id: string })[];
+  shippingSettings: ShippingSettings;
 }
 
 
-export default function ProposalForm({ lead, onSuccess, products, onProductAdd, initialData }: ProposalFormProps) {
+export default function ProposalForm({ 
+  lead, 
+  onSuccess, 
+  products, 
+  onProductAdd, 
+  initialData, 
+  customers, 
+  shippingSettings 
+}: ProposalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const isEditMode = !!initialData;
 
@@ -61,8 +71,19 @@ export default function ProposalForm({ lead, onSuccess, products, onProductAdd, 
    React.useEffect(() => {
     if (initialData) {
         form.reset(initialData);
+    } else {
+      // Calculate initial shipping cost if lead is already a customer
+      const customer = customers.find(c => c.id === lead.customerId);
+      if (customer && typeof customer.distance === 'number' && shippingSettings?.tiers) {
+        const tier = shippingSettings.tiers.find(t => 
+          customer.distance! >= t.minDistance && customer.distance! <= t.maxDistance
+        );
+        if (tier) {
+          form.setValue('shipping', tier.cost);
+        }
+      }
     }
-  }, [initialData, form]);
+  }, [initialData, lead, customers, shippingSettings, form]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,

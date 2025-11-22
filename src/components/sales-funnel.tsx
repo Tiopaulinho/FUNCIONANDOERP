@@ -12,7 +12,7 @@ import {
 } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle } from "lucide-react";
-import type { Lead, LeadStatus, Customer, Product, Proposal } from "@/lib/schemas";
+import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -371,6 +371,7 @@ interface SalesFunnelProps {
   proposals: Proposal[];
   onProposalSave: (proposal: Proposal) => void;
   onProposalSent: (proposal: Proposal) => void;
+  shippingSettings: ShippingSettings;
 }
 
 export default function SalesFunnel({ 
@@ -385,7 +386,8 @@ export default function SalesFunnel({
     onProductAdd,
     proposals,
     onProposalSave,
-    onProposalSent
+    onProposalSent,
+    shippingSettings
 }: SalesFunnelProps) {
   const { toast } = useToast();
   const [nameFilter, setNameFilter] = React.useState("");
@@ -779,6 +781,8 @@ export default function SalesFunnel({
                         onProductAdd={onProductAdd}
                         onSuccess={handleProposalFormSuccess}
                         initialData={savedProposal}
+                        customers={customers}
+                        shippingSettings={shippingSettings}
                     />
                 )}
             </DialogContent>

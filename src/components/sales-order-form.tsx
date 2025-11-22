@@ -107,9 +107,15 @@ export default function SalesOrderForm({
         price: item.price || 0,
       }));
       form.setValue('items', proposalItems);
+
+      // Set shipping from proposal
+      if (typeof proposalData.shipping === 'number') {
+        form.setValue('shipping', proposalData.shipping);
+      }
+
       toast({
         title: "Dados carregados!",
-        description: "Os itens da proposta foram carregados no pedido.",
+        description: "Os itens e o frete da proposta foram carregados no pedido.",
       });
     } else {
         toast({
@@ -137,7 +143,7 @@ export default function SalesOrderForm({
       } else if (cameFromLead) {
         form.reset({
           customerId: customerForLead?.id || "",
-          shipping: 0,
+          shipping: proposalData?.shipping || 0,
           shippingMethod: 'Retirada',
           items: proposalData?.items?.map(item => ({
             ...item,
@@ -208,6 +214,20 @@ export default function SalesOrderForm({
         { value: 'A Combinar', label: 'A Combinar (valor a definir)', cost: 0 },
     ];
 
+    // Don't auto-calculate if coming from a proposal that already has shipping
+    if (proposalData && typeof proposalData.shipping === 'number' && proposalData.shipping > 0) {
+        const proposalShippingOption: ShippingOption = {
+            value: `Proposta-${proposalData.shipping}`,
+            label: `Frete da Proposta: ${proposalData.shipping.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+            cost: proposalData.shipping
+        };
+        setShippingOptions([proposalShippingOption, ...baseOptions]);
+        form.setValue("shippingMethod", proposalShippingOption.value);
+        form.setValue("shipping", proposalShippingOption.cost, { shouldValidate: true });
+        return;
+    }
+
+
     if (selectedCustomerId && shippingSettings?.tiers?.length) {
       const customer = customers.find(c => c.id === selectedCustomerId);
       if (customer && typeof customer.distance === 'number') {
@@ -239,7 +259,7 @@ export default function SalesOrderForm({
       form.setValue("shippingMethod", 'A Combinar');
       form.setValue("shipping", 0, { shouldValidate: true });
     }
-  }, [selectedCustomerId, customers, shippingSettings, form]);
+  }, [selectedCustomerId, customers, shippingSettings, form, proposalData]);
 
 
   const handleShippingMethodChange = (value: string) => {
@@ -358,7 +378,7 @@ export default function SalesOrderForm({
                             Este lead ainda não é um cliente. Clique no botão '+' para completar o cadastro.
                         </CardDescription>
                       )}
-                      {!cameFromLead && (
+                      {!cameFromLead && !isEditMode && (
                          <CardDescription className="text-xs text-muted-foreground mt-1">
                             Não encontrou o cliente? Clique no botão '+' para cadastrar.
                         </CardDescription>
