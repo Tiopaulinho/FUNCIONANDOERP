@@ -260,7 +260,10 @@ export default function CustomerRegistrationForm({
                       <FormLabel>CEP</FormLabel>
                       <div className="relative">
                         <FormControl>
-                          <Input placeholder="Ex: 01001-000" {...field} onBlur={handleZipBlur} />
+                          <Input placeholder="Ex: 01001-000" {...field} onBlur={(e) => {
+                            field.onBlur();
+                            handleZipBlur(e);
+                          }} />
                         </FormControl>
                         {isFetchingAddress && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />}
                       </div>
@@ -395,5 +398,3 @@ export default function CustomerRegistrationForm({
     </Card>
   );
 }
-
-    
