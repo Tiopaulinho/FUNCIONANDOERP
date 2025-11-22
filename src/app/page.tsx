@@ -13,8 +13,6 @@ import {
 import {
   Tabs,
   TabsContent,
-  TabsList,
-  TabsTrigger,
 } from "@/components/ui/tabs";
 import SalesOrderForm from "@/components/sales-order-form";
 import ProductList from "@/components/product-list";
@@ -24,6 +22,13 @@ import SalesFunnel from "@/components/sales-funnel";
 import ProposalList from "@/components/proposal-list";
 import ShippingSettingsComponent from "@/components/shipping-settings";
 import ReactivationSettings from "@/components/reactivation-settings";
+import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 
 const initialProducts: (Product & { id: string })[] = [
@@ -238,15 +243,30 @@ const handleProposalSent = (proposal: Proposal) => {
       <div className="w-full max-w-7xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="mb-4 flex items-center justify-between gap-4">
-            <TabsList>
-              <TabsTrigger value="funnel">Funil de Venda</TabsTrigger>
-              <TabsTrigger value="customers">Clientes</TabsTrigger>
-              <TabsTrigger value="proposals">Propostas</TabsTrigger>
-              <TabsTrigger value="orders">Pedidos de Venda</TabsTrigger>
-              <TabsTrigger value="products">Produtos</TabsTrigger>
-              <TabsTrigger value="shipping">Frete</TabsTrigger>
-              <TabsTrigger value="reactivation">Reativação</TabsTrigger>
-            </TabsList>
+             <Menubar>
+                <MenubarMenu>
+                    <MenubarTrigger className="font-semibold" onClick={() => setActiveTab('funnel')}>Funil de Venda</MenubarTrigger>
+                </MenubarMenu>
+                <MenubarMenu>
+                    <MenubarTrigger>Cadastros</MenubarTrigger>
+                    <MenubarContent>
+                        <MenubarItem onClick={() => setActiveTab('customers')}>Clientes</MenubarItem>
+                        <MenubarItem onClick={() => setActiveTab('products')}>Produtos</MenubarItem>
+                        <MenubarItem onClick={() => setActiveTab('shipping')}>Frete</MenubarItem>
+                        <MenubarItem onClick={() => setActiveTab('reactivation')}>Reativação</MenubarItem>
+                    </MenubarContent>
+                </MenubarMenu>
+                 <MenubarMenu>
+                    <MenubarTrigger>Operacional</MenubarTrigger>
+                    <MenubarContent>
+                        <MenubarItem onClick={() => setActiveTab('proposals')}>Propostas</MenubarItem>
+                        <MenubarItem onClick={() => setActiveTab('orders')}>Pedidos de Venda</MenubarItem>
+                    </MenubarContent>
+                </MenubarMenu>
+                 <MenubarMenu>
+                    <MenubarTrigger disabled>Análises</MenubarTrigger>
+                </MenubarMenu>
+            </Menubar>
           </div>
           <TabsContent value="customers">
             <CustomerList 
