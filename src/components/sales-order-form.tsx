@@ -164,6 +164,12 @@ export default function SalesOrderForm({
     resetForm();
   }, [initialData, leadData, proposalData, isEditMode, cameFromLead, customerForLead, form]);
 
+  React.useEffect(() => {
+    if (proposalData) {
+      loadProposalData();
+    }
+  }, [proposalData, loadProposalData]);
+
 
   const watchedItems = form.watch("items");
   const watchedShipping = form.watch("shipping") || 0;
@@ -595,6 +601,8 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    
 
     
 
