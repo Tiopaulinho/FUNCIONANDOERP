@@ -50,7 +50,6 @@ const LeadCard = ({
     onClick, 
     proposals,
     onGenerateProposal,
-    isReactivation,
     onReactivate,
     status,
 }: { 
@@ -59,7 +58,6 @@ const LeadCard = ({
     onClick: () => void;
     proposals: Proposal[];
     onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
-    isReactivation?: boolean;
     onReactivate: (lead: Lead) => void;
     status: LeadStatus;
 }) => {
@@ -119,7 +117,7 @@ const LeadCard = ({
         </CardFooter>
       )}
 
-      {isReactivation && (
+      {status === 'Reativar' && (
          <CardFooter className="p-4 pt-0">
             <Button 
                 className="w-full" 
@@ -427,11 +425,11 @@ export default function SalesFunnel({
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
 
-  React.useEffect(() => {
+ React.useEffect(() => {
     const checkReactivation = () => {
         const now = new Date();
-        const leadsToUpdate: string[] = [];
         const customerLastApproval: { [customerId: string]: string } = {};
+        const leadsToCreateForReactivation: Lead[] = [];
 
         // Find the latest approval date for each customer
         leads.forEach(lead => {
@@ -444,26 +442,40 @@ export default function SalesFunnel({
                 }
             }
         });
+        
+        const approvedCustomers = new Set(leads.filter(l => l.status === 'Aprovado').map(l => l.customerId));
+        const reactivationCustomers = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.customerId));
 
-        // Check if any lead from that customer group should be moved
-        leads.forEach(lead => {
-            if (lead.status === 'Aprovado' && lead.customerId && customerLastApproval[lead.customerId]) {
-                const lastApprovalDate = new Date(customerLastApproval[lead.customerId]);
-                const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                if (diffDays > shippingSettings.reactivationPeriodDays) {
-                    leadsToUpdate.push(lead.id);
+        approvedCustomers.forEach(customerId => {
+            if (!customerId || reactivationCustomers.has(customerId)) {
+                return;
+            }
+            
+            const lastApprovalDate = new Date(customerLastApproval[customerId]);
+            const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > shippingSettings.reactivationPeriodDays) {
+                const originalLead = leads.find(l => l.customerId === customerId); // Find a representative lead
+                if (originalLead) {
+                    const today = new Date().toISOString();
+                    const newLead: Lead = {
+                        ...originalLead, // copy data from original customer
+                        id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                        status: 'Reativar',
+                        statusHistory: [{ status: 'Reativar', date: today }],
+                        proposalId: undefined, 
+                        proposalNotes: 'Oportunidade de reativação.',
+                        value: 0,
+                    };
+                    leadsToCreateForReactivation.push(newLead);
                 }
             }
         });
 
-        if (leadsToUpdate.length > 0) {
-            setLeads(prevLeads =>
-                prevLeads.map(l =>
-                    leadsToUpdate.includes(l.id) ? { ...l, status: 'Reativar' } : l
-                )
-            );
+
+        if (leadsToCreateForReactivation.length > 0) {
+            setLeads(prevLeads => [...prevLeads, ...leadsToCreateForReactivation]);
         }
     };
 
@@ -564,12 +576,16 @@ export default function SalesFunnel({
     })
   }
 
-  const handleCardClick = (lead: Lead, group?: Lead[]) => {
+  const handleCardClick = (lead: Lead) => {
+    const group = (
+        lead.status === 'Aprovado' ? Object.values(groupedApprovedLeads) :
+        lead.status === 'Reprovado' ? Object.values(groupedRejectedLeads) :
+        []
+    ).find(g => g.some(l => l.name === lead.name));
+
     if (group && group.length > 1) {
         const title = lead.status === "Aprovado" ? "Oportunidades Aprovadas" : "Oportunidades Reprovadas";
-        setGroupedModalTitle(title);
-        setSelectedGroup(group);
-        setIsGroupedLeadsModalOpen(true);
+        handleViewGroup(group, title);
     } else {
         setSelectedLead(lead);
         setIsDetailsModalOpen(true);
@@ -671,7 +687,8 @@ export default function SalesFunnel({
       proposalNotes: 'Oportunidade de reativação.',
       value: 0,
     };
-    onAddLead(newLead);
+    // Don't use onAddLead as it adds to the start of the array
+    setLeads(prev => [...prev, newLead]);
 
     toast({
       title: "Nova Oportunidade Criada!",
@@ -680,32 +697,11 @@ export default function SalesFunnel({
   };
 
   const handleReactivate = (leadToReactivate: Lead) => {
-    const today = new Date().toISOString();
-
-    // 1. Create a new opportunity in the 'Contact' stage
-    const newOpportunity: Omit<Lead, 'id' | 'status' | 'statusHistory'> = {
-      ...leadToReactivate,
-      value: 0, // Reset value for the new opportunity
-      proposalNotes: 'Oportunidade de reativação.',
-      proposalId: undefined,
-    };
-    
-    const newLeadId = `lead-${Date.now()}`;
-    const newLeadWithStatus: Lead = {
-        ...newOpportunity,
-        id: newLeadId,
-        status: "Contato",
-        statusHistory: [{ status: "Contato", date: today }],
-    };
-    setLeads(prev => [newLeadWithStatus, ...prev]);
-
-
-    // 2. Move the old lead back to 'Aprovado' with updated history
-    updateLeadWithHistory(leadToReactivate, 'Aprovado');
-
+    // Just move the lead from "Reativar" to "Contato"
+    updateLeadWithHistory(leadToReactivate, 'Contato');
     toast({
-        title: "Cliente Reativado!",
-        description: `Uma nova oportunidade para ${leadToReactivate.name} foi criada em 'Contato'.`,
+        title: "Cliente em Reativação!",
+        description: `A oportunidade para ${leadToReactivate.name} foi movida para 'Contato'.`,
     });
 };
 
@@ -826,63 +822,43 @@ export default function SalesFunnel({
                     {status === 'Aprovado' ? (
                         Object.values(groupedApprovedLeads).map((group, index) => {
                             const firstLead = group[0];
-                            if (group.length > 1) {
-                                return (
-                                    <Card key={`group-approved-${index}`} className="mb-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleViewGroup(group, "Oportunidades Aprovadas")}>
-                                        <CardHeader className="p-4">
-                                            <CardTitle className="text-base font-bold flex items-center gap-2">
-                                                <Users className="h-4 w-4 text-muted-foreground" />
-                                                {firstLead.name}
-                                            </CardTitle>
-                                            <CardDescription>
-                                                {group.length} oportunidades ganhas
-                                            </CardDescription>
-                                        </CardHeader>
-                                    </Card>
-                                );
-                            }
                             return (
-                                <LeadCard
-                                    key={firstLead.id}
-                                    lead={firstLead}
-                                    onDragStart={handleDragStart}
-                                    onClick={() => handleCardClick(firstLead)}
-                                    proposals={proposals}
-                                    onGenerateProposal={handleGenerateProposalClick}
-                                    onReactivate={handleReactivate}
-                                    status={status}
-                                />
+                                <Card 
+                                  key={`group-approved-${index}`} 
+                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow" 
+                                  onClick={() => handleCardClick(firstLead)}
+                                >
+                                    <CardHeader className="p-4">
+                                        <CardTitle className="text-base font-bold flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                            {firstLead.name}
+                                        </CardTitle>
+                                        <CardDescription>
+                                            {group.length} {group.length > 1 ? 'oportunidades ganhas' : 'oportunidade ganha'}
+                                        </CardDescription>
+                                    </CardHeader>
+                                </Card>
                             );
                         })
                     ) : status === 'Reprovado' ? (
                          Object.values(groupedRejectedLeads).map((group, index) => {
                             const firstLead = group[0];
-                             if (group.length > 1) {
-                                return (
-                                    <Card key={`group-rejected-${index}`} className="mb-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleViewGroup(group, "Oportunidades Reprovadas")}>
-                                        <CardHeader className="p-4">
-                                            <CardTitle className="text-base font-bold flex items-center gap-2">
-                                                <Users className="h-4 w-4 text-muted-foreground" />
-                                                {firstLead.name}
-                                            </CardTitle>
-                                            <CardDescription>
-                                                {group.length} oportunidades perdidas
-                                            </CardDescription>
-                                        </CardHeader>
-                                    </Card>
-                                );
-                            }
                             return (
-                                <LeadCard
-                                    key={firstLead.id}
-                                    lead={firstLead}
-                                    onDragStart={handleDragStart}
-                                    onClick={() => handleCardClick(firstLead)}
-                                    proposals={proposals}
-                                    onGenerateProposal={handleGenerateProposalClick}
-                                    onReactivate={handleReactivate}
-                                    status={status}
-                                />
+                                <Card 
+                                  key={`group-rejected-${index}`} 
+                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow" 
+                                  onClick={() => handleCardClick(firstLead)}
+                                >
+                                    <CardHeader className="p-4">
+                                        <CardTitle className="text-base font-bold flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                            {firstLead.name}
+                                        </CardTitle>
+                                        <CardDescription>
+                                            {group.length} {group.length > 1 ? 'oportunidades perdidas' : 'oportunidade perdida'}
+                                        </CardDescription>
+                                    </CardHeader>
+                                </Card>
                             );
                         })
                     ) : (
@@ -894,7 +870,6 @@ export default function SalesFunnel({
                                 onClick={() => handleCardClick(lead)}
                                 proposals={proposals}
                                 onGenerateProposal={handleGenerateProposalClick}
-                                isReactivation={status === 'Reativar'}
                                 onReactivate={handleReactivate}
                                 status={status}
                             />
