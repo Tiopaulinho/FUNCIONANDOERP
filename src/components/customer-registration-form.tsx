@@ -5,7 +5,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { Loader2, UserPlus, Truck } from "lucide-react";
+import { Loader2, UserPlus, Truck, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +90,7 @@ export default function CustomerRegistrationForm({
   }, [initialData, reset]);
 
   const watchedDistance = form.watch("distance");
+  const watchedZip = form.watch("zip");
 
   React.useEffect(() => {
     if (typeof watchedDistance === 'number' && shippingSettings?.tiers?.length) {
@@ -142,6 +143,22 @@ export default function CustomerRegistrationForm({
     } finally {
       setIsFetchingAddress(false);
     }
+  };
+
+  const openMaps = () => {
+    const originZip = shippingSettings?.originZip;
+    const destinationZip = form.getValues("zip");
+
+    if (!originZip || !destinationZip) {
+      toast({
+        variant: "destructive",
+        title: "CEP(s) faltando",
+        description: "Certifique-se de que o CEP de origem (em Configurações de Frete) e o CEP do cliente estão preenchidos.",
+      });
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${originZip}&destination=${destinationZip}`;
+    window.open(url, "_blank");
   };
 
 
@@ -393,9 +410,21 @@ export default function CustomerRegistrationForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Distância (KM)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
-                      </FormControl>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={openMaps}
+                          disabled={!watchedZip || !shippingSettings?.originZip}
+                        >
+                          <MapPin className="h-4 w-4" />
+                          <span className="sr-only">Calcular no Maps</span>
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
