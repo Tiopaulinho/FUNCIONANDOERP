@@ -555,8 +555,18 @@ export default function SalesFunnel({
   }
 
   const handleCardClick = (lead: Lead) => {
-    setSelectedLead(lead);
-    setIsDetailsModalOpen(true);
+    if (lead.status === 'Aprovado') {
+        const approvedGroup = Object.values(groupedApprovedLeads).find(group => group.some(l => l.id === lead.id));
+        if (approvedGroup && approvedGroup.length > 1) {
+            handleViewGroup(approvedGroup);
+        } else {
+            setSelectedLead(lead);
+            setIsDetailsModalOpen(true);
+        }
+    } else {
+        setSelectedLead(lead);
+        setIsDetailsModalOpen(true);
+    }
   };
   
   const handleEditClick = (lead: Lead) => {
@@ -653,7 +663,7 @@ export default function SalesFunnel({
       proposalId: undefined, 
       proposalNotes: 'Nova compra para cliente existente.',
     };
-    setLeads(prevLeads => [...prevLeads, newLead]);
+    onAddLead(newLead);
     setGenerateProposalLead(newLead);
     setIsGenerateProposalModalOpen(true);
 
@@ -663,29 +673,36 @@ export default function SalesFunnel({
     });
   };
 
-  const handleReactivate = (lead: Lead) => {
+  const handleReactivate = (leadToReactivate: Lead) => {
     const today = new Date().toISOString();
-    // Create a new lead for the new opportunity
-    const newOpportunityLead: Lead = {
-      ...lead,
-      id: `lead-${Date.now()}`,
-      status: 'Proposta',
-      statusHistory: [{ status: 'Proposta', date: today }],
-      proposalId: undefined,
+
+    // 1. Create a new opportunity in the 'Contact' stage
+    const newOpportunity: Omit<Lead, 'id' | 'status' | 'statusHistory'> = {
+      ...leadToReactivate,
+      value: 0, // Reset value for the new opportunity
       proposalNotes: 'Oportunidade de reativação.',
+      proposalId: undefined,
     };
-    onAddLead(newOpportunityLead);
-    setGenerateProposalLead(newOpportunityLead);
-    setIsGenerateProposalModalOpen(true);
     
-    // Update the old lead back to 'Aprovado' with a new history entry
-    updateLeadWithHistory(lead, 'Aprovado');
+    // Use the main onAddLead function
+    const newLeadId = `lead-${Date.now()}`;
+    const newLeadWithStatus: Lead = {
+        ...newOpportunity,
+        id: newLeadId,
+        status: "Contato",
+        statusHistory: [{ status: "Contato", date: today }],
+    };
+    setLeads(prev => [newLeadWithStatus, ...prev]);
+
+
+    // 2. Move the old lead back to 'Aprovado' with updated history
+    updateLeadWithHistory(leadToReactivate, 'Aprovado');
 
     toast({
         title: "Cliente Reativado!",
-        description: `Uma nova oportunidade foi criada para ${lead.name}.`,
+        description: `Uma nova oportunidade para ${leadToReactivate.name} foi criada em 'Contato'.`,
     });
-  };
+};
 
 
   const handleViewGroup = (group: Lead[]) => {
