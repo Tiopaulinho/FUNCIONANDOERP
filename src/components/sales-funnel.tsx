@@ -61,14 +61,11 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
     >
       <CardHeader className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-4">
-            <CardTitle className="text-base font-bold flex items-center gap-2 flex-1 min-w-0">
-                <Building className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="truncate">{lead.name}</span>
+            <CardTitle className="text-base font-bold flex items-start gap-2 flex-1 min-w-0">
+                <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
+                <span className="flex-1">{lead.name}</span>
             </CardTitle>
              <div className="flex items-center gap-2 flex-shrink-0">
-                {lead.proposalNotes && !lead.proposalId && lead.status !== 'Aprovado' && (
-                    <StickyNote className="h-4 w-4 text-amber-500" title="Existem observações para esta proposta" />
-                )}
                 {proposal && (
                   <Badge variant="secondary" className="flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
@@ -254,10 +251,7 @@ const GroupedLeadsModal = ({
     
     const getProposalValue = (lead: Lead) => {
         const proposal = proposals.find(p => p.id === lead.proposalId);
-        if (proposal) {
-            return proposal.total;
-        }
-        return lead.value;
+        return proposal?.total ?? 0;
     }
   
     return (
@@ -554,6 +548,7 @@ export default function SalesFunnel({
   const handleSendWhatsApp = () => {
     if (savedProposal && generateProposalLead) {
         onProposalSent(savedProposal);
+        updateLeadWithHistory(generateProposalLead, 'Negociação', { proposalId: savedProposal.id });
         toast({
             title: "Proposta Enviada!",
             description: `Lead movido para Negociação.`
@@ -632,7 +627,6 @@ export default function SalesFunnel({
     }
     for (const lead of filteredLeads) {
       if (grouped[lead.status]) {
-        // Handle approved leads grouping
         if (lead.status === "Aprovado") {
             const existingGroup = grouped["Aprovado"]!.find(
                 (l) => l.name === lead.name
@@ -691,21 +685,20 @@ export default function SalesFunnel({
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-lg capitalize">{status}</h3>
                     <Badge variant="secondary" className="rounded-full">
-                        {leadsByStatus[status]?.length || 0}
+                        {status === 'Aprovado' ? leads.filter(l => l.status === 'Aprovado').length : leadsByStatus[status]?.length || 0}
                     </Badge>
                   </div>
               </div>
               <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
                    {status === "Aprovado" ?
-                        (leadsByStatus[status] || []).map((lead) => {
-                            const group = leads.filter(l => l.status === "Aprovado" && l.name === lead.name);
+                        (leads.filter(l => l.status === "Aprovado")).map((lead) => {
                             return (
                                 <LeadCard
                                     key={lead.id}
                                     lead={lead}
                                     onDragStart={handleDragStart}
-                                    onClick={() => handleCardClick(lead)}
+                                    onClick={() => handleNewPurchase(lead)}
                                     proposals={proposals}
                                 />
                             );
@@ -721,11 +714,16 @@ export default function SalesFunnel({
                         ))
                     }
 
-                  {(leadsByStatus[status]?.length === 0) && (
+                  {(leadsByStatus[status]?.length === 0 && status !== 'Aprovado') && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                           {filteredLeads.length > 0 && leads.length > filteredLeads.length ? 'Nenhum lead encontrado com este filtro' : 'Arraste um lead aqui'}
                       </div>
                   )}
+                   {(status === 'Aprovado' && leads.filter(l => l.status === 'Aprovado').length === 0) && (
+                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                            Arraste um lead aqui
+                        </div>
+                    )}
                   </CardContent>
               </Card>
             </div>
@@ -827,11 +825,5 @@ export default function SalesFunnel({
     </div>
   );
 }
-
-    
-
-    
-
-    
 
     
