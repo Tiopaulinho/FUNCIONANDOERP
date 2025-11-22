@@ -44,8 +44,8 @@ export default function CustomerRegistrationForm({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isFetchingAddress, setIsFetchingAddress] = React.useState(false);
-  const isEditMode = !!(initialData && initialData.id);
-  const cameFromLead = !!(initialData && !initialData.id && (initialData.name || initialData.email));
+  const isEditMode = !!(initialData && 'id' in initialData && initialData.id);
+  const cameFromLead = !!(initialData && (!('id' in initialData) || !initialData.id));
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerRegistrationSchema),
@@ -64,10 +64,12 @@ export default function CustomerRegistrationForm({
       distance: 0,
     },
   });
+  
+  const { reset } = form;
 
   React.useEffect(() => {
     if (initialData) {
-        form.reset({
+        reset({
             name: initialData.name || "",
             companyName: initialData.companyName || "",
             email: initialData.email || "",
@@ -82,7 +84,7 @@ export default function CustomerRegistrationForm({
             distance: initialData.distance || 0,
         });
     }
-  }, [initialData, form.reset]);
+  }, [initialData, reset]);
 
   const handleZipBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const zipCode = e.target.value.replace(/\D/g, '');
@@ -128,28 +130,32 @@ export default function CustomerRegistrationForm({
 
   async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
+    // This is a simplified action handler. 
+    // In a real app, you might call a server action here.
     try {
-      const result = await registerCustomerAction(data);
-      if (result.success) {
-        toast({
-          title: "Sucesso!",
-          description: isEditMode
-            ? "Cliente atualizado com sucesso!"
-            : result.message,
-        });
         if (onSuccess) {
           onSuccess(data);
+        } else {
+          // Fallback to server action if no onSuccess prop is provided
+          const result = await registerCustomerAction(data);
+           if (result.success) {
+            toast({
+              title: "Sucesso!",
+              description: isEditMode
+                ? "Cliente atualizado com sucesso!"
+                : result.message,
+            });
+            if (!isEditMode) {
+              form.reset();
+            }
+          } else {
+             toast({
+              variant: "destructive",
+              title: isEditMode ? "Erro na atualização" : "Erro no cadastro",
+              description: result.message || "Ocorreu um erro. Tente novamente.",
+            });
+          }
         }
-        if (!isEditMode) {
-          form.reset();
-        }
-      } else {
-        toast({
-          variant: "destructive",
-          title: isEditMode ? "Erro na atualização" : "Erro no cadastro",
-          description: result.message || "Ocorreu um erro. Tente novamente.",
-        });
-      }
     } catch (error) {
       toast({
         variant: "destructive",

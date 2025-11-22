@@ -31,6 +31,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
 import { CardDescription } from "./ui/card";
+import CustomerRegistrationForm from "./customer-registration-form";
 
 const salesOrderItemSchema = z.object({
   id: z.string().optional(),
@@ -78,6 +79,7 @@ export default function SalesOrderForm({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
+  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
   const isEditMode = !!initialData;
   const cameFromLead = !!leadData;
   
@@ -185,6 +187,18 @@ export default function SalesOrderForm({
     }
     setIsProductDialogOpen(false);
   }
+  
+  const handleCustomerFormSuccess = (customerData: Omit<Customer, 'id'>) => {
+    const newCustomer = onCustomerAdd(customerData);
+    if (newCustomer) {
+      form.setValue("customerId", newCustomer.id);
+      setIsCustomerDialogOpen(false);
+      toast({
+        title: "Cliente Cadastrado!",
+        description: `O cliente ${newCustomer.name} foi selecionado.`,
+      });
+    }
+  }
 
 
   async function onSubmit(data: SalesOrderFormValues) {
@@ -230,12 +244,24 @@ export default function SalesOrderForm({
 
 
   const selectedCustomerId = form.watch("customerId");
+  
+  const leadCustomerData = React.useMemo(() => {
+    if (!cameFromLead || customerForLead) return null;
+    return {
+      name: leadData?.contact || "",
+      companyName: leadData?.name,
+      email: leadData?.email || "",
+      phone: leadData?.phone || "",
+    }
+  }, [cameFromLead, customerForLead, leadData]);
+
 
   return (
     <div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
+            <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
               <FormField
                 control={form.control}
                 name="customerId"
@@ -271,25 +297,38 @@ export default function SalesOrderForm({
                           </SelectContent>
                         </Select>
                        )}
-                      <Button variant="outline" size="icon" disabled={isEditMode || (cameFromLead && !!customerForLead)} onClick={onSwitchToCustomers} type="button">
-                        <UserPlus className="h-4 w-4" />
-                        <span className="sr-only">Novo Cliente</span>
-                      </Button>
+                       <DialogTrigger asChild>
+                          <Button variant="outline" size="icon" disabled={isEditMode || (cameFromLead && !!customerForLead)} type="button">
+                            <UserPlus className="h-4 w-4" />
+                            <span className="sr-only">Novo Cliente</span>
+                          </Button>
+                       </DialogTrigger>
                     </div>
                      { (cameFromLead && !customerForLead) && (
                         <CardDescription className="text-xs text-muted-foreground mt-1">
-                            Este lead ainda não é um cliente. Feche este modal e cadastre-o na aba 'Clientes'.
+                            Este lead ainda não é um cliente. Clique no botão '+' para completar o cadastro.
                         </CardDescription>
                       )}
                       {!cameFromLead && (
                          <CardDescription className="text-xs text-muted-foreground mt-1">
-                            Não encontrou o cliente? Cadastre-o primeiro na aba 'Clientes'.
+                            Não encontrou o cliente? Clique no botão '+' para cadastrar.
                         </CardDescription>
                       )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <DialogContent className="sm:max-w-[800px]">
+                <DialogHeader>
+                    <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
+                </DialogHeader>
+                <CustomerRegistrationForm 
+                    onSuccess={handleCustomerFormSuccess}
+                    initialData={leadCustomerData}
+                />
+              </DialogContent>
+            </Dialog>
+
                {proposalData && (
                 <div className="flex items-center gap-4">
                   <Button type="button" variant="outline" size="sm" onClick={loadProposalData}>
