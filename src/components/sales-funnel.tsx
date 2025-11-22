@@ -90,7 +90,7 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
             <Button 
                 className="w-full" 
                 size="sm"
-                onClick={(e) => { e.stopPropagation(); /* onNewPurchase(lead) */}}
+                onClick={(e) => { e.stopPropagation(); onClick() }}
             >
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 Nova Compra
@@ -357,6 +357,7 @@ export default function SalesFunnel({
     onUpdateLead,
     onDeleteLead,
     onAddLead,
+    customers,
     products,
     onProductAdd,
     proposals,
@@ -473,16 +474,8 @@ export default function SalesFunnel({
   }
 
   const handleCardClick = (lead: Lead) => {
-    const approvedLeadsForCustomer = leads.filter(
-        (l) => l.status === "Aprovado" && l.name === lead.name
-    );
-
-    if (lead.status === "Aprovado" && approvedLeadsForCustomer.length > 1) {
-        handleViewGroup(approvedLeadsForCustomer);
-    } else {
-        setSelectedLead(lead);
-        setIsDetailsModalOpen(true);
-    }
+    setSelectedLead(lead);
+    setIsDetailsModalOpen(true);
   };
   
   const handleEditClick = (lead: Lead) => {
@@ -627,16 +620,7 @@ export default function SalesFunnel({
     }
     for (const lead of filteredLeads) {
       if (grouped[lead.status]) {
-        if (lead.status === "Aprovado") {
-            const existingGroup = grouped["Aprovado"]!.find(
-                (l) => l.name === lead.name
-            );
-            if (!existingGroup) {
-                grouped["Aprovado"]!.push(lead);
-            }
-        } else {
-            grouped[lead.status]!.push(lead);
-        }
+        grouped[lead.status]!.push(lead);
       }
     }
     return grouped;
@@ -685,45 +669,27 @@ export default function SalesFunnel({
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-lg capitalize">{status}</h3>
                     <Badge variant="secondary" className="rounded-full">
-                        {status === 'Aprovado' ? leads.filter(l => l.status === 'Aprovado').length : leadsByStatus[status]?.length || 0}
+                        {leadsByStatus[status]?.length || 0}
                     </Badge>
                   </div>
               </div>
               <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
-                   {status === "Aprovado" ?
-                        (leads.filter(l => l.status === "Aprovado")).map((lead) => {
-                            return (
-                                <LeadCard
-                                    key={lead.id}
-                                    lead={lead}
-                                    onDragStart={handleDragStart}
-                                    onClick={() => handleNewPurchase(lead)}
-                                    proposals={proposals}
-                                />
-                            );
-                        }) :
-                        (leadsByStatus[status] || []).map((lead) => (
-                            <LeadCard
-                                key={lead.id}
-                                lead={lead}
-                                onDragStart={handleDragStart}
-                                onClick={() => handleCardClick(lead)}
-                                proposals={proposals}
-                            />
-                        ))
-                    }
+                   {(leadsByStatus[status] || []).map((lead) => (
+                      <LeadCard
+                          key={lead.id}
+                          lead={lead}
+                          onDragStart={handleDragStart}
+                          onClick={status === 'Aprovado' ? () => handleNewPurchase(lead) : () => handleCardClick(lead)}
+                          proposals={proposals}
+                      />
+                  ))}
 
-                  {(leadsByStatus[status]?.length === 0 && status !== 'Aprovado') && (
+                  {(leadsByStatus[status]?.length === 0) && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                           {filteredLeads.length > 0 && leads.length > filteredLeads.length ? 'Nenhum lead encontrado com este filtro' : 'Arraste um lead aqui'}
                       </div>
                   )}
-                   {(status === 'Aprovado' && leads.filter(l => l.status === 'Aprovado').length === 0) && (
-                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                            Arraste um lead aqui
-                        </div>
-                    )}
                   </CardContent>
               </Card>
             </div>
@@ -760,6 +726,8 @@ export default function SalesFunnel({
                 <DialogDescription>Preencha os dados abaixo para adicionar um novo lead ao funil.</DialogDescription>
               </DialogHeader>
               <NewLeadForm
+                leads={leads}
+                customers={customers}
                 onSuccess={handleNewLeadSuccess}
               />
             </DialogContent>
@@ -825,5 +793,3 @@ export default function SalesFunnel({
     </div>
   );
 }
-
-    

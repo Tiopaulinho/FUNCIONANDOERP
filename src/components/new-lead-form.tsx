@@ -17,17 +17,21 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { newLeadSchema, type Lead } from "@/lib/schemas";
+import { newLeadSchema, type Lead, type Customer } from "@/lib/schemas";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { useToast } from "@/hooks/use-toast";
 
 type NewLeadFormValues = z.infer<typeof newLeadSchema>;
 
 interface NewLeadFormProps {
   onSuccess: (data: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => void;
+  leads: Lead[];
+  customers: (Customer & { id: string })[];
 }
 
-export default function NewLeadForm({ onSuccess }: NewLeadFormProps) {
+export default function NewLeadForm({ onSuccess, leads, customers }: NewLeadFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { toast } = useToast();
 
   const form = useForm<NewLeadFormValues>({
     resolver: zodResolver(newLeadSchema),
@@ -44,6 +48,28 @@ export default function NewLeadForm({ onSuccess }: NewLeadFormProps) {
 
   async function onSubmit(data: NewLeadFormValues) {
     setIsSubmitting(true);
+
+    const isDuplicate = () => {
+        const normalizedContact = data.contact.trim().toLowerCase();
+        if (data.type === 'pj') {
+            const normalizedName = (data.name || "").trim().toLowerCase();
+            return customers.some(c => c.name.toLowerCase() === normalizedName) ||
+                   leads.some(l => l.name.toLowerCase() === normalizedName);
+        } else { // pf
+            return customers.some(c => c.name.toLowerCase() === normalizedContact) ||
+                   leads.some(l => l.contact.toLowerCase() === normalizedContact && l.name.toLowerCase() === normalizedContact);
+        }
+    };
+
+    if (isDuplicate()) {
+        toast({
+            variant: "destructive",
+            title: "Lead duplicado",
+            description: "Já existe um lead ou cliente com esses dados.",
+        });
+        setIsSubmitting(false);
+        return;
+    }
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -169,5 +195,3 @@ export default function NewLeadForm({ onSuccess }: NewLeadFormProps) {
     </Form>
   );
 }
-
-    
