@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -38,11 +38,12 @@ import LeadForm from "./lead-form";
 import { Textarea } from "./ui/textarea";
 import ProposalForm from "./proposal-form";
 import { Input } from "./ui/input";
+import NewLeadForm from "./new-lead-form";
 
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart, onClick, proposals, onNewPurchase, onViewHistory }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, proposals: Proposal[], onNewPurchase?: (lead: Lead) => void, onViewHistory?: (lead: Lead) => void }) => {
+const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, proposals: Proposal[]}) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
   const handleButtonClick = (e: React.MouseEvent, action: (lead: Lead) => void) => {
@@ -87,12 +88,12 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals, onNewPurchase, onView
             </CardDescription>
         )}
       </CardHeader>
-      {lead.status === 'Aprovado' && onNewPurchase && (
+      {lead.status === 'Aprovado' && (
          <CardContent className="p-4 pt-0">
             <Button 
                 className="w-full" 
                 size="sm"
-                onClick={(e) => handleButtonClick(e, onNewPurchase)}
+                onClick={(e) => { e.stopPropagation(); /* onNewPurchase(lead) */}}
             >
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 Nova Compra
@@ -346,6 +347,7 @@ interface SalesFunnelProps {
   onOpenNewOrder: (lead: Lead) => void;
   onUpdateLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
+  onAddLead: (lead: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => void;
   customers: (Customer & { id: string })[];
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
@@ -360,6 +362,7 @@ export default function SalesFunnel({
     onOpenNewOrder, 
     onUpdateLead,
     onDeleteLead,
+    onAddLead,
     products,
     onProductAdd,
     proposals,
@@ -375,6 +378,7 @@ export default function SalesFunnel({
   const [generateProposalLead, setGenerateProposalLead] = React.useState<Lead | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isNewLeadModalOpen, setIsNewLeadModalOpen] = React.useState(false);
   const [isProposalModalOpen, setIsProposalModalOpen] = React.useState(false);
   const [isGenerateProposalModalOpen, setIsGenerateProposalModalOpen] = React.useState(false);
   const [isGroupedLeadsModalOpen, setIsGroupedLeadsModalOpen] = React.useState(false);
@@ -475,8 +479,16 @@ export default function SalesFunnel({
   }
 
   const handleCardClick = (lead: Lead) => {
-    setSelectedLead(lead);
-    setIsDetailsModalOpen(true);
+    const approvedLeadsForCustomer = leads.filter(
+        (l) => l.status === "Aprovado" && l.name === lead.name
+    );
+
+    if (lead.status === "Aprovado" && approvedLeadsForCustomer.length > 1) {
+        handleViewGroup(approvedLeadsForCustomer);
+    } else {
+        setSelectedLead(lead);
+        setIsDetailsModalOpen(true);
+    }
   };
   
   const handleEditClick = (lead: Lead) => {
@@ -541,9 +553,7 @@ export default function SalesFunnel({
   
   const handleSendWhatsApp = () => {
     if (savedProposal && generateProposalLead) {
-        const leadWithProposal = { ...generateProposalLead, proposalId: savedProposal.id };
         onProposalSent(savedProposal);
-        updateLeadWithHistory(leadWithProposal, 'Negociação');
         toast({
             title: "Proposta Enviada!",
             description: `Lead movido para Negociação.`
@@ -593,6 +603,15 @@ export default function SalesFunnel({
     setIsGroupedLeadsModalOpen(false);
     handleCardClick(lead);
   };
+  
+  const handleNewLeadSuccess = (data: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => {
+    onAddLead(data);
+    setIsNewLeadModalOpen(false);
+    toast({
+        title: "Lead Criado!",
+        description: "O novo lead foi adicionado à coluna 'Lista de Leads'.",
+    });
+  };
 
 
   const filteredLeads = React.useMemo(() => {
@@ -613,7 +632,17 @@ export default function SalesFunnel({
     }
     for (const lead of filteredLeads) {
       if (grouped[lead.status]) {
-        grouped[lead.status]!.push(lead);
+        // Handle approved leads grouping
+        if (lead.status === "Aprovado") {
+            const existingGroup = grouped["Aprovado"]!.find(
+                (l) => l.name === lead.name
+            );
+            if (!existingGroup) {
+                grouped["Aprovado"]!.push(lead);
+            }
+        } else {
+            grouped[lead.status]!.push(lead);
+        }
       }
     }
     return grouped;
@@ -627,10 +656,16 @@ export default function SalesFunnel({
                 <h2 className="text-2xl font-bold">Funil de Vendas</h2>
                 <p className="text-muted-foreground">Arraste e solte os leads para atualizar o status.</p>
             </div>
-            <Button onClick={simulateImport} variant="outline">
-              <Upload className="mr-2 h-4 w-4" />
-              Importar Leads (Simulação)
-            </Button>
+            <div className="flex gap-2">
+                <Button onClick={() => setIsNewLeadModalOpen(true)} >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Novo Lead
+                </Button>
+                <Button onClick={simulateImport} variant="outline">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Importar Leads (Simulação)
+                </Button>
+            </div>
         </div>
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
             <Input
@@ -662,16 +697,29 @@ export default function SalesFunnel({
               </div>
               <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
-                  {leadsByStatus[status]?.map((lead) => (
-                      <LeadCard 
-                        key={lead.id} 
-                        lead={lead} 
-                        onDragStart={handleDragStart}
-                        onClick={() => handleCardClick(lead)}
-                        proposals={proposals}
-                        onNewPurchase={handleNewPurchase}
-                      />
-                  ))}
+                   {status === "Aprovado" ?
+                        (leadsByStatus[status] || []).map((lead) => {
+                            const group = leads.filter(l => l.status === "Aprovado" && l.name === lead.name);
+                            return (
+                                <LeadCard
+                                    key={lead.id}
+                                    lead={lead}
+                                    onDragStart={handleDragStart}
+                                    onClick={() => handleCardClick(lead)}
+                                    proposals={proposals}
+                                />
+                            );
+                        }) :
+                        (leadsByStatus[status] || []).map((lead) => (
+                            <LeadCard
+                                key={lead.id}
+                                lead={lead}
+                                onDragStart={handleDragStart}
+                                onClick={() => handleCardClick(lead)}
+                                proposals={proposals}
+                            />
+                        ))
+                    }
 
                   {(leadsByStatus[status]?.length === 0) && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -703,6 +751,18 @@ export default function SalesFunnel({
               <LeadForm
                 initialData={editingLead}
                 onSuccess={handleEditSuccess}
+              />
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isNewLeadModalOpen} onOpenChange={setIsNewLeadModalOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Criar Novo Lead</DialogTitle>
+                <DialogDescription>Preencha os dados abaixo para adicionar um novo lead ao funil.</DialogDescription>
+              </DialogHeader>
+              <NewLeadForm
+                onSuccess={handleNewLeadSuccess}
               />
             </DialogContent>
         </Dialog>
@@ -767,6 +827,8 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
 
     
 

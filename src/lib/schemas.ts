@@ -85,6 +85,23 @@ export const leadSchema = z.object({
   proposalNotes: z.string().optional(),
 });
 
+export const newLeadSchema = z.object({
+  type: z.enum(["pf", "pj"]),
+  name: z.string().optional(), // Company name for PJ
+  contact: z.string().min(3, { message: "O nome do contato é obrigatório." }),
+  phone: z.string().optional(),
+  email: z.string().email({ message: "Email inválido." }).optional(),
+}).refine(data => {
+  if (data.type === "pj") {
+    return !!data.name && data.name.length >= 3;
+  }
+  return true;
+}, {
+  message: "O nome da empresa é obrigatório para Pessoa Jurídica.",
+  path: ["name"],
+});
+
+
 export type Lead = z.infer<typeof leadSchema> & {
   id: string;
   status: LeadStatus;
@@ -123,3 +140,4 @@ export type ProposalItem = z.infer<typeof proposalItemSchema>;
 
     
 
+    

@@ -150,6 +150,17 @@ export default function Home() {
     return newCustomer;
   }
   
+  const addLead = (leadData: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => {
+    const today = new Date().toISOString();
+    const newLead: Lead = {
+      ...leadData,
+      id: `lead-${Date.now()}`,
+      status: "Lista de Leads",
+      statusHistory: [{ status: "Lista de Leads", date: today }],
+    };
+    setLeads(prev => [newLead, ...prev]);
+  };
+  
   const updateLead = (updatedLead: Lead) => {
     setLeads(prevLeads => prevLeads.map(l => l.id === updatedLead.id ? updatedLead : l));
   };
@@ -179,7 +190,7 @@ const handleProposalSent = (proposal: Proposal) => {
       const today = new Date().toISOString();
       const newHistoryEntry = { status: 'Negociação' as const, date: today };
       const newHistory = [...(leadToUpdate.statusHistory || []), newHistoryEntry];
-      updateLead({ ...leadToUpdate, status: 'Negociação', statusHistory: newHistory });
+      updateLead({ ...leadToUpdate, status: 'Negociação', statusHistory: newHistory, proposalId: proposal.id });
     }
 };
 
@@ -197,11 +208,11 @@ const handleProposalSent = (proposal: Proposal) => {
   return (
     <main className="flex min-h-dvh w-full flex-col items-center bg-background p-4 md:p-8">
       <div className="w-full max-w-7xl">
-        <Tabs defaultValue="customers" className="w-full">
+        <Tabs defaultValue="funnel" className="w-full">
           <div className="mb-4 flex items-center justify-between gap-4">
             <TabsList>
-              <TabsTrigger value="customers">Clientes</TabsTrigger>
               <TabsTrigger value="funnel">Funil de Venda</TabsTrigger>
+              <TabsTrigger value="customers">Clientes</TabsTrigger>
               <TabsTrigger value="proposals">Propostas</TabsTrigger>
               <TabsTrigger value="orders">Pedidos de Venda</TabsTrigger>
               <TabsTrigger value="products">Produtos</TabsTrigger>
@@ -220,6 +231,7 @@ const handleProposalSent = (proposal: Proposal) => {
               onProductAdd={addProduct}
               onUpdateLead={updateLead}
               onDeleteLead={deleteLead}
+              onAddLead={addLead}
               proposals={proposals}
               onProposalSave={handleProposalSave}
               onProposalSent={handleProposalSent}
@@ -289,3 +301,5 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
+
+    
