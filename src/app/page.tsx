@@ -19,9 +19,10 @@ import {
 import SalesOrderForm from "@/components/sales-order-form";
 import ProductList from "@/components/product-list";
 import ProductForm from "@/components/product-form";
-import type { Product, SalesOrder, Lead, Customer, Proposal } from "@/lib/schemas";
+import type { Product, SalesOrder, Lead, Customer, Proposal, ShippingSettings } from "@/lib/schemas";
 import SalesFunnel from "@/components/sales-funnel";
 import ProposalList from "@/components/proposal-list";
+import ShippingSettingsComponent from "@/components/shipping-settings";
 
 
 const initialProducts: (Product & { id: string })[] = [
@@ -32,11 +33,11 @@ const initialProducts: (Product & { id: string })[] = [
 ];
 
 const initialOrders: SalesOrder[] = [
-  { id: "ORD-001", customerId: "1", customerName: "José da Silva", date: "2024-07-28", total: 150.50, status: "Entregue", items: [ {id: "item-1", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 150.50} ] },
-  { id: "ORD-002", customerId: "2", customerName: "Maria Oliveira", date: "2024-07-27", total: 299.99, status: "Enviado", items: [ {id: "item-2", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 2, price: 120}, {id: "item-3", productId: "prod-3", productName: "Teclado", quantity: 1, price: 59.99} ] },
-  { id: "ORD-003", customerId: "3", customerName: "Carlos Pereira", date: "2024-07-26", total: 75.00, status: "Processando", items: [ {id: "item-4", productId: "prod-4", productName: "Monitor 4K", quantity: 1, price: 75.00} ] },
-  { id: "ORD-004", customerId: "4", customerName: "Ana Costa", date: "2024-07-25", total: 500.00, status: "Pendente", items: [ {id: "item-5", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 500} ] },
-  { id: "ORD-005", customerId: "1", customerName: "José da Silva", date: "2024-07-24", total: 99.90, status: "Entregue", items: [ {id: "item-6", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 1, price: 99.90} ] },
+  { id: "ORD-001", customerId: "1", customerName: "José da Silva", date: "2024-07-28", total: 150.50, status: "Entregue", shipping: 0, items: [ {id: "item-1", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 150.50} ] },
+  { id: "ORD-002", customerId: "2", customerName: "Maria Oliveira", date: "2024-07-27", total: 299.99, status: "Enviado", shipping: 0, items: [ {id: "item-2", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 2, price: 120}, {id: "item-3", productId: "prod-3", productName: "Teclado", quantity: 1, price: 59.99} ] },
+  { id: "ORD-003", customerId: "3", customerName: "Carlos Pereira", date: "2024-07-26", total: 75.00, status: "Processando", shipping: 0, items: [ {id: "item-4", productId: "prod-4", productName: "Monitor 4K", quantity: 1, price: 75.00} ] },
+  { id: "ORD-004", customerId: "4", customerName: "Ana Costa", date: "2024-07-25", total: 500.00, status: "Pendente", shipping: 0, items: [ {id: "item-5", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 500} ] },
+  { id: "ORD-005", customerId: "1", customerName: "José da Silva", date: "2024-07-24", total: 99.90, status: "Entregue", shipping: 0, items: [ {id: "item-6", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 1, price: 99.90} ] },
 ];
 
 const initialLeads: Lead[] = [
@@ -51,13 +52,22 @@ const initialLeads: Lead[] = [
 const initialProposals: Proposal[] = [];
 
 const initialCustomers: (Customer & { id: string })[] = [
-  { id: "1", name: "José da Silva", companyName: "Silva & Filhos", email: "jose.silva@example.com", phone: "(11) 98765-4321", zip: "01001-000", street: "Praça da Sé", number: "s/n", complement: "lado ímpar", neighborhood: "Sé", city: "São Paulo", state: "SP" },
-  { id: "2", name: "Maria Oliveira", companyName: "Oliveira Transportes", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ" },
-  { id: "3", name: "Carlos Pereira", email: "carlos.pereira@example.com", phone: "(31) 95555-4444", zip: "30110-044", street: "Av. do Contorno", number: "6594", complement: "Sala 501", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG" },
-  { id: "4", name: "Ana Costa", email: "ana.costa@example.com", phone: "(71) 99999-8888", zip: "40020-000", street: "Largo do Pelourinho", number: "10", complement: "", neighborhood: "Pelourinho", city: "Salvador", state: "BA" },
-  { id: "cust-gama-1", name: "Comércio Gama", companyName: "Comércio Gama", email: "contato@comerciogama.com", phone: "(31) 93333-3333", zip: "30110-044", street: "Av. do Contorno", number: "7000", complement: "", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG" },
-  { id: "cust-epsilon-1", name: "Indústria Epsilon", companyName: "Indústria Epsilon", email: "contato@industriaepsilon.com", phone: "(51) 95555-5555", zip: "90010-000", street: "Av. Borges de Medeiros", number: "500", complement: "", neighborhood: "Centro Histórico", city: "Porto Alegre", state: "RS" },
+  { id: "1", name: "José da Silva", companyName: "Silva & Filhos", email: "jose.silva@example.com", phone: "(11) 98765-4321", zip: "01001-000", street: "Praça da Sé", number: "s/n", complement: "lado ímpar", neighborhood: "Sé", city: "São Paulo", state: "SP", distance: 10 },
+  { id: "2", name: "Maria Oliveira", companyName: "Oliveira Transportes", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ", distance: 450 },
+  { id: "3", name: "Carlos Pereira", email: "carlos.pereira@example.com", phone: "(31) 95555-4444", zip: "30110-044", street: "Av. do Contorno", number: "6594", complement: "Sala 501", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG", distance: 500 },
+  { id: "4", name: "Ana Costa", email: "ana.costa@example.com", phone: "(71) 99999-8888", zip: "40020-000", street: "Largo do Pelourinho", number: "10", complement: "", neighborhood: "Pelourinho", city: "Salvador", state: "BA", distance: 1900 },
+  { id: "cust-gama-1", name: "Comércio Gama", companyName: "Comércio Gama", email: "contato@comerciogama.com", phone: "(31) 93333-3333", zip: "30110-044", street: "Av. do Contorno", number: "7000", complement: "", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG", distance: 500 },
+  { id: "cust-epsilon-1", name: "Indústria Epsilon", companyName: "Indústria Epsilon", email: "contato@industriaepsilon.com", phone: "(51) 95555-5555", zip: "90010-000", street: "Av. Borges de Medeiros", number: "500", complement: "", neighborhood: "Centro Histórico", city: "Porto Alegre", state: "RS", distance: 1100 },
 ];
+
+const initialShippingSettings: ShippingSettings = {
+  originZip: "01001-000",
+  tiers: [
+    { minDistance: 0, maxDistance: 50, cost: 10 },
+    { minDistance: 51, maxDistance: 200, cost: 25 },
+    { minDistance: 201, maxDistance: 1000, cost: 50 },
+  ]
+};
 
 
 export default function Home() {
@@ -66,6 +76,7 @@ export default function Home() {
   const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
   const [customers, setCustomers] = React.useState(initialCustomers);
   const [proposals, setProposals] = React.useState<Proposal[]>(initialProposals);
+  const [shippingSettings, setShippingSettings] = React.useState<ShippingSettings>(initialShippingSettings);
 
   const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
   const [leadForOrder, setLeadForOrder] = React.useState<Lead | null>(null);
@@ -206,11 +217,6 @@ const handleProposalSent = (proposal: Proposal) => {
     }
   };
 
-  const handleSwitchToCustomersTab = () => {
-    setIsSalesOrderDialogOpen(false);
-    setActiveTab("customers");
-  }
-
 
   return (
     <main className="flex min-h-dvh w-full flex-col items-center bg-background p-4 md:p-8">
@@ -223,6 +229,7 @@ const handleProposalSent = (proposal: Proposal) => {
               <TabsTrigger value="proposals">Propostas</TabsTrigger>
               <TabsTrigger value="orders">Pedidos de Venda</TabsTrigger>
               <TabsTrigger value="products">Produtos</TabsTrigger>
+              <TabsTrigger value="shipping">Frete</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="customers">
@@ -269,6 +276,12 @@ const handleProposalSent = (proposal: Proposal) => {
               onNewProductClick={() => setIsNewProductDialogOpen(true)}
             />
           </TabsContent>
+          <TabsContent value="shipping">
+            <ShippingSettingsComponent
+              settings={shippingSettings}
+              onSave={setShippingSettings}
+            />
+          </TabsContent>
         </Tabs>
         
         <Dialog open={isSalesOrderDialogOpen} onOpenChange={(isOpen) => {
@@ -292,7 +305,7 @@ const handleProposalSent = (proposal: Proposal) => {
                 proposalData={proposalForOrder}
                 customers={customers}
                 onCustomerAdd={addCustomer}
-                onSwitchToCustomers={handleSwitchToCustomersTab}
+                shippingSettings={shippingSettings}
               />
             </DialogContent>
         </Dialog>

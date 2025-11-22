@@ -65,6 +65,7 @@ export type SalesOrder = {
   date: string;
   total: number;
   status: OrderStatus;
+  shipping: number;
   items: OrderItem[];
 };
 
@@ -138,9 +139,14 @@ export const proposalSchema = z.object({
 export type Proposal = z.infer<typeof proposalSchema>;
 export type ProposalItem = z.infer<typeof proposalItemSchema>;
 
-    
 
-    
+export interface ShippingTier {
+  minDistance: number;
+  maxDistance: number;
+  cost: number;
+}
 
-    
-
+export interface ShippingSettings {
+  originZip: string;
+  tiers: ShippingTier[];
+}

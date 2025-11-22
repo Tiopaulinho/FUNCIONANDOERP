@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
-import type { Customer, Product, SalesOrder, Lead, Proposal, ProposalItem } from "@/lib/schemas";
+import type { Customer, Product, SalesOrder, Lead, Proposal, ProposalItem, ShippingSettings } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
@@ -47,6 +47,7 @@ const salesOrderSchema = z.object({
   customerName: z.string().optional(), // For data handling
   date: z.string().optional(), // For data handling
   status: z.enum(["Pendente", "Processando", "Enviado", "Entregue"]).optional(),
+  shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
   items: z.array(salesOrderItemSchema).min(1, "Adicione pelo menos um item ao pedido."),
 });
 
@@ -62,7 +63,7 @@ interface SalesOrderFormProps {
   proposalData?: Proposal | null;
   customers: (Customer & { id: string })[];
   onCustomerAdd: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
-  onSwitchToCustomers: () => void;
+  shippingSettings: ShippingSettings;
 }
 
 export default function SalesOrderForm({ 
@@ -74,7 +75,7 @@ export default function SalesOrderForm({
   proposalData,
   customers,
   onCustomerAdd,
-  onSwitchToCustomers,
+  shippingSettings,
 }: SalesOrderFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -95,6 +96,7 @@ export default function SalesOrderForm({
     resolver: zodResolver(salesOrderSchema),
     defaultValues: {
       customerId: "",
+      shipping: 0,
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
     },
   });
@@ -144,6 +146,7 @@ export default function SalesOrderForm({
       } else if (cameFromLead) {
         form.reset({
           customerId: customerForLead?.id || "",
+          shipping: 0,
           items: proposalData?.items?.map(item => ({
             ...item,
             quantity: item.quantity || 1,
@@ -153,6 +156,7 @@ export default function SalesOrderForm({
       } else {
         form.reset({
           customerId: "",
+          shipping: 0,
           items: defaultItems,
         });
       }
@@ -163,7 +167,10 @@ export default function SalesOrderForm({
 
 
   const watchedItems = form.watch("items");
-  const total = watchedItems.reduce((acc, item) => acc + (item.quantity || 0) * (item.price || 0), 0);
+  const watchedShipping = form.watch("shipping") || 0;
+  const subtotal = watchedItems.reduce((acc, item) => acc + (item.quantity || 0) * (item.price || 0), 0);
+  const total = subtotal + watchedShipping;
+
 
   const handleProductSelect = (productId: string, index: number) => {
     const product = products.find(p => p.id === productId);
@@ -200,6 +207,25 @@ export default function SalesOrderForm({
     }
   }
 
+  const selectedCustomerId = form.watch("customerId");
+
+  React.useEffect(() => {
+    if (selectedCustomerId && shippingSettings) {
+      const customer = customers.find(c => c.id === selectedCustomerId);
+      if (customer && typeof customer.distance === 'number') {
+        const tier = shippingSettings.tiers.find(t => 
+          customer.distance! >= t.minDistance && customer.distance! <= t.maxDistance
+        );
+        if (tier) {
+          form.setValue("shipping", tier.cost);
+        } else {
+          // Optional: handle cases where distance is outside all tiers
+          form.setValue("shipping", 0);
+        }
+      }
+    }
+  }, [selectedCustomerId, customers, shippingSettings, form]);
+
 
   async function onSubmit(data: SalesOrderFormValues) {
     setIsSubmitting(true);
@@ -225,6 +251,7 @@ export default function SalesOrderForm({
       status: initialData?.status || 'Pendente',
       customerName: customer?.companyName || customer?.name || 'Cliente Desconhecido',
       total: total,
+      shipping: data.shipping || 0,
       items: data.items.map(item => ({...item, id: item.id || `item-${Date.now()}-${Math.random()}`})),
     };
     
@@ -242,8 +269,6 @@ export default function SalesOrderForm({
     setIsSubmitting(false);
   }
 
-
-  const selectedCustomerId = form.watch("customerId");
   
   const leadCustomerData = React.useMemo(() => {
     if (!cameFromLead || customerForLead) return null;
@@ -466,21 +491,42 @@ export default function SalesOrderForm({
 
           <Separator />
 
-          <div className="flex justify-end items-center gap-4">
-              <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Total do Pedido</p>
-                  <p className="text-2xl font-bold">{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+          <div className="flex justify-end items-start gap-8">
+              <div className="space-y-1 text-right">
+                  <p className="text-sm text-muted-foreground">Subtotal</p>
+                  <p className="text-lg font-medium">{subtotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
               </div>
-              <Button type="submit" disabled={isSubmitting} size="lg">
-                  {isSubmitting ? (
-                  <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Salvando...
-                  </>
-                  ) : (
-                    isEditMode ? "Salvar Alterações" : "Criar Pedido"
-                  )}
-              </Button>
+              <div className="w-32">
+                <FormField
+                    control={form.control}
+                    name="shipping"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Frete (R$)</FormLabel>
+                        <FormControl>
+                            <Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
+                        </FormControl>
+                        <FormMessage className="mt-1 text-xs"/>
+                        </FormItem>
+                    )}
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Total do Pedido</p>
+                    <p className="text-2xl font-bold">{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                </div>
+                <Button type="submit" disabled={isSubmitting} size="lg">
+                    {isSubmitting ? (
+                    <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Salvando...
+                    </>
+                    ) : (
+                      isEditMode ? "Salvar Alterações" : "Criar Pedido"
+                    )}
+                </Button>
+              </div>
           </div>
         </form>
       </Form>
