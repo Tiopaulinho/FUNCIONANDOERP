@@ -37,6 +37,7 @@ import {
 import LeadForm from "./lead-form";
 import { Textarea } from "./ui/textarea";
 import ProposalForm from "./proposal-form";
+import { Input } from "./ui/input";
 
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
@@ -64,7 +65,7 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
                 {proposal && (
                   <Badge variant="secondary" className="flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
-                      {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      {(proposal.total ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                   </Badge>
                 )}
             </div>
@@ -190,7 +191,7 @@ const LeadDetailsModal = ({
                     <div>
                         <p className="text-sm text-muted-foreground">Valor da Proposta</p>
                         <p className="font-semibold text-lg">
-                            {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            {(proposal.total ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                         </p>
                     </div>
                 </div>
@@ -277,13 +278,11 @@ const GroupedLeadsModal = ({
     if (!group) return null;
     
     const getProposalValue = (lead: Lead) => {
-      if (lead.proposalId) {
         const proposal = proposals.find(p => p.id === lead.proposalId);
-        if (proposal && proposal.total) {
-          return proposal.total;
+        if (proposal) {
+            return proposal.total;
         }
-      }
-      return lead.value;
+        return lead.value;
     }
   
     return (
@@ -301,7 +300,7 @@ const GroupedLeadsModal = ({
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-base">Oportunidade #{lead.id.slice(-4)}</CardTitle>
-                    <p className="font-bold text-lg">{getProposalValue(lead)?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                    <p className="font-bold text-lg">{(getProposalValue(lead) ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                   </div>
                   {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
                 </CardHeader>
@@ -394,6 +393,7 @@ export default function SalesFunnel({
     onProposalSent
 }: SalesFunnelProps) {
   const { toast } = useToast();
+  const [nameFilter, setNameFilter] = React.useState("");
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
   const [editingLead, setEditingLead] = React.useState<Lead | null>(null);
   const [proposalLead, setProposalLead] = React.useState<Lead | null>(null);
@@ -620,18 +620,27 @@ export default function SalesFunnel({
   };
 
 
+  const filteredLeads = React.useMemo(() => {
+    if (!nameFilter) {
+      return leads;
+    }
+    return leads.filter(lead => 
+      lead.name.toLowerCase().includes(nameFilter.toLowerCase())
+    );
+  }, [leads, nameFilter]);
+
   const leadsByStatus = React.useMemo(() => {
     const grouped: { [key in LeadStatus]?: Lead[] } = {};
     for (const status of funnelStatuses) {
         grouped[status] = [];
     }
-    for (const lead of leads) {
+    for (const lead of filteredLeads) {
       if (grouped[lead.status]) {
         grouped[lead.status]!.push(lead);
       }
     }
     return grouped;
-  }, [leads]);
+  }, [filteredLeads]);
   
   const approvedLeadsGrouped = React.useMemo(() => {
     const approved = leadsByStatus['Aprovado'] || [];
@@ -647,7 +656,7 @@ export default function SalesFunnel({
 
   return (
     <div className="w-full">
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-6 flex justify-between items-center gap-4 flex-wrap">
             <div>
                 <h2 className="text-2xl font-bold">Funil de Vendas</h2>
                 <p className="text-muted-foreground">Arraste e solte os leads para atualizar o status.</p>
@@ -656,6 +665,14 @@ export default function SalesFunnel({
               <Upload className="mr-2 h-4 w-4" />
               Importar Leads (Simulação)
             </Button>
+        </div>
+        <div className="mb-6">
+            <Input
+                placeholder="Filtrar por nome da empresa..."
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                className="max-w-sm"
+            />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         {funnelStatuses.map((status) => (
@@ -699,7 +716,7 @@ export default function SalesFunnel({
                   {((status === 'Aprovado' && Object.keys(approvedLeadsGrouped).length === 0) ||
                     (status !== 'Aprovado' && leadsByStatus[status]?.length === 0)) && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                          Arraste um lead aqui
+                          {filteredLeads.length > 0 && leads.length > filteredLeads.length ? 'Nenhum lead encontrado com este filtro' : 'Arraste um lead aqui'}
                       </div>
                   )}
                   </CardContent>
@@ -791,3 +808,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
