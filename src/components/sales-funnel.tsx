@@ -50,12 +50,14 @@ const LeadCard = ({
     onClick, 
     proposals,
     onGenerateProposal,
+    isApproved,
 }: { 
     lead: Lead;
     onDragStart: (e: React.DragEvent, leadId: string) => void;
     onClick: () => void;
     proposals: Proposal[];
     onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
+    isApproved?: boolean;
 }) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
@@ -108,7 +110,7 @@ const LeadCard = ({
         </CardFooter>
       )}
 
-      {lead.status === 'Aprovado' && (
+      {isApproved && (
          <CardFooter className="p-4 pt-0">
             <Button 
                 className="w-full" 
@@ -705,9 +707,10 @@ export default function SalesFunnel({
                           key={lead.id}
                           lead={lead}
                           onDragStart={handleDragStart}
-                          onClick={status === 'Aprovado' ? () => handleNewPurchase(lead) : () => handleCardClick(lead)}
+                          onClick={() => handleCardClick(lead)}
                           proposals={proposals}
                           onGenerateProposal={handleGenerateProposalClick}
+                          isApproved={status === 'Aprovado'}
                       />
                   ))}
 
