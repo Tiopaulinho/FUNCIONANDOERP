@@ -82,12 +82,12 @@ const LeadCard = ({
       onClick={onClick}
     >
       <CardHeader className="p-4 space-y-2 flex-grow">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col items-start gap-2">
+            <Badge variant="outline" className="font-mono text-xs">{lead.id}</Badge>
             <CardTitle className="text-base font-bold flex items-start gap-2 flex-1 min-w-0">
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
                 <span className="flex-1">{lead.name}</span>
             </CardTitle>
-            <Badge variant="outline" className="font-mono text-xs">{lead.id}</Badge>
         </div>
         <CardDescription className="text-sm flex items-center gap-2 pt-1">
             <User className="h-4 w-4 text-muted-foreground" />
@@ -706,7 +706,6 @@ export default function SalesFunnel({
   };
 
   const handleReactivate = (leadToReactivate: Lead) => {
-    const today = new Date().toISOString();
     updateLeadWithHistory(leadToReactivate, 'Contato');
     toast({
         title: "Cliente em Reativação!",
