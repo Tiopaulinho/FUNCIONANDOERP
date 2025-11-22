@@ -26,33 +26,22 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
-import type { Customer, Product, SalesOrder, Lead, Proposal, ProposalItem, ShippingSettings } from "@/lib/schemas";
+import type { Customer, Product, SalesOrder, Lead, Proposal, ProposalItem, ShippingSettings, ShippingTier } from "@/lib/schemas";
+import { salesOrderSchema } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import ProductForm from "./product-form";
 import { CardDescription } from "./ui/card";
 import CustomerRegistrationForm from "./customer-registration-form";
 
-const salesOrderItemSchema = z.object({
-  id: z.string().optional(),
-  productId: z.string().min(1, "Selecione um produto."),
-  productName: z.string(), // To display name
-  quantity: z.coerce.number().min(1, "A quantidade deve ser no mínimo 1."),
-  price: z.coerce.number().min(0.01, "O preço deve ser positivo."),
-});
-
-const salesOrderSchema = z.object({
-  id: z.string().optional(),
-  customerId: z.string().min(1, "Selecione um cliente."),
-  customerName: z.string().optional(), // For data handling
-  date: z.string().optional(), // For data handling
-  status: z.enum(["Pendente", "Processando", "Enviado", "Entregue"]).optional(),
-  shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
-  items: z.array(salesOrderItemSchema).min(1, "Adicione pelo menos um item ao pedido."),
-});
-
-
 type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
+
+interface ShippingOption {
+    value: string;
+    label: string;
+    cost: number;
+}
+
 
 interface SalesOrderFormProps {
   initialData?: SalesOrder | null;
@@ -81,6 +70,7 @@ export default function SalesOrderForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = React.useState(false);
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = React.useState(false);
+  const [shippingOptions, setShippingOptions] = React.useState<ShippingOption[]>([]);
   const isEditMode = !!initialData;
   const cameFromLead = !!leadData;
   
@@ -97,6 +87,7 @@ export default function SalesOrderForm({
     defaultValues: {
       customerId: "",
       shipping: 0,
+      shippingMethod: 'Retirada',
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
     },
   });
@@ -147,6 +138,7 @@ export default function SalesOrderForm({
         form.reset({
           customerId: customerForLead?.id || "",
           shipping: 0,
+          shippingMethod: 'Retirada',
           items: proposalData?.items?.map(item => ({
             ...item,
             quantity: item.quantity || 1,
@@ -157,6 +149,7 @@ export default function SalesOrderForm({
         form.reset({
           customerId: "",
           shipping: 0,
+          shippingMethod: 'Retirada',
           items: defaultItems,
         });
       }
@@ -210,6 +203,11 @@ export default function SalesOrderForm({
   const selectedCustomerId = form.watch("customerId");
 
   React.useEffect(() => {
+    const baseOptions: ShippingOption[] = [
+        { value: 'Retirada', label: 'Retirada no local', cost: 0 },
+        { value: 'A Combinar', label: 'A Combinar (valor a definir)', cost: 0 },
+    ];
+
     if (selectedCustomerId && shippingSettings?.tiers?.length) {
       const customer = customers.find(c => c.id === selectedCustomerId);
       if (customer && typeof customer.distance === 'number') {
@@ -217,14 +215,40 @@ export default function SalesOrderForm({
           customer.distance! >= t.minDistance && customer.distance! <= t.maxDistance
         );
         
-        const shippingCost = tier ? tier.cost : 0;
-        form.setValue("shipping", shippingCost, { shouldValidate: true });
-
+        if (tier) {
+          const calculatedOption: ShippingOption = {
+            value: `Calculado-${tier.cost}`,
+            label: `Frete Calculado: ${tier.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+            cost: tier.cost
+          };
+          setShippingOptions([calculatedOption, ...baseOptions]);
+          form.setValue("shippingMethod", calculatedOption.value);
+          form.setValue("shipping", calculatedOption.cost, { shouldValidate: true });
+        } else {
+          setShippingOptions(baseOptions);
+          form.setValue("shippingMethod", 'A Combinar');
+          form.setValue("shipping", 0, { shouldValidate: true });
+        }
       } else {
+        setShippingOptions(baseOptions);
+        form.setValue("shippingMethod", 'A Combinar');
         form.setValue("shipping", 0, { shouldValidate: true });
       }
+    } else {
+      setShippingOptions(baseOptions);
+      form.setValue("shippingMethod", 'A Combinar');
+      form.setValue("shipping", 0, { shouldValidate: true });
     }
   }, [selectedCustomerId, customers, shippingSettings, form]);
+
+
+  const handleShippingMethodChange = (value: string) => {
+      const selectedOption = shippingOptions.find(opt => opt.value === value);
+      if (selectedOption) {
+          form.setValue('shipping', selectedOption.cost, { shouldValidate: true });
+          form.setValue('shippingMethod', selectedOption.value);
+      }
+  };
 
 
   async function onSubmit(data: SalesOrderFormValues) {
@@ -345,7 +369,7 @@ export default function SalesOrderForm({
               />
               <DialogContent className="sm:max-w-[800px]">
                 <DialogHeader>
-                    <DialogTitle className="sr-only">Cadastro de Cliente</DialogTitle>
+                    <DialogTitle>Cadastro de Cliente</DialogTitle>
                 </DialogHeader>
                 <CustomerRegistrationForm 
                     onSuccess={handleCustomerFormSuccess}
@@ -413,7 +437,7 @@ export default function SalesOrderForm({
                                 </SelectContent>
                             </Select>
                              <DialogTrigger asChild>
-                                <Button variant="outline" size="icon">
+                                <Button variant="outline" size="icon" type="button">
                                     <Plus className="h-4 w-4"/>
                                     <span className="sr-only">Adicionar Produto</span>
                                 </Button>
@@ -471,7 +495,7 @@ export default function SalesOrderForm({
             ))}
             </TableBody>
             </Table>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                 <DialogTitle>Novo Produto</DialogTitle>
                 </DialogHeader>
@@ -497,16 +521,27 @@ export default function SalesOrderForm({
                   <p className="text-sm text-muted-foreground">Subtotal</p>
                   <p className="text-lg font-medium">{subtotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
               </div>
-              <div className="w-32">
+              <div className="w-56">
                 <FormField
                     control={form.control}
-                    name="shipping"
+                    name="shippingMethod"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Frete (R$)</FormLabel>
-                        <FormControl>
-                            <Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
-                        </FormControl>
+                        <FormLabel>Frete</FormLabel>
+                        <Select onValueChange={(value) => { field.onChange(value); handleShippingMethodChange(value); }} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione o frete..." />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {shippingOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
                         <FormMessage className="mt-1 text-xs"/>
                         </FormItem>
                     )}
@@ -534,3 +569,5 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    

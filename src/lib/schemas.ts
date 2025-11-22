@@ -50,24 +50,33 @@ export type Product = z.infer<typeof productSchema>;
 
 export type OrderStatus = "Pendente" | "Processando" | "Enviado" | "Entregue";
 
-export type OrderItem = {
-  id: string;
-  productId: string;
-  productName: string;
-  quantity: number;
-  price: number;
+export const salesOrderItemSchema = z.object({
+  id: z.string().optional(),
+  productId: z.string().min(1, "Selecione um produto."),
+  productName: z.string(), // To display name
+  quantity: z.coerce.number().min(1, "A quantidade deve ser no mínimo 1."),
+  price: z.coerce.number().min(0.01, "O preço deve ser positivo."),
+});
+
+export const salesOrderSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "Selecione um cliente."),
+  customerName: z.string().optional(), // For data handling
+  date: z.string().optional(), // For data handling
+  status: z.enum(["Pendente", "Processando", "Enviado", "Entregue"]).optional(),
+  shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
+  shippingMethod: z.string().optional(),
+  items: z.array(salesOrderItemSchema).min(1, "Adicione pelo menos um item ao pedido."),
+});
+
+
+export type OrderItem = z.infer<typeof salesOrderItemSchema>;
+
+export type SalesOrder = z.infer<typeof salesOrderSchema> & {
+    id: string;
+    total: number;
 };
 
-export type SalesOrder = {
-  id: string;
-  customerId: string;
-  customerName: string;
-  date: string;
-  total: number;
-  status: OrderStatus;
-  shipping: number;
-  items: OrderItem[];
-};
 
 export const leadStatusSchema = z.enum(["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"]);
 export type LeadStatus = z.infer<typeof leadStatusSchema>;
@@ -150,3 +159,5 @@ export interface ShippingSettings {
   originZip: string;
   tiers: ShippingTier[];
 }
+
+    
