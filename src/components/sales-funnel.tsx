@@ -42,8 +42,14 @@ import { Input } from "./ui/input";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reprovado"];
 
-const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, proposals: Proposal[] }) => {
+const LeadCard = ({ lead, onDragStart, onClick, proposals, onNewPurchase, onViewHistory }: { lead: Lead, onDragStart: (e: React.DragEvent, leadId: string) => void, onClick: () => void, proposals: Proposal[], onNewPurchase?: (lead: Lead) => void, onViewHistory?: (lead: Lead) => void }) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
+
+  const handleButtonClick = (e: React.MouseEvent, action: (lead: Lead) => void) => {
+    e.stopPropagation();
+    action(lead);
+  };
+
 
   return (
     <Card 
@@ -59,7 +65,7 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
                 <span className="truncate">{lead.name}</span>
             </CardTitle>
              <div className="flex items-center gap-2 flex-shrink-0">
-                {lead.proposalNotes && !lead.proposalId && (
+                {lead.proposalNotes && !lead.proposalId && lead.status !== 'Aprovado' && (
                     <StickyNote className="h-4 w-4 text-amber-500" title="Existem observações para esta proposta" />
                 )}
                 {proposal && (
@@ -81,52 +87,20 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
             </CardDescription>
         )}
       </CardHeader>
+      {lead.status === 'Aprovado' && onNewPurchase && (
+         <CardContent className="p-4 pt-0">
+            <Button 
+                className="w-full" 
+                size="sm"
+                onClick={(e) => handleButtonClick(e, onNewPurchase)}
+            >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Nova Compra
+            </Button>
+        </CardContent>
+      )}
     </Card>
   );
-};
-
-
-const GroupedLeadCard = ({ group, onNewPurchase, onView }: { group: Lead[], onNewPurchase: (lead: Lead) => void, onView: (group: Lead[]) => void }) => {
-    const representativeLead = group[0];
-  
-    const handleNewPurchaseClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onNewPurchase(representativeLead);
-    };
-  
-    return (
-      <Card 
-        className="mb-4 cursor-pointer hover:shadow-md transition-shadow group/lead-card"
-        onClick={() => onView(group)}
-      >
-        <CardHeader className="p-4 space-y-2">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Building className="h-4 w-4 text-muted-foreground" />
-              {representativeLead.name}
-            </CardTitle>
-            <Badge variant="secondary" className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                {group.length}
-            </Badge>
-          </div>
-          <CardDescription className="text-sm flex items-center gap-2 pt-1">
-            <User className="h-4 w-4 text-muted-foreground" />
-            {representativeLead.contact}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <Button 
-            className="w-full opacity-0 group-hover/lead-card:opacity-100 transition-opacity" 
-            size="sm"
-            onClick={handleNewPurchaseClick}
-          >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Nova Compra
-          </Button>
-        </CardContent>
-      </Card>
-    );
 };
   
 
@@ -642,17 +616,6 @@ export default function SalesFunnel({
     return grouped;
   }, [filteredLeads]);
   
-  const approvedLeadsGrouped = React.useMemo(() => {
-    const approved = leadsByStatus['Aprovado'] || [];
-    return approved.reduce((acc, lead) => {
-      const key = lead.customerId || lead.name;
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(lead);
-      return acc;
-    }, {} as Record<string, Lead[]>);
-  }, [leadsByStatus]);
 
   return (
     <div className="w-full">
@@ -686,35 +649,24 @@ export default function SalesFunnel({
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-lg capitalize">{status}</h3>
                     <Badge variant="secondary" className="rounded-full">
-                        {status === 'Aprovado' ? Object.keys(approvedLeadsGrouped).length : leadsByStatus[status]?.length || 0}
+                        {leadsByStatus[status]?.length || 0}
                     </Badge>
                   </div>
               </div>
               <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
-                  {status === 'Aprovado' ? (
-                     Object.values(approvedLeadsGrouped).map((group, index) => (
-                        <GroupedLeadCard 
-                          key={index} 
-                          group={group}
-                          onNewPurchase={handleNewPurchase}
-                          onView={handleViewGroup}
-                        />
-                      ))
-                  ) : (
-                    leadsByStatus[status]?.map((lead) => (
-                        <LeadCard 
-                          key={lead.id} 
-                          lead={lead} 
-                          onDragStart={handleDragStart}
-                          onClick={() => handleCardClick(lead)}
-                          proposals={proposals}
-                        />
-                    ))
-                  )}
+                  {leadsByStatus[status]?.map((lead) => (
+                      <LeadCard 
+                        key={lead.id} 
+                        lead={lead} 
+                        onDragStart={handleDragStart}
+                        onClick={() => handleCardClick(lead)}
+                        proposals={proposals}
+                        onNewPurchase={handleNewPurchase}
+                      />
+                  ))}
 
-                  {((status === 'Aprovado' && Object.keys(approvedLeadsGrouped).length === 0) ||
-                    (status !== 'Aprovado' && leadsByStatus[status]?.length === 0)) && (
+                  {(leadsByStatus[status]?.length === 0) && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                           {filteredLeads.length > 0 && leads.length > filteredLeads.length ? 'Nenhum lead encontrado com este filtro' : 'Arraste um lead aqui'}
                       </div>
@@ -808,5 +760,7 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
 
     
