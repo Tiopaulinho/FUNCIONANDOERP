@@ -78,24 +78,24 @@ const LeadCard = ({
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
                 <span className="flex-1">{lead.name}</span>
             </CardTitle>
-             <div className="flex items-center gap-2 flex-shrink-0">
-                {proposal && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      {(proposal.total ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                  </Badge>
-                )}
-            </div>
         </div>
         <CardDescription className="text-sm flex items-center gap-2 pt-1">
             <User className="h-4 w-4 text-muted-foreground" />
             {lead.contact}
         </CardDescription>
          {lead.phone && (
-            <CardDescription className="text-sm flex items-center gap-2 pt-1">
+            <CardDescription className="text-sm flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 {lead.phone}
             </CardDescription>
+        )}
+        {proposal && (
+            <div className="flex items-center gap-2 pt-1">
+                 <Badge variant="secondary" className="flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    {(proposal.total ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </Badge>
+            </div>
         )}
       </CardHeader>
       
