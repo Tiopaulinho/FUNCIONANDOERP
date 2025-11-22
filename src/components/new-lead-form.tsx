@@ -41,6 +41,7 @@ export default function NewLeadForm({ onSuccess, leads, customers }: NewLeadForm
       contact: "",
       phone: "",
       email: "",
+      zip: "",
     },
   });
   
@@ -53,7 +54,7 @@ export default function NewLeadForm({ onSuccess, leads, customers }: NewLeadForm
         const normalizedContact = data.contact.trim().toLowerCase();
         if (data.type === 'pj') {
             const normalizedName = (data.name || "").trim().toLowerCase();
-            return customers.some(c => c.name.toLowerCase() === normalizedName) ||
+            return customers.some(c => (c.companyName || '').toLowerCase() === normalizedName) ||
                    leads.some(l => l.name.toLowerCase() === normalizedName);
         } else { // pf
             return customers.some(c => c.name.toLowerCase() === normalizedContact) ||
@@ -149,32 +150,47 @@ export default function NewLeadForm({ onSuccess, leads, customers }: NewLeadForm
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
-              <FormControl>
-                <Input placeholder="(11) 99999-9999" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Telefone</FormLabel>
+                <FormControl>
+                  <Input placeholder="(11) 99999-9999" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="contato@empresa.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="contato@empresa.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+         <FormField
+            control={form.control}
+            name="zip"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>CEP <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
+                    <FormControl>
+                        <Input placeholder="Ex: 01001-000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
         />
         
         <Button

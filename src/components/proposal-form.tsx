@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useForm, useFieldArray, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, PlusCircle, Trash2, FileText, Percent, Truck } from "lucide-react";
+import { Loader2, PlusCircle, Trash2, FileText, Percent, Truck, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,12 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "./ui/separator";
-import type { Product, Lead, Proposal, Customer, ShippingSettings } from "@/lib/schemas";
+import type { Product, Lead, Proposal, Customer, ShippingSettings, ShippingTier } from "@/lib/schemas";
 import { proposalSchema } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Textarea } from "./ui/textarea";
 
 type ProposalFormValues = Zod.infer<typeof proposalSchema>;
+
+interface ShippingOption {
+    value: string;
+    label: string;
+    cost: number;
+}
 
 interface ProposalFormProps {
   lead: Lead;
@@ -39,6 +45,7 @@ interface ProposalFormProps {
   initialData?: Proposal | null;
   customers: (Customer & { id: string })[];
   shippingSettings: ShippingSettings;
+  onUpdateLead: (lead: Lead) => void;
 }
 
 
@@ -49,9 +56,11 @@ export default function ProposalForm({
   onProductAdd, 
   initialData, 
   customers, 
-  shippingSettings 
+  shippingSettings,
+  onUpdateLead
 }: ProposalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [shippingOptions, setShippingOptions] = React.useState<ShippingOption[]>([]);
   const isEditMode = !!initialData;
 
   const form = useForm<ProposalFormValues>({
@@ -61,6 +70,7 @@ export default function ProposalForm({
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
       discount: 0,
       shipping: 0,
+      shippingMethod: "A Combinar",
       observations: lead.proposalNotes || "",
       paymentMethods: "",
       date: new Date().toISOString().split('T')[0],
@@ -68,28 +78,11 @@ export default function ProposalForm({
     },
   });
 
-   React.useEffect(() => {
-    if (initialData) {
-        form.reset(initialData);
-    } else {
-      // Calculate initial shipping cost if lead is already a customer
-      const customer = customers.find(c => c.id === lead.customerId);
-      if (customer && typeof customer.distance === 'number' && shippingSettings?.tiers) {
-        const tier = shippingSettings.tiers.find(t => 
-          customer.distance! >= t.minDistance && customer.distance! <= t.maxDistance
-        );
-        if (tier) {
-          form.setValue('shipping', tier.cost);
-        }
-      }
-    }
-  }, [initialData, lead, customers, shippingSettings, form]);
-
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "items",
   });
-  
+
   const watchedItems = form.watch('items');
   const watchedDiscount = form.watch('discount');
   const watchedShipping = form.watch('shipping');
@@ -106,7 +99,6 @@ export default function ProposalForm({
     return sub - discountAmount + shippingValue;
   }, [watchedItems, watchedDiscount, watchedShipping]);
 
-
   const handleProductSelect = (productId: string, index: number) => {
     const product = products.find(p => p.id === productId);
     if (product) {
@@ -117,6 +109,71 @@ export default function ProposalForm({
         price: product.price,
       });
     }
+  };
+
+  const handleDistanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const distance = parseFloat(e.target.value);
+    onUpdateLead({ ...lead, distance: isNaN(distance) ? undefined : distance });
+  };
+  
+  const openMaps = () => {
+    if (shippingSettings?.originZip && lead.zip) {
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${shippingSettings.originZip}&destination=${lead.zip}`;
+        window.open(url, "_blank");
+    }
+  };
+
+  const setupShippingOptions = React.useCallback((currentLead: Lead) => {
+    const baseOptions: ShippingOption[] = [
+        { value: 'Retirada', label: 'Retirada no local', cost: 0 },
+        { value: 'A Combinar', label: 'A Combinar (valor a definir)', cost: 0 },
+    ];
+    
+    let calculatedOption: ShippingOption | null = null;
+    
+    if (currentLead.distance && shippingSettings?.tiers?.length) {
+        const tier = shippingSettings.tiers.find(t => 
+          currentLead.distance! >= t.minDistance && currentLead.distance! <= t.maxDistance
+        );
+        
+        if (tier) {
+            calculatedOption = {
+                value: `Calculado-${tier.cost}`,
+                label: `Frete Calculado: ${tier.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+                cost: tier.cost
+            };
+        }
+    }
+    
+    const newOptions = calculatedOption ? [calculatedOption, ...baseOptions] : baseOptions;
+    setShippingOptions(newOptions);
+    
+    const chosenMethod = form.getValues("shippingMethod");
+
+    if (calculatedOption && chosenMethod !== calculatedOption.value) {
+        form.setValue('shippingMethod', calculatedOption.value);
+        form.setValue('shipping', calculatedOption.cost, { shouldValidate: true });
+    } else if (!calculatedOption && chosenMethod !== 'A Combinar') {
+        form.setValue('shippingMethod', 'A Combinar');
+        form.setValue('shipping', 0, { shouldValidate: true });
+    }
+
+  }, [shippingSettings, form]);
+
+
+  React.useEffect(() => {
+    if (initialData) {
+        form.reset(initialData);
+    }
+    setupShippingOptions(lead);
+  }, [initialData, lead, form, setupShippingOptions]);
+
+  const handleShippingMethodChange = (value: string) => {
+      const selectedOption = shippingOptions.find(opt => opt.value === value);
+      if (selectedOption) {
+          form.setValue('shipping', selectedOption.cost, { shouldValidate: true });
+          form.setValue('shippingMethod', selectedOption.value);
+      }
   };
 
   async function onSubmit(data: ProposalFormValues) {
@@ -232,22 +289,65 @@ export default function ProposalForm({
           </div>
 
           <Separator />
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <FormLabel>Distância (KM)</FormLabel>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        type="number" 
+                        placeholder="0" 
+                        value={lead.distance || ""}
+                        onChange={handleDistanceChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={openMaps}
+                      disabled={!lead.zip || !shippingSettings?.originZip}
+                    >
+                      <MapPin className="h-4 w-4" />
+                      <span className="sr-only">Calcular no Maps</span>
+                    </Button>
+                </div>
+              </div>
+              <FormField
+                control={form.control}
+                name="shippingMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1"><Truck className="h-4 w-4" /> Frete</FormLabel>
+                    <Select onValueChange={(value) => { field.onChange(value); handleShippingMethodChange(value); }} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o frete" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {shippingOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="discount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1"><Percent className="h-4 w-4" /> Desconto (%)</FormLabel>
+                    <FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}/></FormControl>
+                  </FormItem>
+                )}
+              />
+          </div>
+
+
+          <Separator />
 
           <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-            <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-                <FormField control={form.control} name="discount" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="flex items-center gap-1"><Percent className="h-4 w-4" /> Desconto (%)</FormLabel>
-                        <FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}/></FormControl>
-                    </FormItem>
-                )} />
-                <FormField control={form.control} name="shipping" render={({ field }) => (
-                     <FormItem>
-                        <FormLabel className="flex items-center gap-1"><Truck className="h-4 w-4" /> Frete (R$)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} /></FormControl>
-                    </FormItem>
-                )} />
-            </div>
+            <div></div>
              <div className="flex items-center gap-4 w-full md:w-auto justify-end">
                 <div className="text-right space-y-1">
                     <p className="text-sm text-muted-foreground">Total da Proposta</p>

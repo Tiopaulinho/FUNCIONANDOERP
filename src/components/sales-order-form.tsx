@@ -107,10 +107,10 @@ export default function SalesOrderForm({
         price: item.price || 0,
       }));
       form.setValue('items', proposalItems);
-
-      // Set shipping from proposal
-      if (typeof proposalData.shipping === 'number') {
-        form.setValue('shipping', proposalData.shipping);
+      
+      if(proposalData.shippingMethod) {
+          form.setValue('shippingMethod', proposalData.shippingMethod);
+          form.setValue('shipping', proposalData.shipping || 0);
       }
 
       toast({
@@ -144,7 +144,7 @@ export default function SalesOrderForm({
         form.reset({
           customerId: customerForLead?.id || "",
           shipping: proposalData?.shipping || 0,
-          shippingMethod: 'Retirada',
+          shippingMethod: proposalData?.shippingMethod || 'Retirada',
           items: proposalData?.items?.map(item => ({
             ...item,
             quantity: item.quantity || 1,
@@ -213,42 +213,39 @@ export default function SalesOrderForm({
         { value: 'Retirada', label: 'Retirada no local', cost: 0 },
         { value: 'A Combinar', label: 'A Combinar (valor a definir)', cost: 0 },
     ];
+    
+    const customer = customers.find(c => c.id === selectedCustomerId);
 
-    // Don't auto-calculate if coming from a proposal that already has shipping
-    if (proposalData && typeof proposalData.shipping === 'number' && proposalData.shipping > 0) {
-        const proposalShippingOption: ShippingOption = {
-            value: `Proposta-${proposalData.shipping}`,
-            label: `Frete da Proposta: ${proposalData.shipping.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
-            cost: proposalData.shipping
+    // If coming from a proposal, its shipping method takes precedence
+    if (proposalData?.shippingMethod) {
+        const proposalCost = proposalData.shipping || 0;
+        const proposalOption: ShippingOption = {
+            value: proposalData.shippingMethod,
+            label: `${proposalData.shippingMethod}: ${proposalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+            cost: proposalCost
         };
-        setShippingOptions([proposalShippingOption, ...baseOptions]);
-        form.setValue("shippingMethod", proposalShippingOption.value);
-        form.setValue("shipping", proposalShippingOption.cost, { shouldValidate: true });
-        return;
+         const finalOptions = [proposalOption, ...baseOptions.filter(o => o.value !== proposalOption.value)];
+         setShippingOptions(finalOptions);
+         form.setValue("shippingMethod", proposalOption.value);
+         form.setValue("shipping", proposalOption.cost, { shouldValidate: true });
+         return;
     }
 
 
-    if (selectedCustomerId && shippingSettings?.tiers?.length) {
-      const customer = customers.find(c => c.id === selectedCustomerId);
-      if (customer && typeof customer.distance === 'number') {
-        const tier = shippingSettings.tiers.find(t => 
-          customer.distance! >= t.minDistance && customer.distance! <= t.maxDistance
-        );
-        
-        if (tier) {
-          const calculatedOption: ShippingOption = {
-            value: `Calculado-${tier.cost}`,
-            label: `Frete Calculado: ${tier.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
-            cost: tier.cost
-          };
-          setShippingOptions([calculatedOption, ...baseOptions]);
-          form.setValue("shippingMethod", calculatedOption.value);
-          form.setValue("shipping", calculatedOption.cost, { shouldValidate: true });
-        } else {
-          setShippingOptions(baseOptions);
-          form.setValue("shippingMethod", 'A Combinar');
-          form.setValue("shipping", 0, { shouldValidate: true });
-        }
+    if (customer && typeof customer.distance === 'number' && shippingSettings?.tiers?.length) {
+      const tier = shippingSettings.tiers.find(t => 
+        customer.distance! >= t.minDistance && customer.distance! <= t.maxDistance
+      );
+      
+      if (tier) {
+        const calculatedOption: ShippingOption = {
+          value: `Calculado-${tier.cost}`,
+          label: `Frete Calculado: ${tier.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+          cost: tier.cost
+        };
+        setShippingOptions([calculatedOption, ...baseOptions]);
+        form.setValue("shippingMethod", calculatedOption.value);
+        form.setValue("shipping", calculatedOption.cost, { shouldValidate: true });
       } else {
         setShippingOptions(baseOptions);
         form.setValue("shippingMethod", 'A Combinar');
@@ -589,5 +586,3 @@ export default function SalesOrderForm({
     </div>
   );
 }
-
-    

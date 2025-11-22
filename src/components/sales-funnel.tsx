@@ -734,14 +734,17 @@ export default function SalesFunnel({
         />
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>Editar Lead</DialogTitle>
               </DialogHeader>
-              <LeadForm
-                initialData={editingLead}
-                onSuccess={handleEditSuccess}
-              />
+              {editingLead && (
+                <LeadForm
+                    initialData={editingLead}
+                    onSuccess={handleEditSuccess}
+                    shippingSettings={shippingSettings}
+                />
+              )}
             </DialogContent>
         </Dialog>
         
@@ -783,6 +786,7 @@ export default function SalesFunnel({
                         initialData={savedProposal}
                         customers={customers}
                         shippingSettings={shippingSettings}
+                        onUpdateLead={onUpdateLead}
                     />
                 )}
             </DialogContent>

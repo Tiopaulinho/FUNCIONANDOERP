@@ -91,10 +91,18 @@ export type LeadStatusHistoryEntry = z.infer<typeof leadStatusHistoryEntrySchema
 export const leadSchema = z.object({
   name: z.string().min(3, "O nome da empresa deve ter pelo menos 3 caracteres."),
   contact: z.string().min(3, "O nome do contato deve ter pelo menos 3 caracteres."),
-  email: z.string().email({ message: "Email inválido" }).optional(),
+  email: z.string().email({ message: "Email inválido" }).optional().or(z.literal('')),
   phone: z.string().optional(),
   value: z.coerce.number({invalid_type_error: "O valor é obrigatório."}).min(0, "O valor não pode ser negativo.").optional(),
   proposalNotes: z.string().optional(),
+  zip: z.string().optional(),
+  street: z.string().optional(),
+  number: z.string().optional(),
+  complement: z.string().optional(),
+  neighborhood: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  distance: z.coerce.number().optional(),
 });
 
 export const newLeadSchema = z.object({
@@ -102,7 +110,8 @@ export const newLeadSchema = z.object({
   name: z.string().optional(), // Company name for PJ
   contact: z.string().min(3, { message: "O nome do contato é obrigatório." }),
   phone: z.string().optional(),
-  email: z.string().email({ message: "Email inválido." }).optional(),
+  email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
+  zip: z.string().optional(),
 }).refine(data => {
   if (data.type === "pj") {
     return !!data.name && data.name.length >= 3;
@@ -140,6 +149,7 @@ export const proposalSchema = z.object({
   items: z.array(proposalItemSchema).min(1, "Adicione pelo menos um item."),
   discount: z.coerce.number().min(0, "O desconto não pode ser negativo.").optional(),
   shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
+  shippingMethod: z.string().optional(),
   observations: z.string().optional(),
   paymentMethods: z.string().optional(),
   total: z.coerce.number().optional(),
@@ -159,5 +169,3 @@ export interface ShippingSettings {
   originZip: string;
   tiers: ShippingTier[];
 }
-
-    
