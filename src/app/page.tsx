@@ -44,21 +44,28 @@ const initialOrders: SalesOrder[] = [
 const initialLeads: Lead[] = [
   { id: "lead-1", name: "Empresa Alpha", contact: "João", phone: "(11) 91111-1111", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X.", statusHistory: [{ status: "Contato", date: "2024-07-20"}] },
   { id: "lead-2", name: "Startup Beta", contact: "Mariana", phone: "(21) 92222-2222", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile.", statusHistory: [{ status: "Proposta", date: "2024-07-21"}] },
-  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1", statusHistory: [{ status: "Aprovado", date: "2024-07-22"}] },
+  { id: "lead-3", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-gama-1", statusHistory: [{ status: "Aprovado", date: "2024-07-22"}] },
   { id: "lead-4", name: "Serviços Delta", contact: "Fernanda", phone: "(41) 94444-4444", value: 5000, status: "Lista de Leads", statusHistory: [{ status: "Lista de Leads", date: "2024-07-23"}] },
-  { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1", statusHistory: [{ status: "Aprovado", date: "2024-07-24"}] },
+  { id: "lead-5", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1", proposalId: "prop-epsilon-1", statusHistory: [{ status: "Aprovado", date: "2024-07-24"}] },
   { id: "lead-6", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado", statusHistory: [{ status: "Reprovado", date: "2024-07-25"}] },
+  { id: "lead-7", name: "Consultoria Sigma", contact: "Beatriz", phone: "(71) 97777-7777", value: 18000, status: "Negociação", proposalId: "prop-sigma-1", statusHistory: [{ status: "Negociação", date: "2024-07-26"}] },
+  { id: "lead-8", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 7000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-gama-2", statusHistory: [{ status: "Aprovado", date: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString() }] }, // Old approved to test reactivation
 ];
 
-const initialProposals: Proposal[] = [];
+const initialProposals: Proposal[] = [
+  { id: "prop-gama-1", leadId: "lead-3", date: "2024-07-21", status: "Sent", items: [{ id: "p-item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 2, price: 7500 }], total: 15000, discount: 0, shipping: 100 },
+  { id: "prop-gama-2", leadId: "lead-8", date: "2024-07-28", status: "Sent", items: [{ id: "p-item-2", productId: "prod-4", productName: "Eletrônicos - Monitor 4K", quantity: 3, price: 2300 }], total: 6900, discount: 0, shipping: 50 },
+  { id: "prop-epsilon-1", leadId: "lead-5", date: "2024-07-23", status: "Sent", items: [{ id: "p-item-3", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 5, price: 7400 }], total: 37000, discount: 0, shipping: 250 },
+  { id: "prop-sigma-1", leadId: "lead-7", date: "2024-07-25", status: "Sent", items: [{ id: "p-item-4", productId: "prod-3", productName: "Acessórios - Teclado Mecânico", quantity: 10, price: 450 }], total: 4500, discount: 0, shipping: 0 },
+];
 
 const initialCustomers: (Customer & { id: string })[] = [
   { id: "1", name: "José da Silva", companyName: "Silva & Filhos", email: "jose.silva@example.com", phone: "(11) 98765-4321", zip: "01001-000", street: "Praça da Sé", number: "s/n", complement: "lado ímpar", neighborhood: "Sé", city: "São Paulo", state: "SP", distance: 10 },
   { id: "2", name: "Maria Oliveira", companyName: "Oliveira Transportes", email: "maria.oliveira@example.com", phone: "(21) 91234-5678", zip: "20040-004", street: "Av. Rio Branco", number: "156", complement: "", neighborhood: "Centro", city: "Rio de Janeiro", state: "RJ", distance: 450 },
   { id: "3", name: "Carlos Pereira", email: "carlos.pereira@example.com", phone: "(31) 95555-4444", zip: "30110-044", street: "Av. do Contorno", number: "6594", complement: "Sala 501", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG", distance: 500 },
   { id: "4", name: "Ana Costa", email: "ana.costa@example.com", phone: "(71) 99999-8888", zip: "40020-000", street: "Largo do Pelourinho", number: "10", complement: "", neighborhood: "Pelourinho", city: "Salvador", state: "BA", distance: 1900 },
-  { id: "cust-gama-1", name: "Comércio Gama", companyName: "Comércio Gama", email: "contato@comerciogama.com", phone: "(31) 93333-3333", zip: "30110-044", street: "Av. do Contorno", number: "7000", complement: "", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG", distance: 500 },
-  { id: "cust-epsilon-1", name: "Indústria Epsilon", companyName: "Indústria Epsilon", email: "contato@industriaepsilon.com", phone: "(51) 95555-5555", zip: "90010-000", street: "Av. Borges de Medeiros", number: "500", complement: "", neighborhood: "Centro Histórico", city: "Porto Alegre", state: "RS", distance: 1100 },
+  { id: "cust-gama-1", name: "Carlos", companyName: "Comércio Gama", email: "contato@comerciogama.com", phone: "(31) 93333-3333", zip: "30110-044", street: "Av. do Contorno", number: "7000", complement: "", neighborhood: "Savassi", city: "Belo Horizonte", state: "MG", distance: 500 },
+  { id: "cust-epsilon-1", name: "Ricardo", companyName: "Indústria Epsilon", email: "contato@industriaepsilon.com", phone: "(51) 95555-5555", zip: "90010-000", street: "Av. Borges de Medeiros", number: "500", complement: "", neighborhood: "Centro Histórico", city: "Porto Alegre", state: "RS", distance: 1100 },
 ];
 
 const initialShippingSettings: ShippingSettings = {
@@ -337,3 +344,5 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
+
+    

@@ -419,35 +419,46 @@ export default function SalesFunnel({
 
   React.useEffect(() => {
     const checkReactivation = () => {
-      const now = new Date();
-      const leadsToUpdate: Lead[] = [];
-      leads.forEach(lead => {
-        if (lead.status === 'Aprovado') {
-          const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
-          if (approvedEntry) {
-            const approvedDate = new Date(approvedEntry.date);
-            const diffTime = Math.abs(now.getTime() - approvedDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays > shippingSettings.reactivationPeriodDays) {
-              leadsToUpdate.push(lead);
-            }
-          }
-        }
-      });
+        const now = new Date();
+        const leadsToUpdate: string[] = [];
+        const customerLastApproval: { [customerId: string]: string } = {};
 
-      if (leadsToUpdate.length > 0) {
-        setLeads(prevLeads => prevLeads.map(l => {
-          if (leadsToUpdate.some(lu => lu.id === l.id)) {
-            return { ...l, status: 'Reativar' };
-          }
-          return l;
-        }));
-      }
+        // Find the latest approval date for each customer
+        leads.forEach(lead => {
+            if (lead.status === 'Aprovado' && lead.customerId) {
+                const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
+                if (approvedEntry) {
+                    if (!customerLastApproval[lead.customerId] || new Date(approvedEntry.date) > new Date(customerLastApproval[lead.customerId])) {
+                        customerLastApproval[lead.customerId] = approvedEntry.date;
+                    }
+                }
+            }
+        });
+
+        // Check if any lead from that customer group should be moved
+        leads.forEach(lead => {
+            if (lead.status === 'Aprovado' && lead.customerId && customerLastApproval[lead.customerId]) {
+                const lastApprovalDate = new Date(customerLastApproval[lead.customerId]);
+                const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays > shippingSettings.reactivationPeriodDays) {
+                    leadsToUpdate.push(lead.id);
+                }
+            }
+        });
+
+        if (leadsToUpdate.length > 0) {
+            setLeads(prevLeads =>
+                prevLeads.map(l =>
+                    leadsToUpdate.includes(l.id) ? { ...l, status: 'Reativar' } : l
+                )
+            );
+        }
     };
 
     const interval = setInterval(checkReactivation, 1000 * 60 * 60); // Check every hour
-    checkReactivation(); 
+    checkReactivation();
 
     return () => clearInterval(interval);
   }, [leads, shippingSettings.reactivationPeriodDays, setLeads]);
@@ -544,10 +555,6 @@ export default function SalesFunnel({
   }
 
   const handleCardClick = (lead: Lead) => {
-    if (lead.status === 'Aprovado') {
-        handleNewPurchase(lead);
-        return;
-    }
     setSelectedLead(lead);
     setIsDetailsModalOpen(true);
   };
@@ -713,17 +720,28 @@ export default function SalesFunnel({
     });
 }, [leads, nameFilter, contactFilter]);
 
-  const leadsByStatus = React.useMemo(() => {
-    const grouped: { [key in LeadStatus]?: Lead[] } = {};
+  const { leadsByStatus, groupedApprovedLeads } = React.useMemo(() => {
+    const groupedByStatus: { [key in LeadStatus]?: Lead[] } = {};
     for (const status of funnelStatuses) {
-        grouped[status] = [];
+        groupedByStatus[status] = [];
     }
     for (const lead of filteredLeads) {
-      if (grouped[lead.status]) {
-        grouped[lead.status]!.push(lead);
+      if (groupedByStatus[lead.status]) {
+        groupedByStatus[lead.status]!.push(lead);
       }
     }
-    return grouped;
+    
+    const groupedApproved = (groupedByStatus['Aprovado'] || []).reduce((acc, lead) => {
+        if (lead.customerId) {
+            if (!acc[lead.customerId]) {
+                acc[lead.customerId] = [];
+            }
+            acc[lead.customerId].push(lead);
+        }
+        return acc;
+    }, {} as { [key: string]: Lead[] });
+
+    return { leadsByStatus: groupedByStatus, groupedApprovedLeads: groupedApproved };
   }, [filteredLeads]);
   
 
@@ -769,30 +787,67 @@ export default function SalesFunnel({
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-lg capitalize">{status}</h3>
                     <Badge variant="secondary" className="rounded-full">
-                        {leadsByStatus[status]?.length || 0}
+                       {status === 'Aprovado' ? Object.keys(groupedApprovedLeads).length : leadsByStatus[status]?.length || 0}
                     </Badge>
                   </div>
               </div>
               <Card className="bg-muted/30 border-dashed flex-grow">
                   <CardContent className="p-4 min-h-[200px]">
-                   {(leadsByStatus[status] || []).map((lead) => (
-                      <LeadCard
-                          key={lead.id}
-                          lead={lead}
-                          onDragStart={handleDragStart}
-                          onClick={() => handleCardClick(lead)}
-                          proposals={proposals}
-                          onGenerateProposal={handleGenerateProposalClick}
-                          isReactivation={status === 'Reativar'}
-                          onReactivate={handleReactivate}
-                      />
-                  ))}
-
-                  {(leadsByStatus[status]?.length === 0) && (
+                    {status === 'Aprovado' ? (
+                        Object.values(groupedApprovedLeads).map((group, index) => {
+                            const firstLead = group[0];
+                            if (group.length > 1) {
+                                return (
+                                    <Card key={`group-${index}`} className="mb-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleViewGroup(group)}>
+                                        <CardHeader className="p-4">
+                                            <CardTitle className="text-base font-bold flex items-center gap-2">
+                                                <Users className="h-4 w-4 text-muted-foreground" />
+                                                {firstLead.name}
+                                            </CardTitle>
+                                            <CardDescription>
+                                                {group.length} oportunidades ganhas
+                                            </CardDescription>
+                                        </CardHeader>
+                                    </Card>
+                                );
+                            }
+                            return (
+                                <LeadCard
+                                    key={firstLead.id}
+                                    lead={firstLead}
+                                    onDragStart={handleDragStart}
+                                    onClick={() => handleCardClick(firstLead)}
+                                    proposals={proposals}
+                                    onGenerateProposal={handleGenerateProposalClick}
+                                    onReactivate={handleReactivate}
+                                />
+                            );
+                        })
+                    ) : (
+                        (leadsByStatus[status] || []).map((lead) => (
+                            <LeadCard
+                                key={lead.id}
+                                lead={lead}
+                                onDragStart={handleDragStart}
+                                onClick={() => handleCardClick(lead)}
+                                proposals={proposals}
+                                onGenerateProposal={handleGenerateProposalClick}
+                                isReactivation={status === 'Reativar'}
+                                onReactivate={handleReactivate}
+                            />
+                        ))
+                    )}
+                  {(leadsByStatus[status]?.length === 0 && status !== 'Aprovado') && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                           {filteredLeads.length > 0 && leads.length > filteredLeads.length ? 'Nenhum lead encontrado com este filtro' : 'Arraste um lead aqui'}
                       </div>
                   )}
+                  {(status === 'Aprovado' && Object.keys(groupedApprovedLeads).length === 0) && (
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                          Arraste um lead aqui
+                      </div>
+                  )}
+
                   </CardContent>
               </Card>
             </div>
@@ -903,3 +958,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
