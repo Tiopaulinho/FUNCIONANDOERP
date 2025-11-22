@@ -145,6 +145,7 @@ const LeadDetailsModal = ({
   onGenerateProposal,
   onNewPurchase,
   proposals,
+  onSendMessage,
 }: { 
   lead: Lead | null; 
   open: boolean; 
@@ -154,6 +155,7 @@ const LeadDetailsModal = ({
   onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
   onNewPurchase: (lead: Lead) => void;
   proposals: Proposal[];
+  onSendMessage: (lead: Lead) => void;
 }) => {
   if (!lead) return null;
 
@@ -166,6 +168,11 @@ const LeadDetailsModal = ({
   const handleNewPurchaseClick = () => {
     onOpenChange(false);
     onNewPurchase(lead);
+  };
+  
+  const handleSendMessageClick = () => {
+    onOpenChange(false);
+    onSendMessage(lead);
   };
 
   return (
@@ -226,7 +233,13 @@ const LeadDetailsModal = ({
             )}
         </div>
         <Separator />
-        <div className="flex justify-end items-center gap-2">
+        <div className="flex flex-wrap justify-end items-center gap-2">
+            {lead.status === 'Contato' && (
+                <Button onClick={handleSendMessageClick} variant="outline">
+                    <Send className="mr-2 h-4 w-4" />
+                    Enviar Mensagem
+                </Button>
+            )}
             {lead.status === 'Aprovado' && (
               <Button onClick={handleNewPurchaseClick} variant="default">
                 <ShoppingCart className="mr-2 h-4 w-4" />
@@ -380,6 +393,65 @@ const ProposalNotesModal = ({
       </Dialog>
     );
   };
+  
+const SendMessageModal = ({
+    lead,
+    open,
+    onOpenChange,
+    onSend,
+}: {
+    lead: Lead | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSend: () => void;
+}) => {
+    const defaultMessage = `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`;
+    const [message, setMessage] = React.useState(defaultMessage);
+
+    React.useEffect(() => {
+        if (lead) {
+            const newMessage = `Olá ${lead.contact}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`;
+            setMessage(newMessage);
+        }
+    }, [lead]);
+
+    if (!lead) return null;
+
+    const handleSend = () => {
+        // Here you would integrate with a messaging service like WhatsApp
+        console.log("Enviando para:", lead.phone);
+        console.log("Mensagem:", message);
+        onSend();
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Send className="h-5 w-5" /> Enviar Mensagem para {lead.contact}
+                    </DialogTitle>
+                    <DialogDescription>
+                        Revise e edite a mensagem de primeiro contato abaixo.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        rows={10}
+                        className="text-base"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSend} className="w-full">
+                        Simular Envio
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 
 interface SalesFunnelProps {
@@ -428,6 +500,8 @@ export default function SalesFunnel({
   const [isGroupedLeadsModalOpen, setIsGroupedLeadsModalOpen] = React.useState(false);
   const [selectedGroup, setSelectedGroup] = React.useState<Lead[] | null>(null);
   const [groupedModalTitle, setGroupedModalTitle] = React.useState("");
+  const [messageLead, setMessageLead] = React.useState<Lead | null>(null);
+  const [isSendMessageModalOpen, setIsSendMessageModalOpen] = React.useState(false);
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
@@ -461,7 +535,7 @@ export default function SalesFunnel({
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
             if (diffDays > shippingSettings.reactivationPeriodDays) {
-                const originalLead = leads.find(l => l.customerId === customerId && l.status === 'Aprovado');
+                const originalLead = leads.find(l => l.customerId === customerId);
                 if (originalLead) {
                     const today = new Date().toISOString();
                      const totalCount = leads.length + 1;
@@ -495,8 +569,12 @@ export default function SalesFunnel({
     const newHistoryEntry = { status: newStatus, date: today };
     // Avoid duplicating the last status in history
     const lastHistory = lead.statusHistory?.[lead.statusHistory.length - 1];
-    const newHistory = lastHistory?.status === newStatus ? lead.statusHistory : [...(lead.statusHistory || []), newHistoryEntry];
     
+    let newHistory = [...(lead.statusHistory || [])];
+    if (lastHistory?.status !== newStatus) {
+        newHistory.push(newHistoryEntry);
+    }
+
     onUpdateLead({ 
         ...lead, 
         ...updates,
@@ -698,7 +776,24 @@ export default function SalesFunnel({
   }
 
   const handleNewPurchase = (approvedLead: Lead) => {
-    updateLeadWithHistory(approvedLead, 'Contato', { proposalId: undefined, proposalNotes: "Oportunidade de reativação."});
+    const today = new Date().toISOString();
+    const totalCount = leads.length + 1;
+    const customerLeadCount = leads.filter(
+        (l) => l.name.toLowerCase() === approvedLead.name.toLowerCase()
+    ).length + 1;
+    
+    const newLead: Lead = {
+        ...approvedLead,
+        id: `${totalCount}-${customerLeadCount}`,
+        status: 'Contato',
+        statusHistory: [{ status: 'Contato', date: today }],
+        proposalId: undefined,
+        proposalNotes: 'Oportunidade de reativação.',
+        value: 0,
+    };
+
+    onAddLead(newLead);
+    
     toast({
       title: "Nova Oportunidade Criada!",
       description: `Inicie o contato para a nova compra de ${approvedLead.name}.`,
@@ -732,6 +827,20 @@ export default function SalesFunnel({
     toast({
         title: "Lead Criado!",
         description: "O novo lead foi adicionado à coluna 'Lista de Leads'.",
+    });
+  };
+
+  const handleSendMessage = (lead: Lead) => {
+    setMessageLead(lead);
+    setIsSendMessageModalOpen(true);
+  };
+  
+  const handleSendSuccess = () => {
+    setIsSendMessageModalOpen(false);
+    setMessageLead(null);
+    toast({
+        title: "Mensagem Enviada!",
+        description: "A mensagem foi enviada com sucesso (simulação).",
     });
   };
 
@@ -919,6 +1028,7 @@ export default function SalesFunnel({
           onGenerateProposal={handleGenerateProposalClick}
           onNewPurchase={handleNewPurchase}
           proposals={proposals}
+          onSendMessage={handleSendMessage}
         />
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -1011,9 +1121,18 @@ export default function SalesFunnel({
             proposals={proposals}
             title={groupedModalTitle}
         />
+        
+        <SendMessageModal 
+            lead={messageLead}
+            open={isSendMessageModalOpen}
+            onOpenChange={setIsSendMessageModalOpen}
+            onSend={handleSendSuccess}
+        />
 
     </div>
   );
 }
+
+    
 
     
