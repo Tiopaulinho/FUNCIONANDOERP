@@ -368,6 +368,7 @@ export default function SalesFunnel({
 }: SalesFunnelProps) {
   const { toast } = useToast();
   const [nameFilter, setNameFilter] = React.useState("");
+  const [contactFilter, setContactFilter] = React.useState("");
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
   const [editingLead, setEditingLead] = React.useState<Lead | null>(null);
   const [proposalLead, setProposalLead] = React.useState<Lead | null>(null);
@@ -595,13 +596,15 @@ export default function SalesFunnel({
 
 
   const filteredLeads = React.useMemo(() => {
-    if (!nameFilter) {
-      return leads;
-    }
-    return leads.filter(lead => 
-      lead.name.toLowerCase().includes(nameFilter.toLowerCase())
-    );
-  }, [leads, nameFilter]);
+    const lowercasedNameFilter = nameFilter.toLowerCase();
+    const lowercasedContactFilter = contactFilter.toLowerCase();
+
+    return leads.filter(lead => {
+        const nameMatch = !lowercasedNameFilter || lead.name.toLowerCase().includes(lowercasedNameFilter);
+        const contactMatch = !lowercasedContactFilter || lead.contact.toLowerCase().includes(lowercasedContactFilter);
+        return nameMatch && contactMatch;
+    });
+}, [leads, nameFilter, contactFilter]);
 
   const leadsByStatus = React.useMemo(() => {
     const grouped: { [key in LeadStatus]?: Lead[] } = {};
@@ -629,12 +632,16 @@ export default function SalesFunnel({
               Importar Leads (Simulação)
             </Button>
         </div>
-        <div className="mb-6">
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
             <Input
                 placeholder="Filtrar por nome da empresa..."
                 value={nameFilter}
                 onChange={(e) => setNameFilter(e.target.value)}
-                className="max-w-sm"
+            />
+            <Input
+                placeholder="Filtrar por nome do contato..."
+                value={contactFilter}
+                onChange={(e) => setContactFilter(e.target.value)}
             />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
@@ -760,6 +767,8 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
 
     
 
