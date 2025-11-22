@@ -38,6 +38,8 @@ interface CustomerRegistrationFormProps {
   shippingSettings: ShippingSettings;
 }
 
+const RequiredIndicator = () => <span className="text-destructive">*</span>;
+
 export default function CustomerRegistrationForm({
   initialData,
   onSuccess,
@@ -232,7 +234,7 @@ export default function CustomerRegistrationForm({
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome Completo do Contato</FormLabel>
+                      <FormLabel>Nome Completo do Contato <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: João da Silva" {...field} />
                       </FormControl>
@@ -260,7 +262,7 @@ export default function CustomerRegistrationForm({
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input
                           type="email"
@@ -277,7 +279,7 @@ export default function CustomerRegistrationForm({
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Telefone</FormLabel>
+                      <FormLabel>Telefone <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: (11) 99999-9999" {...field} />
                       </FormControl>
@@ -297,7 +299,7 @@ export default function CustomerRegistrationForm({
                   name="zip"
                   render={({ field }) => (
                     <FormItem className="md:col-span-1">
-                      <FormLabel>CEP</FormLabel>
+                      <FormLabel>CEP <RequiredIndicator /></FormLabel>
                       <div className="relative">
                         <FormControl>
                           <Input 
@@ -320,7 +322,7 @@ export default function CustomerRegistrationForm({
                   name="street"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Logradouro</FormLabel>
+                      <FormLabel>Logradouro <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: Av. Paulista" {...field} />
                       </FormControl>
@@ -335,7 +337,7 @@ export default function CustomerRegistrationForm({
                   name="number"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Número</FormLabel>
+                      <FormLabel>Número <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: 1000" {...field} />
                       </FormControl>
@@ -368,7 +370,7 @@ export default function CustomerRegistrationForm({
                   name="neighborhood"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bairro</FormLabel>
+                      <FormLabel>Bairro <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: Bela Vista" {...field} />
                       </FormControl>
@@ -381,7 +383,7 @@ export default function CustomerRegistrationForm({
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cidade</FormLabel>
+                      <FormLabel>Cidade <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: São Paulo" {...field} />
                       </FormControl>
@@ -394,7 +396,7 @@ export default function CustomerRegistrationForm({
                   name="state"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estado</FormLabel>
+                      <FormLabel>Estado <RequiredIndicator /></FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: SP" {...field} />
                       </FormControl>
