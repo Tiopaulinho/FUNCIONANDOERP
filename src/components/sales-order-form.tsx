@@ -198,7 +198,7 @@ export default function SalesOrderForm({
   const handleCustomerFormSuccess = (customerData: Omit<Customer, 'id'>) => {
     const newCustomer = onCustomerAdd(customerData);
     if (newCustomer) {
-      form.setValue("customerId", newCustomer.id);
+      form.setValue("customerId", newCustomer.id, { shouldValidate: true });
       setIsCustomerDialogOpen(false);
       toast({
         title: "Cliente Cadastrado!",
@@ -210,18 +210,18 @@ export default function SalesOrderForm({
   const selectedCustomerId = form.watch("customerId");
 
   React.useEffect(() => {
-    if (selectedCustomerId && shippingSettings) {
+    if (selectedCustomerId && shippingSettings?.tiers?.length) {
       const customer = customers.find(c => c.id === selectedCustomerId);
       if (customer && typeof customer.distance === 'number') {
         const tier = shippingSettings.tiers.find(t => 
           customer.distance! >= t.minDistance && customer.distance! <= t.maxDistance
         );
-        if (tier) {
-          form.setValue("shipping", tier.cost);
-        } else {
-          // Optional: handle cases where distance is outside all tiers
-          form.setValue("shipping", 0);
-        }
+        
+        const shippingCost = tier ? tier.cost : 0;
+        form.setValue("shipping", shippingCost, { shouldValidate: true });
+
+      } else {
+        form.setValue("shipping", 0, { shouldValidate: true });
       }
     }
   }, [selectedCustomerId, customers, shippingSettings, form]);
@@ -533,3 +533,5 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    
