@@ -758,6 +758,7 @@ export default function SalesFunnel({
                 leads={leads}
                 customers={customers}
                 onSuccess={handleNewLeadSuccess}
+                shippingSettings={shippingSettings}
               />
             </DialogContent>
         </Dialog>

@@ -112,6 +112,7 @@ export const newLeadSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
   zip: z.string().optional(),
+  distance: z.coerce.number().optional(),
 }).refine(data => {
   if (data.type === "pj") {
     return !!data.name && data.name.length >= 3;

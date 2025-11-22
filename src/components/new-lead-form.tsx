@@ -5,7 +5,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { newLeadSchema, type Lead, type Customer } from "@/lib/schemas";
+import { newLeadSchema, type Lead, type Customer, ShippingSettings } from "@/lib/schemas";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,9 +27,10 @@ interface NewLeadFormProps {
   onSuccess: (data: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => void;
   leads: Lead[];
   customers: (Customer & { id: string })[];
+  shippingSettings: ShippingSettings;
 }
 
-export default function NewLeadForm({ onSuccess, leads, customers }: NewLeadFormProps) {
+export default function NewLeadForm({ onSuccess, leads, customers, shippingSettings }: NewLeadFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
 
@@ -42,10 +43,28 @@ export default function NewLeadForm({ onSuccess, leads, customers }: NewLeadForm
       phone: "",
       email: "",
       zip: "",
+      distance: 0,
     },
   });
   
   const leadType = form.watch("type");
+  const watchedZip = form.watch("zip");
+
+  const openMaps = () => {
+    const originZip = shippingSettings?.originZip;
+    const destinationZip = form.getValues("zip");
+
+    if (!originZip || !destinationZip) {
+      toast({
+        variant: "destructive",
+        title: "CEP(s) faltando",
+        description: "Certifique-se de que o CEP de origem (em Configurações de Frete) e o CEP do lead estão preenchidos.",
+      });
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${originZip}&destination=${destinationZip}`;
+    window.open(url, "_blank");
+  };
 
   async function onSubmit(data: NewLeadFormValues) {
     setIsSubmitting(true);
@@ -191,6 +210,32 @@ export default function NewLeadForm({ onSuccess, leads, customers }: NewLeadForm
                     <FormMessage />
                 </FormItem>
             )}
+        />
+
+        <FormField
+          control={form.control}
+          name="distance"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Distância (KM) <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
+              <div className="flex items-center gap-2">
+                <FormControl>
+                  <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                </FormControl>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={openMaps}
+                  disabled={!watchedZip || !shippingSettings?.originZip}
+                >
+                  <MapPin className="h-4 w-4" />
+                  <span className="sr-only">Calcular no Maps</span>
+                </Button>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
         />
         
         <Button
