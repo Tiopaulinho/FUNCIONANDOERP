@@ -62,6 +62,7 @@ export const salesOrderSchema = z.object({
   id: z.string().optional(),
   customerId: z.string().min(1, "Selecione um cliente."),
   customerName: z.string().optional(), // For data handling
+  leadId: z.string().optional(), // To link order back to lead
   date: z.string().optional(), // For data handling
   status: z.enum(["Pendente", "Processando", "Enviado", "Entregue"]).optional(),
   shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
@@ -171,3 +172,5 @@ export interface ShippingSettings {
   tiers: ShippingTier[];
   reactivationPeriodDays: number;
 }
+
+    

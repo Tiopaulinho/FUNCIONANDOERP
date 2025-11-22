@@ -86,6 +86,7 @@ export default function SalesOrderForm({
     resolver: zodResolver(salesOrderSchema),
     defaultValues: {
       customerId: "",
+      leadId: "",
       shipping: 0,
       shippingMethod: 'Retirada',
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
@@ -143,6 +144,7 @@ export default function SalesOrderForm({
       } else if (cameFromLead) {
         form.reset({
           customerId: customerForLead?.id || "",
+          leadId: leadData?.id || "",
           shipping: proposalData?.shipping || 0,
           shippingMethod: proposalData?.shippingMethod || 'Retirada',
           items: proposalData?.items?.map(item => ({
@@ -154,6 +156,7 @@ export default function SalesOrderForm({
       } else {
         form.reset({
           customerId: "",
+          leadId: "",
           shipping: 0,
           shippingMethod: 'Retirada',
           items: defaultItems,
@@ -601,6 +604,8 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    
 
     
 

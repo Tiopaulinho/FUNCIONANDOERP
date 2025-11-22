@@ -195,7 +195,7 @@ export default function ProposalForm({
     const finalProposal: Proposal = {
       ...initialData,
       ...data,
-      id: initialData?.id || `PROP-${Date.now()}`,
+      id: initialData?.id || `prop-${lead.id}`,
       date: new Date().toISOString().split('T')[0],
       items: data.items.map(item => ({ ...item, id: item.id || `pitem-${Date.now()}-${Math.random()}` })),
       total: finalTotal,
@@ -375,3 +375,5 @@ export default function ProposalForm({
     </div>
   );
 }
+
+    

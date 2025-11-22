@@ -87,6 +87,7 @@ const LeadCard = ({
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
                 <span className="flex-1">{lead.name}</span>
             </CardTitle>
+            <Badge variant="outline" className="font-mono text-xs">{lead.id}</Badge>
         </div>
         <CardDescription className="text-sm flex items-center gap-2 pt-1">
             <User className="h-4 w-4 text-muted-foreground" />
@@ -171,7 +172,10 @@ const LeadDetailsModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Detalhes do Lead: <span className="font-bold text-primary">{lead.name}</span></DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Lead: <span className="font-bold text-primary">{lead.name}</span></DialogTitle>
+            <Badge variant="outline" className="font-mono text-xs">{lead.id}</Badge>
+          </div>
           <DialogDescription>
             Contato: {lead.contact}
           </DialogDescription>
@@ -304,7 +308,10 @@ const GroupedLeadsModal = ({
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <div>
-                        <CardTitle className="text-base">Oportunidade #{lead.id.slice(-4)}</CardTitle>
+                        <CardTitle className="text-base flex items-center gap-2">
+                           Oportunidade 
+                           <Badge variant="secondary" className="font-mono">{lead.id}</Badge>
+                        </CardTitle>
                         {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
                     </div>
                     <div className="text-right">
@@ -429,9 +436,8 @@ export default function SalesFunnel({
     const checkReactivation = () => {
         const now = new Date();
         const customerLastApproval: { [customerId: string]: string } = {};
-        const leadsToCreateForReactivation: Lead[] = [];
 
-        // Find the latest approval date for each customer
+        // Find the latest approval date for each customer based on their approved leads
         leads.forEach(lead => {
             if (lead.status === 'Aprovado' && lead.customerId) {
                 const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
@@ -442,45 +448,44 @@ export default function SalesFunnel({
                 }
             }
         });
-        
-        const approvedCustomers = new Set(leads.filter(l => l.status === 'Aprovado').map(l => l.customerId));
-        const reactivationCustomers = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.customerId));
 
-        approvedCustomers.forEach(customerId => {
-            if (!customerId || reactivationCustomers.has(customerId)) {
-                return;
+        const customerIdsWithReactivationLead = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.customerId));
+
+        Object.keys(customerLastApproval).forEach(customerId => {
+            if (customerIdsWithReactivationLead.has(customerId)) {
+                return; // Don't create a new reactivation lead if one already exists
             }
-            
+
             const lastApprovalDate = new Date(customerLastApproval[customerId]);
             const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
+
             if (diffDays > shippingSettings.reactivationPeriodDays) {
-                const originalLead = leads.find(l => l.customerId === customerId); // Find a representative lead
+                const originalLead = leads.find(l => l.customerId === customerId && l.status === 'Aprovado');
                 if (originalLead) {
                     const today = new Date().toISOString();
+                     const totalCount = leads.length + 1;
+                     const customerLeadCount = leads.filter(
+                        (l) => l.name.toLowerCase() === originalLead.name.toLowerCase()
+                     ).length + 1;
+
                     const newLead: Lead = {
-                        ...originalLead, // copy data from original customer
-                        id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                        ...originalLead,
+                        id: `${totalCount}-${customerLeadCount}`,
                         status: 'Reativar',
                         statusHistory: [{ status: 'Reativar', date: today }],
                         proposalId: undefined, 
                         proposalNotes: 'Oportunidade de reativação.',
                         value: 0,
                     };
-                    leadsToCreateForReactivation.push(newLead);
+                    setLeads(prevLeads => [...prevLeads, newLead]);
                 }
             }
         });
-
-
-        if (leadsToCreateForReactivation.length > 0) {
-            setLeads(prevLeads => [...prevLeads, ...leadsToCreateForReactivation]);
-        }
     };
 
     const interval = setInterval(checkReactivation, 1000 * 60 * 60); // Check every hour
-    checkReactivation();
+    checkReactivation(); 
 
     return () => clearInterval(interval);
   }, [leads, shippingSettings.reactivationPeriodDays, setLeads]);
@@ -563,10 +568,26 @@ export default function SalesFunnel({
 
   const simulateImport = () => {
     const today = new Date().toISOString();
-    const newLeads: Lead[] = [
-      { id: `lead-${Date.now()}-7`, name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000, status: "Lista de Leads", statusHistory: [{ status: 'Lista de Leads', date: today }] },
-      { id: `lead-${Date.now()}-8`, name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000, status: "Lista de Leads", statusHistory: [{ status: 'Lista de Leads', date: today }] },
+    const currentLeadCount = leads.length;
+
+    const newLeadsData: Omit<Lead, 'id' | 'status' | 'statusHistory'>[] = [
+      { name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000 },
+      { name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000 },
     ];
+
+    const newLeads: Lead[] = newLeadsData.map((leadData, index) => {
+         const totalCount = currentLeadCount + index + 1;
+         const customerLeadCount = leads.filter(
+            (l) => l.name.toLowerCase() === leadData.name.toLowerCase()
+         ).length + 1;
+
+        return {
+            ...leadData,
+            id: `${totalCount}-${customerLeadCount}`,
+            status: "Lista de Leads",
+            statusHistory: [{ status: 'Lista de Leads', date: today }]
+        }
+    });
     
     setLeads(prev => [...prev, ...newLeads]);
 
@@ -677,19 +698,7 @@ export default function SalesFunnel({
   }
 
   const handleNewPurchase = (approvedLead: Lead) => {
-    const today = new Date().toISOString();
-    const newLead: Lead = {
-      ...approvedLead,
-      id: `lead-${Date.now()}`,
-      status: 'Contato',
-      statusHistory: [{ status: 'Contato', date: today }],
-      proposalId: undefined, 
-      proposalNotes: 'Oportunidade de reativação.',
-      value: 0,
-    };
-    // Don't use onAddLead as it adds to the start of the array
-    setLeads(prev => [...prev, newLead]);
-
+    updateLeadWithHistory(approvedLead, 'Contato', { proposalId: undefined, proposalNotes: "Oportunidade de reativação."});
     toast({
       title: "Nova Oportunidade Criada!",
       description: `Inicie o contato para a nova compra de ${approvedLead.name}.`,
@@ -697,7 +706,7 @@ export default function SalesFunnel({
   };
 
   const handleReactivate = (leadToReactivate: Lead) => {
-    // Just move the lead from "Reativar" to "Contato"
+    const today = new Date().toISOString();
     updateLeadWithHistory(leadToReactivate, 'Contato');
     toast({
         title: "Cliente em Reativação!",
@@ -836,6 +845,9 @@ export default function SalesFunnel({
                                         <CardDescription>
                                             {group.length} {group.length > 1 ? 'oportunidades ganhas' : 'oportunidade ganha'}
                                         </CardDescription>
+                                         <CardDescription className="text-xs !mt-2 truncate">
+                                            IDs: {group.map(l => l.id).join(', ')}
+                                        </CardDescription>
                                     </CardHeader>
                                 </Card>
                             );
@@ -856,6 +868,9 @@ export default function SalesFunnel({
                                         </CardTitle>
                                         <CardDescription>
                                             {group.length} {group.length > 1 ? 'oportunidades perdidas' : 'oportunidade perdida'}
+                                        </CardDescription>
+                                         <CardDescription className="text-xs !mt-2 truncate">
+                                            IDs: {group.map(l => l.id).join(', ')}
                                         </CardDescription>
                                     </CardHeader>
                                 </Card>
@@ -1001,3 +1016,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
