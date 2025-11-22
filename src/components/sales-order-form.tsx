@@ -313,11 +313,20 @@ export default function SalesOrderForm({
   
   const leadCustomerData = React.useMemo(() => {
     if (!cameFromLead || customerForLead) return null;
+    // Pass all available lead data to pre-fill the customer form
     return {
       name: leadData?.contact || "",
       companyName: leadData?.name,
       email: leadData?.email || "",
       phone: leadData?.phone || "",
+      zip: leadData?.zip || "",
+      street: leadData?.street || "",
+      number: leadData?.number || "",
+      complement: leadData?.complement || "",
+      neighborhood: leadData?.neighborhood || "",
+      city: leadData?.city || "",
+      state: leadData?.state || "",
+      distance: leadData?.distance || 0,
     }
   }, [cameFromLead, customerForLead, leadData]);
 
@@ -586,3 +595,5 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    
