@@ -221,7 +221,7 @@ export default function SalesOrderForm({
       id: initialData?.id || `ORD-${Date.now()}`,
       date: initialData?.date || new Date().toISOString().split('T')[0],
       status: initialData?.status || 'Pendente',
-      customerName: customer?.name || 'Cliente Desconhecido',
+      customerName: customer?.companyName || customer?.name || 'Cliente Desconhecido',
       total: total,
       items: data.items.map(item => ({...item, id: item.id || `item-${Date.now()}-${Math.random()}`})),
     };
@@ -243,7 +243,8 @@ export default function SalesOrderForm({
   const getCustomerRegistrationInitialData = () => {
     if (cameFromLead && !customerForLead && leadData) {
       return { 
-        name: leadData.name || leadData.contact, 
+        name: leadData.contact,
+        companyName: leadData.name !== leadData.contact ? leadData.name : "",
         email: leadData.email || "", 
         phone: leadData.phone || "" 
       };
@@ -269,7 +270,7 @@ export default function SalesOrderForm({
                          <div className="flex-grow">
                           <Input
                             readOnly
-                            value={customerForLead?.name || leadData?.name || ''}
+                            value={customerForLead?.companyName || customerForLead?.name || leadData?.name || ''}
                             className="bg-muted/50"
                           />
                           {!customerForLead && (
@@ -292,7 +293,7 @@ export default function SalesOrderForm({
                           <SelectContent>
                             {customers.map((customer) => (
                               <SelectItem key={customer.id} value={customer.id}>
-                                {customer.name}
+                                {customer.companyName || customer.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -478,5 +479,3 @@ export default function SalesOrderForm({
     </div>
   );
 }
-
-    

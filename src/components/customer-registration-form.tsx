@@ -50,6 +50,7 @@ export default function CustomerRegistrationForm({
     resolver: zodResolver(customerRegistrationSchema),
     defaultValues: {
       name: "",
+      companyName: "",
       email: "",
       phone: "",
       zip: "",
@@ -66,6 +67,7 @@ export default function CustomerRegistrationForm({
     if (initialData) {
         form.reset({
             name: initialData.name || "",
+            companyName: initialData.companyName || "",
             email: initialData.email || "",
             phone: initialData.phone || "",
             zip: initialData.zip || "",
@@ -136,7 +138,7 @@ export default function CustomerRegistrationForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-foreground">
-                Informações Pessoais
+                Informações Pessoais e de Contato
               </h3>
               <Separator />
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -145,7 +147,7 @@ export default function CustomerRegistrationForm({
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome Completo</FormLabel>
+                      <FormLabel>Nome Completo do Contato</FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: João da Silva" {...field} />
                       </FormControl>
@@ -153,6 +155,21 @@ export default function CustomerRegistrationForm({
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome da Empresa <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Acme Inc." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="email"
@@ -170,20 +187,20 @@ export default function CustomerRegistrationForm({
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: (11) 99999-9999" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: (11) 99999-9999" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <div className="space-y-6">
@@ -317,5 +334,3 @@ export default function CustomerRegistrationForm({
     </Card>
   );
 }
-
-    

@@ -49,7 +49,7 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer }:
     const lowercasedEmailFilter = emailFilter.toLowerCase();
 
     const filtered = customers.filter((customer) => {
-      const nameMatch = customer.name.toLowerCase().includes(lowercasedNameFilter);
+      const nameMatch = (customer.name.toLowerCase().includes(lowercasedNameFilter) || (customer.companyName && customer.companyName.toLowerCase().includes(lowercasedNameFilter)));
       const emailMatch = customer.email.toLowerCase().includes(lowercasedEmailFilter);
       return nameMatch && emailMatch;
     });
@@ -107,7 +107,7 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer }:
           </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
-              placeholder="Filtrar por nome..."
+              placeholder="Filtrar por nome do cliente ou empresa..."
               value={nameFilter}
               onChange={(e) => setNameFilter(e.target.value)}
             />
@@ -123,7 +123,8 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer }:
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
+                <TableHead>Cliente/Empresa</TableHead>
+                <TableHead>Contato</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Cidade</TableHead>
@@ -134,7 +135,8 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer }:
             <TableBody>
               {filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
+                  <TableCell className="font-medium">{customer.companyName || customer.name}</TableCell>
+                  <TableCell>{customer.companyName ? customer.name : '-'}</TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
                   <TableCell>{customer.city}</TableCell>
