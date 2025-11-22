@@ -264,7 +264,7 @@ export default function CustomerRegistrationForm({
                             placeholder="Ex: 01001-000" 
                             {...field} 
                             onBlur={(e) => {
-                                field.onBlur(); // Important to call the original onBlur
+                                field.onBlur();
                                 handleZipBlur(e);
                             }}
                           />
