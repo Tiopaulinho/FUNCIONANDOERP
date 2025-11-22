@@ -43,6 +43,7 @@ export default function CustomerRegistrationForm({
 }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isFetchingAddress, setIsFetchingAddress] = React.useState(false);
   const isEditMode = !!(initialData && initialData.id);
   const cameFromLead = !!(initialData && !initialData.id && (initialData.name || initialData.email));
 
@@ -60,6 +61,7 @@ export default function CustomerRegistrationForm({
       neighborhood: "",
       city: "",
       state: "",
+      distance: 0,
     },
   });
 
@@ -77,9 +79,52 @@ export default function CustomerRegistrationForm({
             neighborhood: initialData.neighborhood || "",
             city: initialData.city || "",
             state: initialData.state || "",
+            distance: initialData.distance || 0,
         });
     }
   }, [initialData, form]);
+
+  const handleZipBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const zipCode = e.target.value.replace(/\D/g, '');
+    if (zipCode.length !== 8) {
+      return;
+    }
+
+    setIsFetchingAddress(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${zipCode}/json/`);
+      const data = await response.json();
+      if (data.erro) {
+        toast({
+            variant: "destructive",
+            title: "CEP não encontrado",
+            description: "Por favor, verifique o CEP e tente novamente.",
+        });
+        form.setValue("street", "");
+        form.setValue("neighborhood", "");
+        form.setValue("city", "");
+        form.setValue("state", "");
+      } else {
+        form.setValue("street", data.logradouro);
+        form.setValue("neighborhood", data.bairro);
+        form.setValue("city", data.localidade);
+        form.setValue("state", data.uf);
+        toast({
+            title: "Endereço encontrado!",
+            description: "Os campos de endereço foram preenchidos.",
+        });
+      }
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Erro ao buscar CEP",
+            description: "Não foi possível buscar o endereço. Tente novamente.",
+        });
+    } finally {
+      setIsFetchingAddress(false);
+    }
+  };
+
 
   async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
@@ -213,9 +258,12 @@ export default function CustomerRegistrationForm({
                   render={({ field }) => (
                     <FormItem className="md:col-span-1">
                       <FormLabel>CEP</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: 01001-000" {...field} />
-                      </FormControl>
+                      <div className="relative">
+                        <FormControl>
+                          <Input placeholder="Ex: 01001-000" {...field} onBlur={handleZipBlur} />
+                        </FormControl>
+                        {isFetchingAddress && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -267,7 +315,7 @@ export default function CustomerRegistrationForm({
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <FormField
                   control={form.control}
                   name="neighborhood"
@@ -302,6 +350,19 @@ export default function CustomerRegistrationForm({
                       <FormLabel>Estado</FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: SP" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="distance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Distância (KM)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -13,6 +13,7 @@ export const customerRegistrationSchema = z.object({
   neighborhood: z.string().min(3, { message: "O bairro é obrigatório." }),
   city: z.string().min(3, { message: "A cidade é obrigatória." }),
   state: z.string().min(2, { message: "O estado é obrigatório." }).max(2, { message: "Use a sigla do estado (ex: SP)." }),
+  distance: z.coerce.number().min(0, "A distância não pode ser negativa.").optional(),
 });
 
 export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: string };
@@ -142,3 +143,4 @@ export type ProposalItem = z.infer<typeof proposalItemSchema>;
     
 
     
+
