@@ -62,10 +62,10 @@ const LeadCard = ({ lead, onDragStart, onClick, proposals }: { lead: Lead, onDra
                     <StickyNote className="h-4 w-4 text-amber-500" title="Existem observações para esta proposta" />
                 )}
                 {proposal && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                    </Badge>
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
+                      {proposal.total?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </Badge>
                 )}
             </div>
         </div>
@@ -441,6 +441,17 @@ export default function SalesFunnel({
             setProposalLead(lead);
             setIsProposalModalOpen(true);
             return;
+        }
+
+        if (newStatus === 'Negociação') {
+            if (!lead.proposalId) {
+                toast({
+                    title: "Ação necessária",
+                    description: "É preciso gerar uma proposta antes de mover para Negociação.",
+                    variant: "destructive"
+                });
+                return;
+            }
         }
 
         if (newStatus === 'Aprovado') {
