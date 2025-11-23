@@ -41,6 +41,7 @@ import ProposalForm from "./proposal-form";
 import { Input } from "./ui/input";
 import NewLeadForm from "./new-lead-form";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Label } from "./ui/label";
 
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reativar", "Reprovado"];
