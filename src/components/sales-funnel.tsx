@@ -1091,13 +1091,16 @@ export default function SalesFunnel({
 
   const { leadsByStatus, groupedApprovedLeads, groupedRejectedLeads } = React.useMemo(() => {
     const groupedByStatus: { [key in LeadStatus]?: Lead[] } = {};
+
+    const getSortDate = (lead: Lead, status: LeadStatus): Date => {
+      const entry = [...(lead.statusHistory || [])].reverse().find(h => h.status === status);
+      return entry ? new Date(entry.date) : new Date(0);
+    };
+
     for (const status of funnelStatuses) {
-        groupedByStatus[status] = [];
-    }
-    for (const lead of filteredLeads) {
-      if (groupedByStatus[lead.status]) {
-        groupedByStatus[lead.status]!.push(lead);
-      }
+        const statusLeads = filteredLeads.filter(lead => lead.status === status);
+        statusLeads.sort((a, b) => getSortDate(a, status).getTime() - getSortDate(b, status).getTime());
+        groupedByStatus[status] = statusLeads;
     }
     
     const groupLeadsByName = (leads: Lead[]): { [key: string]: Lead[] } => {
@@ -1395,3 +1398,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
