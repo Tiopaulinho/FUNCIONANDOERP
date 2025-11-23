@@ -64,6 +64,7 @@ const LeadCard = ({
     onGenerateProposal,
     onReactivate,
     status,
+    onOpenContactModal,
 }: { 
     lead: Lead;
     onDragStart: (e: React.DragEvent, leadId: string) => void;
@@ -72,6 +73,7 @@ const LeadCard = ({
     onGenerateProposal: (lead: Lead, isEditing: boolean) => void;
     onReactivate: (lead: Lead) => void;
     status: LeadStatus;
+    onOpenContactModal: (lead: Lead) => void;
 }) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
@@ -79,6 +81,12 @@ const LeadCard = ({
     e.stopPropagation();
     onGenerateProposal(lead, false);
   };
+  
+  const handleContactClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenContactModal(lead);
+  };
+
 
   const handleReactivateClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -122,8 +130,23 @@ const LeadCard = ({
         )}
       </CardHeader>
       
-      {(lead.status === 'Proposta' && !lead.proposalId) || status === 'Reativar' ? (
+      {(lead.status === 'Proposta' && !lead.proposalId) || status === 'Reativar' || status === 'Contato' ? (
         <CardFooter className="p-2 pl-6 flex justify-end">
+            {lead.status === 'Contato' && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleContactClick}>
+                                <Send className="h-4 w-4"/>
+                                <span className="sr-only">Registrar Contato</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Registrar Contato</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
             {lead.status === 'Proposta' && !lead.proposalId && (
                 <TooltipProvider>
                     <Tooltip>
@@ -1080,6 +1103,7 @@ export default function SalesFunnel({
                                 onGenerateProposal={handleGenerateProposalClick}
                                 onReactivate={handleReactivate}
                                 status={status}
+                                onOpenContactModal={handleOpenContactModal}
                             />
                         ))
                     )}
