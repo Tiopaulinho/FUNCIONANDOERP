@@ -239,13 +239,13 @@ const handleProposalSent = (proposal: Proposal) => {
 
 
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center bg-background p-4 md:p-8">
+    <main className="flex min-h-dvh w-full flex-col items-center bg-muted/30 p-4 md:p-8">
       <div className="w-full max-w-7xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="mb-4 flex items-center justify-between gap-4">
-             <Menubar>
+             <Menubar className="border-none bg-transparent p-0">
                 <MenubarMenu>
-                    <MenubarTrigger className="font-semibold" onClick={() => setActiveTab('funnel')}>Funil de Venda</MenubarTrigger>
+                    <MenubarTrigger className="font-semibold text-primary" onClick={() => setActiveTab('funnel')}>Funil de Venda</MenubarTrigger>
                 </MenubarMenu>
                 <MenubarMenu>
                     <MenubarTrigger>Cadastros</MenubarTrigger>

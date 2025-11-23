@@ -44,6 +44,17 @@ import NewLeadForm from "./new-lead-form";
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reativar", "Reprovado"];
 
+const statusColors: Record<LeadStatus, string> = {
+    "Lista de Leads": "bg-gray-400",
+    "Contato": "bg-blue-500",
+    "Proposta": "bg-purple-500",
+    "Negociação": "bg-yellow-500",
+    "Aprovado": "bg-green-500",
+    "Reativar": "bg-orange-500",
+    "Reprovado": "bg-red-500",
+};
+
+
 const LeadCard = ({ 
     lead, 
     onDragStart, 
@@ -76,12 +87,13 @@ const LeadCard = ({
 
   return (
     <Card 
-      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card flex flex-col" 
+      className="mb-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group/lead-card flex flex-col relative overflow-hidden" 
       draggable={lead.status !== 'Aprovado' && lead.status !== 'Reativar'}
       onDragStart={(e) => onDragStart(e, lead.id)}
       onClick={onClick}
     >
-      <CardHeader className="p-4 space-y-2 flex-grow">
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusColors[lead.status]}`}></div>
+      <CardHeader className="p-4 space-y-2 flex-grow pl-6">
         <div className="flex flex-col items-start gap-2">
             <Badge variant="outline" className="font-mono text-xs">{lead.id}</Badge>
             <CardTitle className="text-base font-bold flex items-start gap-2 flex-1 min-w-0">
@@ -110,7 +122,7 @@ const LeadCard = ({
       </CardHeader>
       
       {lead.status === 'Proposta' && !lead.proposalId && (
-        <CardFooter className="p-4 pt-0">
+        <CardFooter className="p-4 pt-0 pl-6">
             <Button size="sm" className="w-full" onClick={handleGenerateClick}>
                 <FileText className="mr-2 h-4 w-4"/>
                 Gerar Proposta
@@ -119,7 +131,7 @@ const LeadCard = ({
       )}
 
       {status === 'Reativar' && (
-         <CardFooter className="p-4 pt-0">
+         <CardFooter className="p-4 pt-0 pl-6">
             <Button 
                 className="w-full" 
                 size="sm"
@@ -220,7 +232,7 @@ const LeadDetailsModal = ({
             )}
             {lead.statusHistory && lead.statusHistory.length > 0 && (
                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> Histórico de Status</h4>
+                    <h4 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> Histórico</h4>
                     <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border space-y-2 max-h-40 overflow-y-auto">
                         {[...lead.statusHistory].reverse().map((history, index) => (
                              <div key={index} className="flex justify-between items-center">
@@ -237,7 +249,7 @@ const LeadDetailsModal = ({
             {lead.status === 'Contato' && (
                 <Button onClick={handleOpenContactModalClick} variant="outline">
                     <Send className="mr-2 h-4 w-4" />
-                    Enviar Mensagem
+                    Registrar Contato
                 </Button>
             )}
             {lead.status === 'Aprovado' && (
@@ -410,12 +422,11 @@ const ContactModal = ({
 
     const templates = {
         whatsapp: `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`,
-        email: `Olá ${lead?.contact || '[Nome do Contato]'},\n\nEspero que esteja tudo bem.\n\nMeu nome é [Seu Nome] e sou da [Sua Empresa]. Vi que você tem interesse em nossos produtos e gostaria de me colocar à disposição para uma conversa.\n\nAtenciosamente,\n[Seu Nome]`
+        email: `Prezado(a) ${lead?.contact || '[Nome do Contato]'},\n\nEspero que esteja tudo bem.\n\nMeu nome é [Seu Nome] e represento a [Sua Empresa]. Vi que você demonstrou interesse em nossos produtos e gostaria de me colocar à sua disposição para uma conversa, sem compromisso.\n\nFico no aguardo de um retorno.\n\nAtenciosamente,\n[Seu Nome]`
     };
 
     React.useEffect(() => {
         if (open) {
-            // Reset state when modal opens
             setSelectedMethod(null);
             setMessage("");
         }
@@ -446,7 +457,7 @@ const ContactModal = ({
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Phone className="h-5 w-5" /> Registrar Contato com {lead.contact}
+                        <Send className="h-5 w-5" /> Registrar Contato com {lead.contact}
                     </DialogTitle>
                     <DialogDescription>
                         Selecione o método de contato e registre a atividade.
@@ -458,7 +469,7 @@ const ContactModal = ({
                         <Phone className="mr-2 h-4 w-4" /> Ligação
                     </Button>
                     <Button onClick={() => handleMethodSelect('whatsapp')} variant={selectedMethod === 'whatsapp' ? 'default' : 'outline'} className="w-full">
-                        <Send className="mr-2 h-4 w-4" /> WhatsApp
+                        <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
                     </Button>
                      <Button onClick={() => handleMethodSelect('email')} variant={selectedMethod === 'email' ? 'default' : 'outline'} className="w-full">
                         <Mail className="mr-2 h-4 w-4" /> Email
@@ -808,27 +819,10 @@ export default function SalesFunnel({
   }
 
   const handleNewPurchase = (approvedLead: Lead) => {
-    const today = new Date().toISOString();
-    const totalCount = leads.length + 1;
-    const customerLeadCount = leads.filter(
-        (l) => l.name.toLowerCase() === approvedLead.name.toLowerCase()
-    ).length + 1;
-
-     const newLead: Lead = {
-      ...approvedLead,
-      id: `${totalCount}-${customerLeadCount}`,
-      status: "Contato",
-      statusHistory: [{ status: "Contato", date: today }],
-      proposalId: undefined, 
-      proposalNotes: 'Oportunidade de reativação.',
-      value: 0,
-    };
-    
-    setLeads(prev => [...prev, newLead]);
-    
+    updateLeadWithHistory(approvedLead, 'Contato');
     toast({
-      title: "Nova Oportunidade Criada!",
-      description: `Inicie o contato para a nova compra de ${approvedLead.name}.`,
+        title: "Cliente em Reativação!",
+        description: `A oportunidade para ${approvedLead.name} foi movida para 'Contato'.`,
     });
   };
 
@@ -956,7 +950,7 @@ export default function SalesFunnel({
                 onChange={(e) => setContactFilter(e.target.value)}
             />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
         {funnelStatuses.map((status) => (
             <div 
               key={status}
@@ -974,18 +968,19 @@ export default function SalesFunnel({
                     </Badge>
                   </div>
               </div>
-              <Card className="bg-muted/30 border-dashed flex-grow">
-                  <CardContent className="p-4 min-h-[200px]">
+              <Card className="bg-muted/50 border-dashed flex-grow">
+                  <CardContent className="p-2 min-h-[200px]">
                     {status === 'Aprovado' ? (
                         Object.values(groupedApprovedLeads).map((group, index) => {
                             const firstLead = group[0];
                             return (
                                 <Card 
                                   key={`group-approved-${index}`} 
-                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow" 
+                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden" 
                                   onClick={() => handleCardClick(firstLead)}
                                 >
-                                    <CardHeader className="p-4">
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusColors[firstLead.status]}`}></div>
+                                    <CardHeader className="p-4 pl-6">
                                         <CardTitle className="text-base font-bold flex items-center gap-2">
                                             <Users className="h-4 w-4 text-muted-foreground" />
                                             {firstLead.name}
@@ -1006,10 +1001,11 @@ export default function SalesFunnel({
                             return (
                                 <Card 
                                   key={`group-rejected-${index}`} 
-                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow" 
+                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden" 
                                   onClick={() => handleCardClick(firstLead)}
                                 >
-                                    <CardHeader className="p-4">
+                                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusColors[firstLead.status]}`}></div>
+                                    <CardHeader className="p-4 pl-6">
                                         <CardTitle className="text-base font-bold flex items-center gap-2">
                                             <Users className="h-4 w-4 text-muted-foreground" />
                                             {firstLead.name}
