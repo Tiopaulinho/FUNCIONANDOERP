@@ -11,7 +11,7 @@ import {
   CardFooter,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail, MessageCircle } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings, LeadActivity, LeadHistoryEntry } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,7 @@ import { Textarea } from "./ui/textarea";
 import ProposalForm from "./proposal-form";
 import { Input } from "./ui/input";
 import NewLeadForm from "./new-lead-form";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 
 const funnelStatuses: LeadStatus[] = ["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reativar", "Reprovado"];
@@ -121,28 +122,41 @@ const LeadCard = ({
         )}
       </CardHeader>
       
-      {lead.status === 'Proposta' && !lead.proposalId && (
-        <CardFooter className="p-4 pt-0 pl-6">
-            <Button size="sm" className="w-full" onClick={handleGenerateClick}>
-                <FileText className="mr-2 h-4 w-4"/>
-                Gerar Proposta
-            </Button>
-        </CardFooter>
-      )}
+      {(lead.status === 'Proposta' && !lead.proposalId) || status === 'Reativar' ? (
+        <CardFooter className="p-2 pl-6 flex justify-end">
+            {lead.status === 'Proposta' && !lead.proposalId && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleGenerateClick}>
+                                <FileText className="h-4 w-4"/>
+                                <span className="sr-only">Gerar Proposta</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Gerar Proposta</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
 
-      {status === 'Reativar' && (
-         <CardFooter className="p-4 pt-0 pl-6">
-            <Button 
-                className="w-full" 
-                size="sm"
-                variant="default"
-                onClick={handleReactivateClick}
-            >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Reativar Cliente
-            </Button>
+            {status === 'Reativar' && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleReactivateClick}>
+                                <RefreshCw className="h-4 w-4"/>
+                                <span className="sr-only">Reativar Cliente</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Reativar Cliente</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
         </CardFooter>
-      )}
+      ) : null}
     </Card>
   );
 };
@@ -819,15 +833,31 @@ export default function SalesFunnel({
   }
 
   const handleNewPurchase = (approvedLead: Lead) => {
-    updateLeadWithHistory(approvedLead, 'Contato');
+    const today = new Date().toISOString();
+     const totalCount = leads.length + 1;
+     const customerLeadCount = leads.filter(
+        (l) => l.name.toLowerCase() === approvedLead.name.toLowerCase()
+     ).length + 1;
+
+    const newLead: Lead = {
+      ...approvedLead,
+      id: `${totalCount}-${customerLeadCount}`,
+      status: 'Contato',
+      statusHistory: [{ status: 'Contato', date: today }],
+      proposalId: undefined,
+      proposalNotes: 'Oportunidade de nova compra.',
+      value: 0,
+    };
+    onAddLead(newLead);
+
     toast({
-        title: "Cliente em Reativação!",
-        description: `A oportunidade para ${approvedLead.name} foi movida para 'Contato'.`,
+        title: "Nova Oportunidade Criada!",
+        description: `Um novo card para ${approvedLead.name} foi movido para 'Contato'.`,
     });
   };
 
   const handleReactivate = (leadToReactivate: Lead) => {
-    updateLeadWithHistory(leadToReactivate, 'Contato');
+    updateLeadWithHistory(leadToReactivate, 'Contato', { proposalNotes: 'Oportunidade de reativação.' });
     toast({
         title: "Cliente em Reativação!",
         description: `A oportunidade para ${leadToReactivate.name} foi movida para 'Contato'.`,
