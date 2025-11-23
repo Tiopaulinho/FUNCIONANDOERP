@@ -1003,14 +1003,18 @@ export default function SalesFunnel({
                     {status === 'Aprovado' ? (
                         Object.values(groupedApprovedLeads).map((group, index) => {
                             const firstLead = group[0];
+                            const handleNewPurchaseClick = (e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                handleNewPurchase(firstLead);
+                            }
                             return (
                                 <Card 
                                   key={`group-approved-${index}`} 
-                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden" 
+                                  className="mb-4 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden flex flex-col" 
                                   onClick={() => handleCardClick(firstLead)}
                                 >
                                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusColors[firstLead.status]}`}></div>
-                                    <CardHeader className="p-4 pl-6">
+                                    <CardHeader className="p-4 pl-6 flex-grow">
                                         <CardTitle className="text-base font-bold flex items-center gap-2">
                                             <Users className="h-4 w-4 text-muted-foreground" />
                                             {firstLead.name}
@@ -1022,6 +1026,21 @@ export default function SalesFunnel({
                                             IDs: {group.map(l => l.id).join(', ')}
                                         </CardDescription>
                                     </CardHeader>
+                                     <CardFooter className="p-2 pl-6 flex justify-end">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleNewPurchaseClick}>
+                                                        <ShoppingCart className="h-4 w-4"/>
+                                                        <span className="sr-only">Nova Compra</span>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Nova Compra</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </CardFooter>
                                 </Card>
                             );
                         })
