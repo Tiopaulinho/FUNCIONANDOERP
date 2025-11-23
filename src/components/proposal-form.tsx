@@ -5,6 +5,7 @@ import * as React from "react";
 import { useForm, useFieldArray, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2, FileText, Percent, Truck, MapPin } from "lucide-react";
+import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,7 @@ import { proposalSchema } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Textarea } from "./ui/textarea";
 
-type ProposalFormValues = Zod.infer<typeof proposalSchema>;
+type ProposalFormValues = z.infer<typeof proposalSchema>;
 
 interface ShippingOption {
     value: string;
@@ -265,10 +266,10 @@ export default function ProposalForm({
                       />
                     </TableCell>
                     <TableCell>
-                      <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem><FormControl><Input type="number" placeholder="1" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))} /></FormControl></FormItem> )} />
+                      <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem><FormControl><Input type="number" placeholder="1" {...field} value={field.value ?? 1} onChange={e => field.onChange(e.target.value === '' ? 1 : parseInt(e.target.value, 10))} /></FormControl></FormItem> )} />
                     </TableCell>
                     <TableCell>
-                      <FormField control={form.control} name={`items.${index}.price`} render={({ field }) => ( <FormItem><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} /></FormControl></FormItem> )} />
+                      <FormField control={form.control} name={`items.${index}.price`} render={({ field }) => ( <FormItem><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))} /></FormControl></FormItem> )} />
                     </TableCell>
                     <TableCell className="text-right">{( (Number(watchedItems?.[index]?.quantity) || 0) * (Number(watchedItems?.[index]?.price) || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                     <TableCell>
@@ -330,7 +331,7 @@ export default function ProposalForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-1"><Truck className="h-4 w-4" /> Frete</FormLabel>
-                    <Select onValueChange={(value) => { field.onChange(value); handleShippingMethodChange(value); }} value={field.value}>
+                    <Select onValueChange={(value) => { field.onChange(value); handleShippingMethodChange(value); }} value={field.value || ''}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o frete" />
@@ -349,7 +350,7 @@ export default function ProposalForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-1"><Percent className="h-4 w-4" /> Desconto (%)</FormLabel>
-                    <FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}/></FormControl>
+                    <FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))}/></FormControl>
                   </FormItem>
                 )}
               />
@@ -375,5 +376,3 @@ export default function ProposalForm({
     </div>
   );
 }
-
-    

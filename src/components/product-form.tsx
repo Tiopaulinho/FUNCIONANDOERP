@@ -70,7 +70,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
   React.useEffect(() => {
     if (initialData) {
       const isStandardCategory = ["VESTUARIOS", "PAPELARIA", "SERVICOS"].includes(initialData.category);
-      form.reset({
+      const defaultValues = {
         ...initialData,
         category: isStandardCategory ? initialData.category : "OUTROS",
         newCategory: isStandardCategory ? "" : initialData.category,
@@ -82,7 +82,13 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
         taxes: initialData.taxes ?? 0,
         profitMargin: initialData.profitMargin ?? 0,
         productionMinutes: initialData.productionMinutes ?? 0,
-      });
+        type: initialData.type || "",
+        material: initialData.material || "",
+        color: initialData.color || "",
+        size: initialData.size || "",
+        otherDetails: initialData.otherDetails || "",
+      };
+      form.reset(defaultValues);
       if (initialData.laborCost && initialData.productionMinutes) {
         setCostPerMinute(initialData.laborCost / initialData.productionMinutes);
       }
@@ -250,7 +256,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma categoria" />
@@ -275,7 +281,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                     <FormItem>
                       <FormLabel>Nome da Nova Categoria</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Brindes Corporativos" {...field} />
+                        <Input placeholder="Ex: Brindes Corporativos" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -283,14 +289,14 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                 />
               )}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="type" render={({ field }) => ( <FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ex: Cilíndrica, Baby Look" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                <FormField control={form.control} name="material" render={({ field }) => ( <FormItem><FormLabel>Material</FormLabel><FormControl><Input placeholder="Ex: Porcelana, Algodão" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="type" render={({ field }) => ( <FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ex: Cilíndrica, Baby Look" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="material" render={({ field }) => ( <FormItem><FormLabel>Material</FormLabel><FormControl><Input placeholder="Ex: Porcelana, Algodão" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="color" render={({ field }) => ( <FormItem><FormLabel>Cor</FormLabel><FormControl><Input placeholder="Ex: Branca, Preto" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                <FormField control={form.control} name="size" render={({ field }) => ( <FormItem><FormLabel>Tamanho/Capacidade</FormLabel><FormControl><Input placeholder="Ex: 325ml, G, 5x5cm" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="color" render={({ field }) => ( <FormItem><FormLabel>Cor</FormLabel><FormControl><Input placeholder="Ex: Branca, Preto" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="size" render={({ field }) => ( <FormItem><FormLabel>Tamanho/Capacidade</FormLabel><FormControl><Input placeholder="Ex: 325ml, G, 5x5cm" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
               </div>
-               <FormField control={form.control} name="otherDetails" render={({ field }) => ( <FormItem><FormLabel>Outros Detalhes</FormLabel><FormControl><Input placeholder="Ex: Com alça de coração, Estampa frontal" {...field} /></FormControl><FormMessage /></FormItem> )} />
+               <FormField control={form.control} name="otherDetails" render={({ field }) => ( <FormItem><FormLabel>Outros Detalhes</FormLabel><FormControl><Input placeholder="Ex: Com alça de coração, Estampa frontal" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
                <FormField
                   control={form.control}
                   name="name"
@@ -312,10 +318,10 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                <Separator />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="rawMaterialCost" render={({ field }) => (
-                    <FormItem><FormLabel>Custo da Matéria Prima (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Custo da Matéria Prima (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="suppliesCost" render={({ field }) => (
-                    <FormItem><FormLabel>Custo de Insumos (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Custo de Insumos (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -330,6 +336,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                           type="number"
                           placeholder="0"
                           {...field}
+                          value={field.value ?? 0}
                           onChange={handleProductionMinutesChange}
                         />
                       </FormControl>
@@ -342,7 +349,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                         <FormLabel>Custo de Mão de Obra (R$)</FormLabel>
                         <div className="flex items-center gap-2">
                             <FormControl>
-                                <Input type="number" step="0.01" {...field} readOnly className="bg-muted/50" />
+                                <Input type="number" step="0.01" {...field} value={field.value ?? 0} readOnly className="bg-muted/50" />
                             </FormControl>
                             <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
                                 <DialogTrigger asChild>
@@ -365,10 +372,10 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField control={form.control} name="fees" render={({ field }) => (
-                    <FormItem><FormLabel>Taxas (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Taxas (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="taxes" render={({ field }) => (
-                    <FormItem><FormLabel>Impostos (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Impostos (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -392,7 +399,7 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                <Separator />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                     <FormField control={form.control} name="profitMargin" render={({ field }) => (
-                        <FormItem><FormLabel>Margem de Lucro (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Margem de Lucro (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
                     <Card className="bg-muted/50">
@@ -415,8 +422,8 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                                 step="0.01" 
                                 placeholder="Ex: 59,90" 
                                 {...field}
-                                value={field.value ?? ""}
-                                onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} 
+                                value={field.value ?? 0}
+                                onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))} 
                             />
                             </FormControl>
                             <FormMessage />
@@ -454,5 +461,3 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     </div>
   );
 }
-
-    

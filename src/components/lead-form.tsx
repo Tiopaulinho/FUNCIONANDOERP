@@ -38,36 +38,21 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
-    defaultValues: isEditMode ? {
-      name: initialData.name,
-      contact: initialData.contact,
-      phone: initialData.phone || "",
-      email: initialData.email || "",
-      value: initialData.value,
-      proposalNotes: initialData.proposalNotes || "",
-      zip: initialData.zip || "",
-      street: initialData.street || "",
-      number: initialData.number || "",
-      complement: initialData.complement || "",
-      neighborhood: initialData.neighborhood || "",
-      city: initialData.city || "",
-      state: initialData.state || "",
-      distance: initialData.distance || 0,
-    } : {
-      name: "",
-      contact: "",
-      phone: "",
-      email: "",
-      value: 0,
-      proposalNotes: "",
-      zip: "",
-      street: "",
-      number: "",
-      complement: "",
-      neighborhood: "",
-      city: "",
-      state: "",
-      distance: 0,
+    defaultValues: {
+      name: initialData?.name || "",
+      contact: initialData?.contact || "",
+      phone: initialData?.phone || "",
+      email: initialData?.email || "",
+      value: initialData?.value ?? 0,
+      proposalNotes: initialData?.proposalNotes || "",
+      zip: initialData?.zip || "",
+      street: initialData?.street || "",
+      number: initialData?.number || "",
+      complement: initialData?.complement || "",
+      neighborhood: initialData?.neighborhood || "",
+      city: initialData?.city || "",
+      state: initialData?.state || "",
+      distance: initialData?.distance ?? 0,
     },
   });
 
@@ -86,7 +71,7 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
         neighborhood: initialData.neighborhood || "",
         city: initialData.city || "",
         state: initialData.state || "",
-        distance: initialData.distance || 0,
+        distance: initialData.distance ?? 0,
       });
     }
   }, [initialData, form]);
@@ -219,7 +204,7 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
                     <FormItem>
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: (11) 99999-9999" {...field} />
+                        <Input placeholder="Ex: (11) 99999-9999" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -232,7 +217,7 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="contato@empresa.com" {...field} />
+                        <Input type="email" placeholder="contato@empresa.com" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -251,8 +236,8 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
                         step="0.01" 
                         placeholder="Ex: 15000,00" 
                         {...field}
-                        value={field.value ?? ""}
-                        onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} 
+                        value={field.value ?? 0}
+                        onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -266,7 +251,7 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
                   <FormItem>
                     <FormLabel>Observações da Proposta</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Detalhes para a criação da proposta..." {...field} />
+                      <Textarea placeholder="Detalhes para a criação da proposta..." {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -288,6 +273,7 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
                           <Input 
                             placeholder="Ex: 01001-000" 
                             {...field} 
+                            value={field.value || ''}
                             onBlur={(e) => {
                                 field.onBlur();
                                 handleZipBlur(e);
@@ -307,20 +293,20 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
                     <FormItem>
                       <FormLabel>Logradouro</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Av. Paulista" {...field} />
+                        <Input placeholder="Ex: Av. Paulista" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <FormField control={form.control} name="number" render={({ field }) => ( <FormItem><FormLabel>Número</FormLabel><FormControl><Input placeholder="Ex: 1000" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="complement" render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>Complemento</FormLabel><FormControl><Input placeholder="Ex: Apto 101" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="number" render={({ field }) => ( <FormItem><FormLabel>Número</FormLabel><FormControl><Input placeholder="Ex: 1000" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="complement" render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>Complemento</FormLabel><FormControl><Input placeholder="Ex: Apto 101" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <FormField control={form.control} name="neighborhood" render={({ field }) => ( <FormItem><FormLabel>Bairro</FormLabel><FormControl><Input placeholder="Ex: Bela Vista" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>Cidade</FormLabel><FormControl><Input placeholder="Ex: São Paulo" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="state" render={({ field }) => ( <FormItem><FormLabel>Estado</FormLabel><FormControl><Input placeholder="Ex: SP" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="neighborhood" render={({ field }) => ( <FormItem><FormLabel>Bairro</FormLabel><FormControl><Input placeholder="Ex: Bela Vista" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>Cidade</FormLabel><FormControl><Input placeholder="Ex: São Paulo" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="state" render={({ field }) => ( <FormItem><FormLabel>Estado</FormLabel><FormControl><Input placeholder="Ex: SP" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem> )} />
                  </div>
                  <FormField
                   control={form.control}
@@ -330,7 +316,7 @@ export default function LeadForm({ initialData, onSuccess, shippingSettings }: L
                       <FormLabel>Distância (KM)</FormLabel>
                       <div className="flex items-center gap-2">
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                          <Input type="number" placeholder="0" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
                         </FormControl>
                         <Button
                           type="button"

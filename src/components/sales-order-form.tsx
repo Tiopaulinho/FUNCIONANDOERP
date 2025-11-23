@@ -490,7 +490,7 @@ export default function SalesOrderForm({
                       render={({ field }) => (
                           <FormItem>
                           <FormControl>
-                              <Input type="number" placeholder="0" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                              <Input type="number" placeholder="0" {...field} value={field.value ?? 1} onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)} />
                           </FormControl>
                           <FormMessage className="mt-1 text-xs"/>
                           </FormItem>
@@ -504,7 +504,7 @@ export default function SalesOrderForm({
                       render={({ field }) => (
                           <FormItem>
                           <FormControl>
-                              <Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
+                              <Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? 0} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
                           </FormControl>
                           <FormMessage className="mt-1 text-xs"/>
                           </FormItem>
@@ -563,7 +563,7 @@ export default function SalesOrderForm({
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Frete</FormLabel>
-                        <Select onValueChange={(value) => { field.onChange(value); handleShippingMethodChange(value); }} value={field.value}>
+                        <Select onValueChange={(value) => { field.onChange(value); handleShippingMethodChange(value); }} value={field.value || ''}>
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione o frete..." />
@@ -604,13 +604,3 @@ export default function SalesOrderForm({
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    
-
-    
