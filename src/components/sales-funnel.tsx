@@ -11,7 +11,7 @@ import {
   CardFooter,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail, MessageCircle } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail, MessageCircle, PhoneCall, Play, Square, Ban } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings, LeadActivity, LeadHistoryEntry } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -273,7 +273,7 @@ const LeadDetailsModal = ({
                     <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border space-y-2 max-h-40 overflow-y-auto">
                         {[...lead.statusHistory].reverse().map((history, index) => (
                              <div key={index} className="flex justify-between items-center">
-                                <span>{history.status}</span>
+                                <span>{history.status} {history.details ? `(${history.details})` : ''}</span>
                                 <span className="text-xs">{new Date(history.date).toLocaleDateString('pt-BR')}</span>
                             </div>
                         ))}
@@ -448,11 +448,13 @@ const ContactModal = ({
     open,
     onOpenChange,
     onRegisterActivity,
+    onOpenCallModal,
 }: {
     lead: Lead | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onRegisterActivity: (activity: LeadActivity) => void;
+    onRegisterActivity: (activity: LeadActivity, message?: string) => void;
+    onOpenCallModal: (lead: Lead) => void;
 }) => {
     const [selectedMethod, setSelectedMethod] = React.useState<"whatsapp" | "email" | null>(null);
     const [message, setMessage] = React.useState("");
@@ -477,14 +479,14 @@ const ContactModal = ({
     };
 
     const handleRegisterCall = () => {
-        onRegisterActivity('Ligação');
+        onOpenCallModal(lead);
     };
 
     const handleSend = () => {
         if (selectedMethod) {
             console.log(`Simulando envio de ${selectedMethod} para: ${selectedMethod === 'email' ? lead.email : lead.phone}`);
             console.log("Mensagem:", message);
-            onRegisterActivity(selectedMethod === 'whatsapp' ? 'WhatsApp' : 'Email');
+            onRegisterActivity(selectedMethod === 'whatsapp' ? 'WhatsApp' : 'Email', message);
         }
     };
 
@@ -502,8 +504,8 @@ const ContactModal = ({
                 </DialogHeader>
                 
                 <div className="grid grid-cols-3 gap-2 pt-4">
-                     <Button onClick={handleRegisterCall} variant="outline" className="w-full">
-                        <Phone className="mr-2 h-4 w-4" /> Ligação
+                     <Button onClick={handleRegisterCall} variant={selectedMethod === null ? 'outline' : 'outline'} className="w-full">
+                        <PhoneCall className="mr-2 h-4 w-4" /> Ligação
                     </Button>
                     <Button onClick={() => handleMethodSelect('whatsapp')} variant={selectedMethod === 'whatsapp' ? 'default' : 'outline'} className="w-full">
                         <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
@@ -531,6 +533,109 @@ const ContactModal = ({
             </DialogContent>
         </Dialog>
     );
+};
+
+const CallModal = ({
+  lead,
+  open,
+  onOpenChange,
+  onEndCall,
+}: {
+  lead: Lead | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEndCall: (notes: string, duration: number, nextStatus: "Proposta" | "Reprovado") => void;
+}) => {
+  const [timer, setTimer] = React.useState(0);
+  const [isActive, setIsActive] = React.useState(false);
+  const [notes, setNotes] = React.useState("");
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(() => {
+    if (open) {
+      // Reset state on open
+      setTimer(0);
+      setIsActive(false);
+      setNotes("");
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    } else {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+    return () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [open]);
+
+  const handleStart = () => {
+    setIsActive(true);
+    intervalRef.current = setInterval(() => {
+      setTimer((timer) => timer + 1);
+    }, 1000);
+  };
+
+  const handleStop = () => {
+    setIsActive(false);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  };
+  
+  const formatTime = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60).toString().padStart(2, '0');
+    const seconds = (timeInSeconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  };
+
+  const handleFinish = (nextStatus: "Proposta" | "Reprovado") => {
+    handleStop();
+    onEndCall(notes, timer, nextStatus);
+  }
+
+  if (!lead) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="text-center">
+            <DialogTitle className="text-2xl">Ligação para {lead.contact}</DialogTitle>
+            <DialogDescription className="text-4xl font-bold text-primary tracking-wider py-4">
+                {lead.phone || "Telefone não cadastrado"}
+            </DialogDescription>
+        </DialogHeader>
+        
+        <div className="flex flex-col items-center justify-center space-y-4 py-4">
+            <div className="text-6xl font-mono text-foreground">{formatTime(timer)}</div>
+            <div className="flex gap-4">
+                <Button onClick={handleStart} disabled={isActive} size="lg">
+                    <Play className="mr-2"/> Iniciar
+                </Button>
+                <Button onClick={handleStop} disabled={!isActive} size="lg" variant="destructive">
+                    <Square className="mr-2"/> Encerrar
+                </Button>
+            </div>
+        </div>
+        
+        <div className="space-y-2">
+            <Label htmlFor="call-notes">Anotações da Chamada</Label>
+            <Textarea 
+                id="call-notes"
+                placeholder="Detalhes da conversa, próximos passos, etc."
+                rows={4}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={!isActive && timer === 0}
+            />
+        </div>
+
+        <DialogFooter className="grid grid-cols-2 gap-4 pt-4">
+            <Button onClick={() => handleFinish("Reprovado")} disabled={isActive || timer === 0} variant="outline">
+                <Ban className="mr-2"/> Ir para Reprovado
+            </Button>
+            <Button onClick={() => handleFinish("Proposta")} disabled={isActive || timer === 0}>
+                <FileText className="mr-2"/> Ir para Proposta
+            </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 
@@ -582,6 +687,9 @@ export default function SalesFunnel({
   const [groupedModalTitle, setGroupedModalTitle] = React.useState("");
   const [contactLead, setContactLead] = React.useState<Lead | null>(null);
   const [isContactModalOpen, setIsContactModalOpen] = React.useState(false);
+  const [callLead, setCallLead] = React.useState<Lead | null>(null);
+  const [isCallModalOpen, setIsCallModalOpen] = React.useState(false);
+
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
@@ -914,7 +1022,7 @@ export default function SalesFunnel({
     setIsContactModalOpen(true);
   };
   
-  const handleContactActivity = (activity: LeadActivity) => {
+  const handleContactActivity = (activity: LeadActivity, message?: string) => {
     if (!contactLead) return;
 
     const today = new Date().toISOString();
@@ -928,6 +1036,43 @@ export default function SalesFunnel({
     toast({
         title: "Atividade Registrada!",
         description: `A atividade "${activity}" foi registrada para ${contactLead.name}.`,
+    });
+  };
+
+  const handleOpenCallModal = (lead: Lead) => {
+    setCallLead(lead);
+    setIsContactModalOpen(false); // Close contact modal
+    setIsCallModalOpen(true);
+  };
+
+  const handleEndCall = (notes: string, duration: number, nextStatus: "Proposta" | "Reprovado") => {
+    if (!callLead) return;
+    
+    const today = new Date().toISOString();
+    const durationMinutes = Math.floor(duration / 60);
+    const durationSeconds = duration % 60;
+    const durationString = `${durationMinutes}m ${durationSeconds}s`;
+
+    const newHistory: LeadHistoryEntry[] = [
+      ...(callLead.statusHistory || []),
+      { status: "Ligação", date: today, details: durationString },
+      { status: nextStatus, date: today }
+    ];
+
+    onUpdateLead({
+      ...callLead,
+      status: nextStatus,
+      proposalNotes: notes,
+      statusHistory: newHistory,
+      lastCallDuration: duration,
+      lastCallNotes: notes,
+    });
+
+    setIsCallModalOpen(false);
+    setCallLead(null);
+    toast({
+      title: "Ligação Encerrada",
+      description: `Lead movido para ${nextStatus}.`,
     });
   };
 
@@ -1236,6 +1381,14 @@ export default function SalesFunnel({
             open={isContactModalOpen}
             onOpenChange={setIsContactModalOpen}
             onRegisterActivity={handleContactActivity}
+            onOpenCallModal={handleOpenCallModal}
+        />
+
+        <CallModal
+            lead={callLead}
+            open={isCallModalOpen}
+            onOpenChange={setIsCallModalOpen}
+            onEndCall={handleEndCall}
         />
 
     </div>

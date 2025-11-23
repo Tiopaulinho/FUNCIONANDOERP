@@ -88,6 +88,7 @@ export type LeadActivity = z.infer<typeof leadActivitySchema>;
 export const leadHistoryEntrySchema = z.object({
     status: z.union([leadStatusSchema, leadActivitySchema]),
     date: z.string(),
+    details: z.string().optional(), // For call duration, etc.
 });
 export type LeadHistoryEntry = z.infer<typeof leadHistoryEntrySchema>;
 
@@ -107,6 +108,8 @@ export const leadSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   distance: z.coerce.number().optional(),
+  lastCallDuration: z.number().optional(),
+  lastCallNotes: z.string().optional(),
 });
 
 export const newLeadSchema = z.object({
