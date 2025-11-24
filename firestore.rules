@@ -1,87 +1,85 @@
 
 /**
- * Core Philosophy: This ruleset implements a strict, user-centric ownership model.
- * All data is sandboxed, meaning each authenticated user can only access and
- * manage their own information. There is no concept of public or shared data.
+ * Filosofia Principal: Este conjunto de regras implementa um modelo de propriedade estrito e centrado no usuário.
+ * Todos os dados são isolados (sandboxed), o que significa que cada usuário autenticado só pode acessar e
+ * gerenciar suas próprias informações. Não há conceito de dados públicos ou compartilhados.
  *
- * Data Structure: All application data is nested under the `/users/{userId}` path.
- * The primary collection, `clientes`, exists as a subcollection for each user,
- * ensuring a clear and secure separation of data between different users.
- * The structure is `/users/{userId}/clientes/{clienteId}`.
+ * Estrutura de Dados: Todos os dados da aplicação estão aninhados sob o caminho `/users/{userId}`.
+ * A coleção principal, `clientes`, existe como uma subcoleção para cada usuário,
+ * garantindo uma separação clara e segura dos dados entre diferentes usuários.
+ * A estrutura é `/users/{userId}/clientes/{clienteId}`.
  *
- * Key Security Decisions:
- * - Default Deny: All operations are denied by default. Access is only granted
- *   through explicit `allow` statements.
- * - Strict Ownership: A user's identity (`request.auth.uid`) is verified
- *   against the `userId` parameter in the document path for every operation. This
- *   prevents any user from accessing another user's data.
- * - No User Listing: The top-level `/users` collection is not readable,
- *   preventing malicious actors from discovering the list of all application users.
+ * Decisões Chave de Segurança:
+ * - Negação por Padrão: Todas as operações são negadas por padrão. O acesso só é concedido
+ *   através de declarações `allow` explícitas.
+ * - Propriedade Estrita: A identidade de um usuário (`request.auth.uid`) é verificada
+ *   contra o parâmetro `userId` no caminho do documento para cada operação. Isso
+ *   impede que qualquer usuário acesse os dados de outro usuário.
+ * - Sem Listagem de Usuários: A coleção de nível superior `/users` não é legível,
+ *   impedindo que atores mal-intencionados descubram a lista de todos os usuários da aplicação.
  *
- * Denormalization for Authorization: This ruleset relies on Path-Based
- * Authorization. The `userId` in the path `/users/{userId}` is the sole source of
- * truth for ownership. This design is highly performant as it requires no
- * extra document reads (`get()` calls) to authorize an operation.
+ * Desnormalização para Autorização: Este conjunto de regras depende da Autorização Baseada em Caminho
+ * (Path-Based Authorization). O `userId` no caminho `/users/{userId}` é a única fonte
+ * de verdade para a propriedade. Este design é altamente performático, pois não requer
+ * leituras extras de documentos (chamadas `get()`) para autorizar uma operação.
  *
- * Structural Segregation: The entire data model is built on segregation. Each
- * user's data is stored in its own document tree, making it impossible for list
- * queries to accidentally leak data from other users.
+ * Segregação Estrutural: Todo o modelo de dados é construído sobre segregação. Os dados de cada
+ * usuário são armazenados em sua própria árvore de documentos, tornando impossível para as
+ * consultas de lista vazarem acidentalmente dados de outros usuários.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ----------------------------------------------------------------------
-    // Helper Functions
+    // Funções Auxiliares
     // ----------------------------------------------------------------------
 
     /**
-     * Checks if the user is authenticated.
+     * Verifica se o usuário está autenticado.
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * Validates if the currently authenticated user's ID matches the
-     * userId from the document path, establishing ownership.
+     * Valida se o ID do usuário atualmente autenticado corresponde ao
+     * userId do caminho do documento, estabelecendo a propriedade.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * Ensures an update or delete operation targets an existing document
-     * and that the requester is the legitimate owner. This prevents modifying
-     * or deleting documents that do not exist.
+     * Garante que uma operação de atualização ou exclusão vise um documento existente
+     * e que o solicitante seja o proprietário legítimo. Isso impede a modificação
+     * ou exclusão de documentos que não existem.
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
     // ----------------------------------------------------------------------
-    // Collection Rules
+    // Regras das Coleções
     // ----------------------------------------------------------------------
 
     /**
-     * @description Manages access to a user's private list of customers ('clientes').
-     * Only the owner of the data tree can perform any action on their customers.
+     * @description Gerencia o acesso à lista privada de clientes ('clientes') de um usuário.
+     * Apenas o proprietário da árvore de dados pode realizar qualquer ação em seus clientes.
      * @path /users/{userId}/clientes/{clienteId}
-     * @allow (create) An authenticated user with UID 'user_abc' can create a new customer document at `/users/user_abc/clientes/cliente_123`.
-     * @deny (get) An authenticated user with UID 'user_xyz' is denied from reading `/users/user_abc/clientes/cliente_123`.
-     * @principle Restricts access to a user's own data tree. All operations are authorized based on the `userId` in the path.
+     * @allow (create) Um usuário autenticado com UID 'user_abc' pode criar um novo documento de cliente em `/users/user_abc/clientes/cliente_123`.
+     * @deny (get) Um usuário autenticado com UID 'user_xyz' é impedido de ler `/users/user_abc/clientes/cliente_123`.
+     * @principle Restringe o acesso à própria árvore de dados de um usuário. Todas as operações são autorizadas com base no `userId` no caminho.
      */
     match /users/{userId}/clientes/{clienteId} {
-      // Read permissions: Only the owner can get or list their own customers.
+      // Permissões de leitura: Apenas o proprietário pode obter ou listar seus próprios clientes.
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
 
-      // Write permissions: Only the owner can create, update, or delete their own customers.
+      // Permissões de escrita: Apenas o proprietário pode criar, atualizar ou excluir seus próprios clientes.
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
   }
 }
-
-    
