@@ -855,7 +855,7 @@ export default function SalesFunnel({
     
     const maxId = leadNumbers.length > 0 ? Math.max(...leadNumbers) : 0;
     const newId = maxId + 1;
-    return `LD-${newId.toString().padStart(3, '0')}`;
+    return `LD-${newId.toString().padStart(5, '0')}`;
   };
 
 
@@ -996,8 +996,9 @@ export default function SalesFunnel({
   const handleImportLeads = (data: any[]) => {
     let importedCount = 0;
     let skippedCount = 0;
+    const currentLeads = [...leads];
 
-    data.forEach((row, index) => {
+    data.forEach((row) => {
         const name = row['name'];
         const contact = row['contact'];
         if (!name || !contact) {
@@ -1006,13 +1007,13 @@ export default function SalesFunnel({
         }
         
         // Basic duplicate check
-        const isDuplicate = leads.some(l => l.name.toLowerCase() === name.toLowerCase() && l.contact.toLowerCase() === contact.toLowerCase());
+        const isDuplicate = currentLeads.some(l => l.name.toLowerCase() === name.toLowerCase() && l.contact.toLowerCase() === contact.toLowerCase());
         if (isDuplicate) {
             skippedCount++;
             return;
         }
-
-        onAddLead({
+        
+        const newLeadData = {
             name: name,
             contact: contact,
             phone: row['phone'] || "",
@@ -1020,7 +1021,14 @@ export default function SalesFunnel({
             value: Number(row['value']) || 0,
             zip: row['zip'] || "",
             distance: Number(row['distance']) || 0,
-            displayId: generateDisplayId([...leads, ...data.slice(0, index)])
+            displayId: generateDisplayId(currentLeads)
+        };
+
+        onAddLead(newLeadData);
+        currentLeads.push({
+            id: '', // dummy id for check
+            status: 'Lista de Leads',
+            ...newLeadData
         });
         importedCount++;
     });
@@ -1257,7 +1265,7 @@ export default function SalesFunnel({
     const groupedByStatus: { [key in LeadStatus]?: Lead[] } = {};
 
     const getSortDate = (lead: Lead, status: LeadStatus): Date => {
-      const entry = (lead.statusHistory || []).find(h => h.status === status);
+      const entry = [...(lead.statusHistory || [])].reverse().find(h => h.status === status);
       return entry ? new Date(entry.date) : new Date(0);
     };
 
@@ -1572,3 +1580,5 @@ export default function SalesFunnel({
     </div>
   );
 }
+
+    
