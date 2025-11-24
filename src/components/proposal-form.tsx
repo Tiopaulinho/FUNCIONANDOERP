@@ -169,7 +169,13 @@ export default function ProposalForm({
 
   React.useEffect(() => {
     if (initialData) {
-        form.reset(initialData);
+        form.reset({
+            ...initialData,
+            discount: initialData.discount || 0,
+            shipping: initialData.shipping || 0,
+            observations: initialData.observations || "",
+            paymentMethods: initialData.paymentMethods || "",
+        });
     }
     setCurrentLead(lead);
     setupShippingOptions(lead);
@@ -193,10 +199,12 @@ export default function ProposalForm({
 
     const finalTotal = total;
 
+    const proposalId = initialData?.id || `prop-${lead.id}`;
+
     const finalProposal: Proposal = {
       ...initialData,
       ...data,
-      id: initialData?.id || `prop-${lead.id}`,
+      id: proposalId,
       date: new Date().toISOString().split('T')[0],
       items: data.items.map(item => ({ ...item, id: item.id || `pitem-${Date.now()}-${Math.random()}` })),
       total: finalTotal,

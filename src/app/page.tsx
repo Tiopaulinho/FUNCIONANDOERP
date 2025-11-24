@@ -42,29 +42,26 @@ const initialProducts: (Product & { id: string })[] = [
 ];
 
 const initialOrders: SalesOrder[] = [
-  { id: "ORD-001", leadId: "1-1", customerId: "1", customerName: "José da Silva", date: "2024-07-28", total: 150.50, status: "Entregue", shipping: 0, items: [ {id: "item-1", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 150.50} ] },
-  { id: "ORD-002", leadId: "2-1", customerId: "2", customerName: "Maria Oliveira", date: "2024-07-27", total: 299.99, status: "Enviado", shipping: 0, items: [ {id: "item-2", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 2, price: 120}, {id: "item-3", productId: "prod-3", productName: "Teclado", quantity: 1, price: 59.99} ] },
-  { id: "ORD-003", leadId: "3-1", customerId: "3", customerName: "Carlos Pereira", date: "2024-07-26", total: 75.00, status: "Processando", shipping: 0, items: [ {id: "item-4", productId: "prod-4", productName: "Monitor 4K", quantity: 1, price: 75.00} ] },
-  { id: "ORD-004", leadId: "4-1", customerId: "4", customerName: "Ana Costa", date: "2024-07-25", total: 500.00, status: "Pendente", shipping: 0, items: [ {id: "item-5", productId: "prod-1", productName: "Notebook Pro", quantity: 1, price: 500} ] },
-  { id: "ORD-005", leadId: "5-2", customerId: "1", customerName: "José da Silva", date: "2024-07-24", total: 99.90, status: "Entregue", shipping: 0, items: [ {id: "item-6", productId: "prod-2", productName: "Mouse Sem Fio", quantity: 1, price: 99.90} ] },
+  { id: "ORD-00003", leadId: "lead-3", customerId: "cust-gama-1", customerName: "Comércio Gama", date: "2024-07-26", total: 25000, status: "Processando", shipping: 0, items: [ {id: "item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 1, price: 25000} ] },
+  { id: "ORD-00005", leadId: "lead-5", customerId: "cust-epsilon-1", customerName: "Indústria Epsilon", date: "2024-07-24", total: 50000, status: "Entregue", shipping: 0, items: [ {id: "item-2", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 5, price: 10000} ] },
 ];
 
 const initialLeads: Lead[] = [
-  { id: "1-1", name: "Empresa Alpha", contact: "João", phone: "(11) 91111-1111", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X.", statusHistory: [{ status: "Contato", date: "2024-07-20"}] },
-  { id: "2-1", name: "Startup Beta", contact: "Mariana", phone: "(21) 92222-2222", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile.", statusHistory: [{ status: "Proposta", date: "2024-07-21"}] },
-  { id: "3-1", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-3-1", statusHistory: [{ status: "Aprovado", date: "2024-07-22"}] },
-  { id: "4-1", name: "Serviços Delta", contact: "Fernanda", phone: "(41) 94444-4444", value: 5000, status: "Lista de Leads", statusHistory: [{ status: "Lista de Leads", date: "2024-07-23"}] },
-  { id: "5-1", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1", proposalId: "prop-5-1", statusHistory: [{ status: "Aprovado", date: "2024-07-24"}] },
-  { id: "6-1", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado", statusHistory: [{ status: "Reprovado", date: "2024-07-25"}] },
-  { id: "7-1", name: "Consultoria Sigma", contact: "Beatriz", phone: "(71) 97777-7777", value: 18000, status: "Negociação", proposalId: "prop-7-1", statusHistory: [{ status: "Negociação", date: "2024-07-26"}] },
-  { id: "8-2", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 7000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-8-2", statusHistory: [{ status: "Aprovado", date: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString() }] }, // Old approved to test reactivation
+  { id: "lead-1", displayId: "LD-00001", name: "Empresa Alpha", contact: "João", phone: "(11) 91111-1111", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X.", statusHistory: [{ status: "Contato", date: "2024-07-20"}] },
+  { id: "lead-2", displayId: "LD-00002", name: "Startup Beta", contact: "Mariana", phone: "(21) 92222-2222", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile.", statusHistory: [{ status: "Proposta", date: "2024-07-21"}] },
+  { id: "lead-3", displayId: "LD-00003", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-lead-3", statusHistory: [{ status: "Aprovado", date: "2024-07-22"}] },
+  { id: "lead-4", displayId: "LD-00004", name: "Serviços Delta", contact: "Fernanda", phone: "(41) 94444-4444", value: 5000, status: "Lista de Leads", statusHistory: [{ status: "Lista de Leads", date: "2024-07-23"}] },
+  { id: "lead-5", displayId: "LD-00005", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1", proposalId: "prop-lead-5", statusHistory: [{ status: "Aprovado", date: "2024-07-24"}] },
+  { id: "lead-6", displayId: "LD-00006", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado", statusHistory: [{ status: "Reprovado", date: "2024-07-25"}] },
+  { id: "lead-7", displayId: "LD-00007", name: "Consultoria Sigma", contact: "Beatriz", phone: "(71) 97777-7777", value: 18000, status: "Negociação", proposalId: "prop-lead-7", statusHistory: [{ status: "Negociação", date: "2024-07-26"}] },
+  { id: "lead-8", displayId: "LD-00008", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 7000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-lead-8", statusHistory: [{ status: "Aprovado", date: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString() }] }, // Old approved to test reactivation
 ];
 
 const initialProposals: Proposal[] = [
-  { id: "prop-3-1", leadId: "3-1", date: "2024-07-21", status: "Sent", items: [{ id: "p-item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 2, price: 7500 }], total: 15000, discount: 0, shipping: 100 },
-  { id: "prop-8-2", leadId: "8-2", date: "2024-07-28", status: "Sent", items: [{ id: "p-item-2", productId: "prod-4", productName: "Eletrônicos - Monitor 4K", quantity: 3, price: 2300 }], total: 6900, discount: 0, shipping: 50 },
-  { id: "prop-5-1", leadId: "5-1", date: "2024-07-23", status: "Sent", items: [{ id: "p-item-3", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 5, price: 7400 }], total: 37000, discount: 0, shipping: 250 },
-  { id: "prop-7-1", leadId: "7-1", date: "2024-07-25", status: "Sent", items: [{ id: "p-item-4", productId: "prod-3", productName: "Acessórios - Teclado Mecânico", quantity: 10, price: 450 }], total: 4500, discount: 0, shipping: 0 },
+  { id: "prop-lead-3", leadId: "lead-3", date: "2024-07-21", status: "Sent", items: [{ id: "p-item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 2, price: 7500 }], total: 15000, discount: 0, shipping: 100 },
+  { id: "prop-lead-8", leadId: "lead-8", date: "2024-07-28", status: "Sent", items: [{ id: "p-item-2", productId: "prod-4", productName: "Eletrônicos - Monitor 4K", quantity: 3, price: 2300 }], total: 6900, discount: 0, shipping: 50 },
+  { id: "prop-lead-5", leadId: "lead-5", date: "2024-07-23", status: "Sent", items: [{ id: "p-item-3", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 5, price: 7400 }], total: 37000, discount: 0, shipping: 250 },
+  { id: "prop-lead-7", leadId: "lead-7", date: "2024-07-25", status: "Sent", items: [{ id: "p-item-4", productId: "prod-3", productName: "Acessórios - Teclado Mecânico", quantity: 10, price: 450 }], total: 4500, discount: 0, shipping: 0 },
 ];
 
 const initialShippingSettings: ShippingSettings = {
@@ -132,7 +129,12 @@ export default function Home() {
     if (isEditing) {
       setOrders(prevOrders => prevOrders.map(o => o.id === savedOrder.id ? savedOrder : o));
     } else {
-      setOrders(prevOrders => [...prevOrders, { ...savedOrder, id: `ORD-${Date.now()}` }]);
+      let orderId = `ORD-${Date.now()}`;
+      if (leadForOrder && leadForOrder.displayId) {
+          const leadNum = leadForOrder.displayId.split('-')[1];
+          orderId = `ORD-${leadNum}`;
+      }
+      setOrders(prevOrders => [...prevOrders, { ...savedOrder, id: orderId }]);
     }
     
     if (leadForOrder) {
@@ -383,3 +385,4 @@ const handleProposalSent = (proposal: Proposal) => {
     
 
     
+

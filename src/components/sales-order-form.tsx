@@ -152,6 +152,7 @@ export default function SalesOrderForm({
           shippingMethod: proposalData?.shippingMethod || 'Retirada',
           items: proposalData?.items?.map(item => ({
             ...item,
+            id: item.id || '',
             quantity: item.quantity || 1,
             price: item.price || 0,
           })) || defaultItems,
@@ -295,11 +296,10 @@ export default function SalesOrderForm({
       return;
     }
 
-
     const finalOrderData: SalesOrder = {
       ...initialData,
       ...data,
-      id: initialData?.id || `ORD-${Date.now()}`,
+      id: initialData?.id || `ORD-00000`, // Placeholder, will be replaced in parent
       date: initialData?.date || new Date().toISOString().split('T')[0],
       status: initialData?.status || 'Pendente',
       customerName: customer?.companyName || customer?.name || 'Cliente Desconhecido',
