@@ -839,7 +839,7 @@ const BirthdayModal = ({
     onOpenChange,
     onSendMessage
 }: {
-    customers: Customer[];
+    customers: (Customer & { id: string })[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSendMessage: (customer: Customer) => void;
@@ -847,7 +847,7 @@ const BirthdayModal = ({
     const [birthdayCustomers, setBirthdayCustomers] = React.useState<Customer[]>([]);
 
     React.useEffect(() => {
-        if (open) {
+        if (open && customers) {
             const currentMonth = new Date().getMonth() + 1;
             const filtered = customers.filter(c => {
                 if (!c.aniversario) return false;
