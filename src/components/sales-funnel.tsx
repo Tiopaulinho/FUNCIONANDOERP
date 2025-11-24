@@ -974,71 +974,79 @@ export default function SalesFunnel({
   };
 
 
- React.useEffect(() => {
+  React.useEffect(() => {
     const checkReactivation = () => {
-        const now = new Date();
-        const customerLastApproval: { [customerId: string]: string } = {};
-
-        // Find the latest approval date for each customer based on their approved leads
-        leads.forEach(lead => {
-            if (lead.status === 'Aprovado' && lead.customerId) {
-                const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
-                if (approvedEntry) {
-                    if (!customerLastApproval[lead.customerId] || new Date(approvedEntry.date) > new Date(customerLastApproval[lead.customerId])) {
-                        customerLastApproval[lead.customerId] = approvedEntry.date;
-                    }
-                }
+      const now = new Date();
+      const customerLastApproval: { [customerId: string]: string } = {};
+  
+      leads.forEach(lead => {
+        if (lead.status === 'Aprovado' && lead.customerId) {
+          const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
+          if (approvedEntry) {
+            if (!customerLastApproval[lead.customerId] || new Date(approvedEntry.date) > new Date(customerLastApproval[lead.customerId])) {
+              customerLastApproval[lead.customerId] = approvedEntry.date;
             }
-        });
-
-        const updatedLeads = [...leads];
-        const existingReactivationCustomerIds = new Set(
-            leads.filter(l => l.status === 'Reativar').map(l => l.customerId)
-        );
-
-        Object.keys(customerLastApproval).forEach(customerId => {
-            // Check if there is already a reactivation card for this customer
-            if (existingReactivationCustomerIds.has(customerId)) {
-                return;
-            }
-
-            const lastApprovalDate = new Date(customerLastApproval[customerId]);
-            const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays > shippingSettings.reactivationPeriodDays) {
-                const originalLead = leads.find(l => l.customerId === customerId);
-                if (!originalLead) return;
-
-                const today = new Date().toISOString();
-                const reactivationLead: Lead = {
-                    ...originalLead,
-                    id: `reactivate-${customerId}-${Date.now()}`, // Unique ID for the suggestion
-                    status: 'Reativar',
-                    statusHistory: [{ status: 'Reativar', date: today }],
-                    proposalId: undefined,
-                    proposalNotes: 'Oportunidade de reativação.',
-                    value: 0,
-                    displayId: undefined, // No displayId for reactivation suggestions
-                };
-                
-                updatedLeads.push(reactivationLead);
-                existingReactivationCustomerIds.add(customerId); // Mark as added to prevent duplicates in this run
-            }
-        });
-
-        // Use a functional update to avoid race conditions if setLeads is called elsewhere
-        setLeads(currentLeads => {
-            // Merge with current state to avoid overwriting other changes
-            const currentLeadIds = new Set(currentLeads.map(l => l.id));
-            const newLeadsToAdd = updatedLeads.filter(l => !currentLeadIds.has(l.id));
-            return [...currentLeads, ...newLeadsToAdd];
-        });
+          }
+        }
+      });
+  
+      const existingReactivationCustomerIds = new Set(
+        leads.filter(l => l.status === 'Reativar').map(l => l.customerId)
+      );
+  
+      const newReactivationLeads: Lead[] = [];
+  
+      Object.keys(customerLastApproval).forEach(customerId => {
+        if (existingReactivationCustomerIds.has(customerId)) {
+          return;
+        }
+  
+        const lastApprovalDate = new Date(customerLastApproval[customerId]);
+        const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+        if (diffDays > (shippingSettings.reactivationPeriodDays || 14)) {
+          const originalLead = leads.find(l => l.customerId === customerId);
+          if (!originalLead) return;
+  
+          const today = new Date().toISOString();
+          const reactivationLead: Lead = {
+            ...originalLead,
+            id: `reactivate-${customerId}`, // Non-unique but fine for suggestions
+            status: 'Reativar',
+            statusHistory: [{ status: 'Reativar', date: today }],
+            proposalId: undefined,
+            proposalNotes: 'Oportunidade de reativação.',
+            value: 0,
+            displayId: undefined,
+          };
+          newReactivationLeads.push(reactivationLead);
+        }
+      });
+  
+      return newReactivationLeads;
     };
-
-    const interval = setInterval(checkReactivation, 1000 * 60 * 60); // Check every hour
-    checkReactivation(); 
-
+  
+    const interval = setInterval(() => {
+      const newLeads = checkReactivation();
+      if (newLeads.length > 0) {
+        setLeads(currentLeads => {
+          const currentReactivationIds = new Set(currentLeads.filter(l => l.status === 'Reativar').map(l => l.id));
+          const leadsToAdd = newLeads.filter(l => !currentReactivationIds.has(l.id));
+          if (leadsToAdd.length > 0) {
+            return [...currentLeads, ...leadsToAdd];
+          }
+          return currentLeads;
+        });
+      }
+    }, 1000 * 60 * 60); // Check every hour
+  
+    // Initial check
+    const initialNewLeads = checkReactivation();
+    if (initialNewLeads.length > 0) {
+      setLeads(currentLeads => [...currentLeads, ...initialNewLeads]);
+    }
+  
     return () => clearInterval(interval);
   }, [leads, shippingSettings.reactivationPeriodDays, setLeads]);
 
