@@ -105,7 +105,7 @@ const LeadCard = ({
       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusColors[lead.status]}`}></div>
       <CardHeader className="p-4 space-y-2 flex-grow pl-6">
         <div className="flex flex-col items-start gap-2">
-            <Badge variant="outline" className="font-mono text-xs">{lead.id}</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{lead.displayId || lead.id}</Badge>
             <CardTitle className="text-base font-bold flex items-start gap-2 flex-1 min-w-0">
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
                 <span className="flex-1">{lead.name}</span>
@@ -231,7 +231,7 @@ const LeadDetailsModal = ({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Lead: <span className="font-bold text-primary">{lead.name}</span></DialogTitle>
-            <Badge variant="outline" className="font-mono text-xs">{lead.id}</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{lead.displayId || lead.id}</Badge>
           </div>
           <DialogDescription>
             Contato: {lead.contact}
@@ -373,7 +373,7 @@ const GroupedLeadsModal = ({
                     <div>
                         <CardTitle className="text-base flex items-center gap-2">
                            Oportunidade 
-                           <Badge variant="secondary" className="font-mono">{lead.id}</Badge>
+                           <Badge variant="secondary" className="font-mono">{lead.displayId || lead.id}</Badge>
                         </CardTitle>
                         {lead.proposalId && <CardDescription>Proposta: {lead.proposalId}</CardDescription>}
                     </div>
@@ -646,7 +646,7 @@ interface SalesFunnelProps {
   onOpenNewOrder: (lead: Lead) => void;
   onUpdateLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
-  onAddLead: (lead: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => void;
+  onAddLead: (lead: Omit<Lead, 'id' | 'status' | 'statusHistory' | 'displayId'> & { displayId?: string }) => void;
   customers: (Customer & { id: string })[];
   products: (Product & { id: string })[];
   onProductAdd: (newProduct: Product & { id: string }) => void;
@@ -694,6 +694,19 @@ export default function SalesFunnel({
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
   const [isPostProposalActionsModalOpen, setIsPostProposalActionsModalOpen] = React.useState(false);
+  
+  const generateDisplayId = (existingLeads: Lead[]): string => {
+    const leadNumbers = existingLeads
+      .map(l => l.displayId)
+      .filter((id): id is string => !!id)
+      .map(id => parseInt(id.split('-')[1], 10))
+      .filter(num => !isNaN(num));
+    
+    const maxId = leadNumbers.length > 0 ? Math.max(...leadNumbers) : 0;
+    const newId = maxId + 1;
+    return `LD-${newId.toString().padStart(3, '0')}`;
+  };
+
 
  React.useEffect(() => {
     const checkReactivation = () => {
@@ -730,6 +743,7 @@ export default function SalesFunnel({
                      const newLead: Lead = {
                         ...originalLead,
                         id: `lead-${Date.now()}-${Math.random()}`,
+                        displayId: generateDisplayId(leads),
                         status: 'Reativar',
                         statusHistory: [{ status: 'Reativar', date: today }],
                         proposalId: undefined, 
@@ -831,15 +845,18 @@ export default function SalesFunnel({
   const simulateImport = () => {
     const today = new Date().toISOString();
 
-    const newLeadsData: Omit<Lead, 'id' | 'status' | 'statusHistory'>[] = [
+    const newLeadsData: Omit<Lead, 'id' | 'status' | 'statusHistory' | 'displayId'>[] = [
       { name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000 },
       { name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000 },
     ];
-
-    const newLeads: Lead[] = newLeadsData.map((leadData) => {
+    
+    const currentLeads = leads;
+    const newLeads: Lead[] = newLeadsData.map((leadData, index) => {
+        const tempLeads = [...currentLeads, ...newLeadsData.slice(0, index).map(l => ({...l, id: '', status: 'Lista de Leads'}))];
         return {
             ...leadData,
             id: `lead-${Date.now()}-${Math.random()}`,
+            displayId: generateDisplayId(tempLeads),
             status: "Lista de Leads",
             statusHistory: [{ status: 'Lista de Leads', date: today }]
         }
@@ -958,6 +975,7 @@ export default function SalesFunnel({
     const newLead: Lead = {
       ...approvedLead,
       id: `lead-${Date.now()}-${Math.random()}`,
+      displayId: generateDisplayId(leads),
       status: 'Contato',
       statusHistory: [{ status: 'Contato', date: today }],
       proposalId: undefined,
@@ -993,8 +1011,8 @@ export default function SalesFunnel({
     setIsDetailsModalOpen(true);
   };
   
-  const handleNewLeadSuccess = (data: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => {
-    onAddLead(data);
+  const handleNewLeadSuccess = (data: Omit<Lead, 'id' | 'status' | 'statusHistory' | 'displayId'>) => {
+    onAddLead({ ...data, displayId: generateDisplayId(leads) });
     setIsNewLeadModalOpen(false);
     toast({
         title: "Lead Criado!",
@@ -1083,7 +1101,7 @@ export default function SalesFunnel({
 
     for (const status of funnelStatuses) {
         const statusLeads = filteredLeads.filter(lead => lead.status === status);
-        statusLeads.sort((a, b) => getSortDate(b, status).getTime() - getSortDate(a, status).getTime());
+        statusLeads.sort((a, b) => getSortDate(a, status).getTime() - getSortDate(b, status).getTime());
         groupedByStatus[status] = statusLeads;
     }
     
@@ -1179,7 +1197,7 @@ export default function SalesFunnel({
                                             {group.length} {group.length > 1 ? 'oportunidades ganhas' : 'oportunidade ganha'}
                                         </CardDescription>
                                          <CardDescription className="text-xs !mt-2 truncate">
-                                            IDs: {group.map(l => l.id).join(', ')}
+                                            IDs: {group.map(l => l.displayId || l.id).join(', ')}
                                         </CardDescription>
                                     </CardHeader>
                                      <CardFooter className="p-2 pl-6 flex justify-end">
@@ -1219,7 +1237,7 @@ export default function SalesFunnel({
                                             {group.length} {group.length > 1 ? 'oportunidades perdidas' : 'oportunidade perdida'}
                                         </CardDescription>
                                          <CardDescription className="text-xs !mt-2 truncate">
-                                            IDs: {group.map(l => l.id).join(', ')}
+                                            IDs: {group.map(l => l.displayId || l.id).join(', ')}
                                         </CardDescription>
                                     </CardHeader>
                                 </Card>

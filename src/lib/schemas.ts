@@ -16,7 +16,7 @@ export const customerRegistrationSchema = z.object({
   distance: z.coerce.number().min(0, "A distância não pode ser negativa.").optional(),
 });
 
-export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: string };
+export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: string; userId?: string };
 
 export const productSchema = z.object({
   name: z.string().min(1, "O nome do produto é obrigatório."),
@@ -110,6 +110,7 @@ export const leadSchema = z.object({
   distance: z.coerce.number().optional(),
   lastCallDuration: z.number().optional(),
   lastCallNotes: z.string().optional(),
+  displayId: z.string().optional(),
 });
 
 export const newLeadSchema = z.object({
@@ -138,6 +139,7 @@ export type Lead = z.infer<typeof leadSchema> & {
   proposalId?: string;
   customerId?: string;
   email?: string;
+  displayId?: string;
 }
 
 
