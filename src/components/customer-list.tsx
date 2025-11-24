@@ -29,15 +29,16 @@ import {
 } from "./ui/dialog";
 import CustomerRegistrationForm from "./customer-registration-form";
 import type { Customer, ShippingSettings } from "@/lib/schemas";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
+import { doc, CollectionReference } from "firebase/firestore";
 
 interface CustomerListProps {
   customers: (Customer & { id: string })[];
-  setCustomers: React.Dispatch<React.SetStateAction<(Customer & { id: string })[]>>;
-  onAddCustomer: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
   shippingSettings: ShippingSettings;
+  collectionRef: CollectionReference | null;
 }
 
-export default function CustomerList({ customers, setCustomers, onAddCustomer, shippingSettings }: CustomerListProps) {
+export default function CustomerList({ customers, shippingSettings, collectionRef }: CustomerListProps) {
   const [nameFilter, setNameFilter] = React.useState("");
   const [emailFilter, setEmailFilter] = React.useState("");
   const [filteredCustomers, setFilteredCustomers] = React.useState(customers);
@@ -63,12 +64,15 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer, s
   }
 
   const handleFormSuccess = (customerData: Omit<Customer, 'id'>) => {
+    if (!collectionRef) return;
+    
     if (editingCustomer) {
       // Update existing customer
-      setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...editingCustomer, ...customerData } : c));
+      const customerDocRef = doc(collectionRef, editingCustomer.id);
+      setDocumentNonBlocking(customerDocRef, customerData, { merge: true });
     } else {
       // Add new customer
-      onAddCustomer(customerData);
+      addDocumentNonBlocking(collectionRef, customerData);
     }
     setIsEditDialogOpen(false);
     setIsNewCustomerDialogOpen(false);
@@ -76,7 +80,9 @@ export default function CustomerList({ customers, setCustomers, onAddCustomer, s
   };
 
   const handleDelete = (id: string) => {
-    setCustomers(prev => prev.filter(c => c.id !== id));
+    if (!collectionRef) return;
+    const customerDocRef = doc(collectionRef, id);
+    deleteDocumentNonBlocking(customerDocRef);
   }
 
   return (

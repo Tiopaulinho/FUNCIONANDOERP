@@ -27,14 +27,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { customerRegistrationSchema, type Customer, type ShippingSettings, type ShippingTier } from "@/lib/schemas";
-import { registerCustomerAction } from "@/app/actions";
 import { Separator } from "./ui/separator";
+import { useUser } from "@/firebase";
 
 type CustomerFormValues = z.infer<typeof customerRegistrationSchema>;
 
 interface CustomerRegistrationFormProps {
   initialData?: Partial<Customer> | null;
-  onSuccess?: (data: Omit<Customer, 'id'>) => void;
+  onSuccess?: (data: Omit<Customer, 'id'> & { userId?: string }) => void;
   shippingSettings: ShippingSettings;
 }
 
@@ -51,6 +51,7 @@ export default function CustomerRegistrationForm({
   const [shippingTier, setShippingTier] = React.useState<ShippingTier | null>(null);
   const isEditMode = !!(initialData && 'id' in initialData && initialData.id);
   const cameFromLead = !!(initialData && (!('id' in initialData) || !initialData.id));
+  const { user } = useUser();
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerRegistrationSchema),
@@ -166,37 +167,37 @@ export default function CustomerRegistrationForm({
 
   async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
-    // This is a simplified action handler. 
-    // In a real app, you might call a server action here.
+    if (!onSuccess) {
+      console.error("onSuccess handler is not defined");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Usuário não autenticado",
+          description: "Você precisa estar logado para cadastrar um cliente.",
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
-        if (onSuccess) {
-          onSuccess(data);
-        } else {
-          // Fallback to server action if no onSuccess prop is provided
-          const result = await registerCustomerAction(data);
-           if (result.success) {
-            toast({
-              title: "Sucesso!",
-              description: isEditMode
-                ? "Cliente atualizado com sucesso!"
-                : result.message,
-            });
-            if (!isEditMode) {
-              form.reset();
-            }
-          } else {
-             toast({
-              variant: "destructive",
-              title: isEditMode ? "Erro na atualização" : "Erro no cadastro",
-              description: result.message || "Ocorreu um erro. Tente novamente.",
-            });
-          }
+        onSuccess({ ...data, userId: user.uid });
+        toast({
+          title: "Sucesso!",
+          description: isEditMode
+            ? "Cliente atualizado com sucesso!"
+            : "Cliente cadastrado com sucesso!",
+        });
+        if (!isEditMode) {
+          form.reset();
         }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Erro inesperado",
-        description: "Ocorreu um erro no servidor. Tente novamente mais tarde.",
+        description: "Ocorreu um erro. Tente novamente mais tarde.",
       });
     } finally {
       setIsSubmitting(false);
