@@ -937,7 +937,7 @@ export default function SalesFunnel({
                 const today = new Date().toISOString();
                 const reactivationLead: Lead = {
                     ...originalLead, // Copy data from an original lead
-                    id: `reactivate-${customerId}-${Date.now()}`, // Unique temporary ID
+                    id: `reactivate-${customerId}-${Date.now()}-${Math.random()}`,
                     displayId: undefined, // No displayId for reactivation suggestions
                     status: 'Reativar',
                     statusHistory: [{ status: 'Reativar', date: today }],
@@ -1357,7 +1357,7 @@ export default function SalesFunnel({
             acc[key].push(lead);
             return acc;
         }, {} as { [key: string]: Lead[] });
-    }
+    };
 
     const groupedApproved = groupLeadsByName(groupedByStatus['Aprovado'] || []);
     const groupedRejected = groupLeadsByName(groupedByStatus['Reprovado'] || []);
@@ -1439,9 +1439,6 @@ export default function SalesFunnel({
                                         <CardDescription>
                                             {group.length} {group.length > 1 ? 'oportunidades ganhas' : 'oportunidade ganha'}
                                         </CardDescription>
-                                         <CardDescription className="text-xs !mt-2 truncate">
-                                            IDs: {group.map(l => l.displayId || l.id).join(', ')}
-                                        </CardDescription>
                                     </CardHeader>
                                      <CardFooter className="p-2 pl-6 flex justify-end">
                                         <TooltipProvider>
@@ -1478,9 +1475,6 @@ export default function SalesFunnel({
                                         </CardTitle>
                                         <CardDescription>
                                             {group.length} {group.length > 1 ? 'oportunidades perdidas' : 'oportunidade perdida'}
-                                        </CardDescription>
-                                         <CardDescription className="text-xs !mt-2 truncate">
-                                            IDs: {group.map(l => l.displayId || l.id).join(', ')}
                                         </CardDescription>
                                     </CardHeader>
                                 </Card>
@@ -1657,3 +1651,6 @@ export default function SalesFunnel({
 }
 
     
+
+    
+
