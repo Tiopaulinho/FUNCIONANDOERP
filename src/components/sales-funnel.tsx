@@ -40,7 +40,7 @@ import { Textarea } from "./ui/textarea";
 import ProposalForm from "./proposal-form";
 import { Input } from "./ui/input";
 import NewLeadForm from "./new-lead-form";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Label } from "./ui/label";
 
 
@@ -639,6 +639,113 @@ const CallModal = ({
   );
 };
 
+const ImportModal = ({
+    open,
+    onOpenChange,
+    onImport,
+    sampleFileName,
+    expectedHeaders
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onImport: (data: any[]) => void;
+    sampleFileName: string;
+    expectedHeaders: string[];
+}) => {
+    const { toast } = useToast();
+    const [file, setFile] = React.useState<File | null>(null);
+    const [isProcessing, setIsProcessing] = React.useState(false);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleImport = () => {
+        if (!file) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum arquivo selecionado",
+                description: "Por favor, selecione um arquivo CSV para importar.",
+            });
+            return;
+        }
+
+        setIsProcessing(true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            const lines = text.split(/\r\n|\n/);
+            const headers = lines[0].split(';').map(h => h.trim());
+            
+            const missingHeaders = expectedHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                 toast({
+                    variant: "destructive",
+                    title: "Cabeçalhos Incorretos",
+                    description: `O arquivo não contém as colunas esperadas: ${missingHeaders.join(', ')}.`,
+                });
+                setIsProcessing(false);
+                return;
+            }
+
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i]) continue;
+                const values = lines[i].split(';');
+                const row: { [key: string]: any } = {};
+                for (let j = 0; j < headers.length; j++) {
+                    row[headers[j]] = values[j];
+                }
+                data.push(row);
+            }
+            onImport(data);
+            setIsProcessing(false);
+            onOpenChange(false);
+        };
+        reader.onerror = () => {
+            toast({
+                variant: "destructive",
+                title: "Erro ao ler arquivo",
+                description: "Não foi possível processar o arquivo selecionado.",
+            });
+            setIsProcessing(false);
+        }
+        reader.readAsText(file, 'UTF-8');
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Importar Dados via CSV</DialogTitle>
+                    <DialogDescription>
+                        Baixe o arquivo de exemplo, preencha com seus dados e faça o upload.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <a href={`/${sampleFileName}`} download>
+                        <Button variant="outline" className="w-full">
+                            Baixar Arquivo de Exemplo
+                        </Button>
+                    </a>
+                    <div className="space-y-2">
+                        <Label htmlFor="csv-file">Arquivo CSV</Label>
+                        <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleImport} disabled={!file || isProcessing}>
+                        {isProcessing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</> : "Processar Importação"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
 
 interface SalesFunnelProps {
   leads: Lead[];
@@ -690,6 +797,7 @@ export default function SalesFunnel({
   const [isContactModalOpen, setIsContactModalOpen] = React.useState(false);
   const [callLead, setCallLead] = React.useState<Lead | null>(null);
   const [isCallModalOpen, setIsCallModalOpen] = React.useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
 
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
@@ -842,33 +950,44 @@ export default function SalesFunnel({
     setProposalLead(null);
   }
 
-  const simulateImport = () => {
-    const today = new Date().toISOString();
+  const handleImportLeads = (data: any[]) => {
+    let importedCount = 0;
+    let skippedCount = 0;
 
-    const newLeadsData: Omit<Lead, 'id' | 'status' | 'statusHistory' | 'displayId'>[] = [
-      { name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000 },
-      { name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000 },
-    ];
-    
-    const currentLeads = leads;
-    const newLeads: Lead[] = newLeadsData.map((leadData, index) => {
-        const tempLeads = [...currentLeads, ...newLeadsData.slice(0, index).map(l => ({...l, id: '', status: 'Lista de Leads'}))];
-        return {
-            ...leadData,
-            id: `lead-${Date.now()}-${Math.random()}`,
-            displayId: generateDisplayId(tempLeads),
-            status: "Lista de Leads",
-            statusHistory: [{ status: 'Lista de Leads', date: today }]
+    data.forEach((row, index) => {
+        const name = row['name'];
+        const contact = row['contact'];
+        if (!name || !contact) {
+            skippedCount++;
+            return; // Skip if essential data is missing
         }
+        
+        // Basic duplicate check
+        const isDuplicate = leads.some(l => l.name.toLowerCase() === name.toLowerCase() && l.contact.toLowerCase() === contact.toLowerCase());
+        if (isDuplicate) {
+            skippedCount++;
+            return;
+        }
+
+        onAddLead({
+            name: name,
+            contact: contact,
+            phone: row['phone'] || "",
+            email: row['email'] || "",
+            value: Number(row['value']) || 0,
+            zip: row['zip'] || "",
+            distance: Number(row['distance']) || 0,
+            displayId: generateDisplayId([...leads, ...data.slice(0, index)])
+        });
+        importedCount++;
     });
-    
-    setLeads(prev => [...prev, ...newLeads]);
 
     toast({
-      title: "Leads Importados!",
-      description: "Novos leads foram adicionados ao seu funil."
-    })
-  }
+        title: "Importação Concluída",
+        description: `${importedCount} leads importados. ${skippedCount} duplicados ou inválidos foram ignorados.`,
+    });
+};
+
 
   const handleCardClick = (lead: Lead) => {
     const group = (
@@ -1101,7 +1220,7 @@ export default function SalesFunnel({
 
     for (const status of funnelStatuses) {
         const statusLeads = filteredLeads.filter(lead => lead.status === status);
-        statusLeads.sort((a, b) => getSortDate(a, status).getTime() - getSortDate(b, status).getTime());
+        statusLeads.sort((a, b) => getSortDate(b, status).getTime() - getSortDate(a, status).getTime());
         groupedByStatus[status] = statusLeads;
     }
     
@@ -1136,9 +1255,9 @@ export default function SalesFunnel({
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Novo Lead
                 </Button>
-                <Button onClick={simulateImport} variant="outline">
+                <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
                   <Upload className="mr-2 h-4 w-4" />
-                  Importar Leads (Simulação)
+                  Importar via CSV
                 </Button>
             </div>
         </div>
@@ -1395,6 +1514,14 @@ export default function SalesFunnel({
             open={isCallModalOpen}
             onOpenChange={setIsCallModalOpen}
             onEndCall={handleEndCall}
+        />
+
+        <ImportModal
+            open={isImportModalOpen}
+            onOpenChange={setIsImportModalOpen}
+            onImport={handleImportLeads}
+            sampleFileName="leads-exemplo.csv"
+            expectedHeaders={["name", "contact", "phone", "email", "value", "zip", "distance"]}
         />
 
     </div>

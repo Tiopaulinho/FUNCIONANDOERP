@@ -19,12 +19,13 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { FilePenLine, Trash2, PackagePlus } from "lucide-react";
+import { FilePenLine, Trash2, PackagePlus, Upload, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter
 } from "./ui/dialog";
 import ProductForm from "./product-form";
 import type { Product } from "@/lib/schemas";
@@ -40,6 +41,114 @@ import {
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "./ui/label";
+
+const ImportModal = ({
+    open,
+    onOpenChange,
+    onImport,
+    sampleFileName,
+    expectedHeaders
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onImport: (data: any[]) => void;
+    sampleFileName: string;
+    expectedHeaders: string[];
+}) => {
+    const { toast } = useToast();
+    const [file, setFile] = React.useState<File | null>(null);
+    const [isProcessing, setIsProcessing] = React.useState(false);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleImport = () => {
+        if (!file) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum arquivo selecionado",
+                description: "Por favor, selecione um arquivo CSV para importar.",
+            });
+            return;
+        }
+
+        setIsProcessing(true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            const lines = text.split(/\r\n|\n/);
+            const headers = lines[0].split(';').map(h => h.trim());
+            
+            const missingHeaders = expectedHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                 toast({
+                    variant: "destructive",
+                    title: "Cabeçalhos Incorretos",
+                    description: `O arquivo não contém as colunas esperadas: ${missingHeaders.join(', ')}.`,
+                });
+                setIsProcessing(false);
+                return;
+            }
+
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i]) continue;
+                const values = lines[i].split(';');
+                const row: { [key: string]: any } = {};
+                for (let j = 0; j < headers.length; j++) {
+                    row[headers[j]] = values[j];
+                }
+                data.push(row);
+            }
+            onImport(data);
+            setIsProcessing(false);
+            onOpenChange(false);
+        };
+        reader.onerror = () => {
+            toast({
+                variant: "destructive",
+                title: "Erro ao ler arquivo",
+                description: "Não foi possível processar o arquivo selecionado.",
+            });
+            setIsProcessing(false);
+        }
+        reader.readAsText(file, 'UTF-8');
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Importar Produtos via CSV</DialogTitle>
+                    <CardDescription>
+                        Baixe o arquivo de exemplo, preencha com seus dados e faça o upload.
+                    </CardDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <a href={`/${sampleFileName}`} download>
+                        <Button variant="outline" className="w-full">
+                            Baixar Arquivo de Exemplo
+                        </Button>
+                    </a>
+                    <div className="space-y-2">
+                        <Label htmlFor="csv-file">Arquivo CSV</Label>
+                        <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleImport} disabled={!file || isProcessing}>
+                        {isProcessing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</> : "Processar Importação"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 interface ProductListProps {
     products: (Product & { id: string })[];
@@ -55,6 +164,7 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
   const [filteredProducts, setFilteredProducts] = React.useState(products);
   const [editingProduct, setEditingProduct] = React.useState<(Product & { id: string }) | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     const lowercasedNameFilter = nameFilter.toLowerCase();
@@ -88,20 +198,66 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
       });
   };
 
+  const handleImportProducts = (data: any[]) => {
+    let importedCount = 0;
+    let skippedCount = 0;
+
+    data.forEach(row => {
+        const name = row['name'];
+        if (!name) {
+            skippedCount++;
+            return;
+        }
+
+        const isDuplicate = products.some(p => p.name.toLowerCase() === name.toLowerCase());
+        if (isDuplicate) {
+            skippedCount++;
+            return;
+        }
+
+        const productData: Product & { id: string } = {
+            id: `prod-${Date.now()}-${Math.random()}`,
+            name: name,
+            category: row['category'] || 'OUTROS',
+            price: Number(row['price']) || 0,
+            rawMaterialCost: Number(row['rawMaterialCost']) || 0,
+            laborCost: Number(row['laborCost']) || 0,
+            suppliesCost: Number(row['suppliesCost']) || 0,
+            fees: Number(row['fees']) || 0,
+            taxes: Number(row['taxes']) || 0,
+            profitMargin: Number(row['profitMargin']) || 0,
+            productionMinutes: Number(row['productionMinutes']) || 0,
+        };
+        onUpdateProduct(productData); // Using onUpdateProduct to add new product to the list
+        importedCount++;
+    });
+
+    toast({
+        title: "Importação Concluída",
+        description: `${importedCount} produtos importados. ${skippedCount} duplicados ou inválidos foram ignorados.`,
+    });
+};
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <CardTitle>Produtos Cadastrados</CardTitle>
               <CardDescription>
                 Visualize e gerencie os produtos cadastrados no sistema.
               </CardDescription>
             </div>
-            <Button onClick={onNewProductClick}>
-              <PackagePlus className="mr-2 h-4 w-4" />
-              Novo Produto
-            </Button>
+            <div className="flex gap-2">
+                <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Importar via CSV
+                </Button>
+                <Button onClick={onNewProductClick}>
+                <PackagePlus className="mr-2 h-4 w-4" />
+                Novo Produto
+                </Button>
+            </div>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
@@ -174,6 +330,13 @@ export default function ProductList({ products, onUpdateProduct, onDeleteProduct
               />
             </DialogContent>
           </Dialog>
+           <ImportModal
+                open={isImportModalOpen}
+                onOpenChange={setIsImportModalOpen}
+                onImport={handleImportProducts}
+                sampleFileName="produtos-exemplo.csv"
+                expectedHeaders={["name", "category", "price", "rawMaterialCost", "laborCost", "suppliesCost", "fees", "taxes", "profitMargin", "productionMinutes"]}
+            />
       </CardContent>
     </Card>
   );
