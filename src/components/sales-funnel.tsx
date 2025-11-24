@@ -68,6 +68,7 @@ const LeadCard = ({
     onOpenContactModal,
     onApprove,
     onReject,
+    onDismissReactivation,
 }: { 
     lead: Lead;
     onDragStart: (e: React.DragEvent, leadId: string) => void;
@@ -79,6 +80,7 @@ const LeadCard = ({
     onOpenContactModal: (lead: Lead) => void;
     onApprove: (lead: Lead) => void;
     onReject: (lead: Lead) => void;
+    onDismissReactivation: (leadId: string) => void;
 }) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
@@ -97,6 +99,11 @@ const LeadCard = ({
     e.stopPropagation();
     onReactivate(lead);
   };
+
+  const handleDismissReactivationClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDismissReactivation(lead.id);
+  }
   
   const handleApproveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -119,7 +126,7 @@ const LeadCard = ({
       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusColors[lead.status]}`}></div>
       <CardHeader className="p-4 space-y-2 flex-grow pl-6">
         <div className="flex flex-col items-start gap-2">
-            <Badge variant="outline" className="font-mono text-xs">{lead.displayId || lead.id}</Badge>
+            {lead.displayId && <Badge variant="outline" className="font-mono text-xs">{lead.displayId}</Badge>}
             <CardTitle className="text-base font-bold flex items-start gap-2 flex-1 min-w-0">
                 <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
                 <span className="flex-1">{lead.name}</span>
@@ -209,17 +216,30 @@ const LeadCard = ({
 
             {status === 'Reativar' && (
                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleReactivateClick}>
-                                <RefreshCw className="h-4 w-4"/>
-                                <span className="sr-only">Reativar Cliente</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Reativar Cliente</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <div className="flex gap-1">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleReactivateClick}>
+                                    <RefreshCw className="h-4 w-4"/>
+                                    <span className="sr-only">Reativar Cliente</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Reativar Cliente</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={handleDismissReactivationClick}>
+                                    <Trash2 className="h-4 w-4"/>
+                                    <span className="sr-only">Dispensar</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Dispensar Reativação</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
                 </TooltipProvider>
             )}
         </CardFooter>
@@ -896,11 +916,17 @@ export default function SalesFunnel({
             }
         });
 
-        const customerIdsWithReactivationLead = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.customerId));
+        const existingReactivationLeadIds = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.id));
 
         Object.keys(customerLastApproval).forEach(customerId => {
-            if (customerIdsWithReactivationLead.has(customerId)) {
-                return; // Don't create a new reactivation lead if one already exists
+            const originalLead = leads.find(l => l.customerId === customerId); // Find any lead for this customer to get their data
+            if (!originalLead) return;
+
+            // Check if there is already a reactivation lead for this customer
+            const hasReactivationLead = leads.some(l => l.status === 'Reativar' && l.customerId === customerId);
+
+            if (hasReactivationLead) {
+                return;
             }
 
             const lastApprovalDate = new Date(customerLastApproval[customerId]);
@@ -908,20 +934,21 @@ export default function SalesFunnel({
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
             if (diffDays > shippingSettings.reactivationPeriodDays) {
-                const originalLead = leads.find(l => l.customerId === customerId && l.status === 'Aprovado');
-                if (originalLead) {
-                    const today = new Date().toISOString();
-                     const newLead: Lead = {
-                        ...originalLead,
-                        id: `lead-${Date.now()}-${Math.random()}`,
-                        displayId: generateDisplayId(leads),
-                        status: 'Reativar',
-                        statusHistory: [{ status: 'Reativar', date: today }],
-                        proposalId: undefined, 
-                        proposalNotes: 'Oportunidade de reativação.',
-                        value: 0,
-                    };
-                    setLeads(prevLeads => [...prevLeads, newLead]);
+                const today = new Date().toISOString();
+                const reactivationLead: Lead = {
+                    ...originalLead, // Copy data from an original lead
+                    id: `reactivate-${customerId}-${Date.now()}`, // Unique temporary ID
+                    displayId: undefined, // No displayId for reactivation suggestions
+                    status: 'Reativar',
+                    statusHistory: [{ status: 'Reativar', date: today }],
+                    proposalId: undefined, 
+                    proposalNotes: 'Oportunidade de reativação.',
+                    value: 0,
+                };
+                
+                if (!existingReactivationLeadIds.has(reactivationLead.id)) {
+                    setLeads(prevLeads => [...prevLeads, reactivationLead]);
+                    existingReactivationLeadIds.add(reactivationLead.id);
                 }
             }
         });
@@ -1061,6 +1088,8 @@ export default function SalesFunnel({
 
 
   const handleCardClick = (lead: Lead) => {
+    if (lead.status === 'Reativar') return; // Reactivation cards are not clickable into detail view
+
     const group = (
         lead.status === 'Aprovado' ? Object.values(groupedApprovedLeads) :
         lead.status === 'Reprovado' ? Object.values(groupedRejectedLeads) :
@@ -1176,17 +1205,41 @@ export default function SalesFunnel({
 
     toast({
         title: "Nova Oportunidade Criada!",
-        description: `Um novo card para ${approvedLead.name} foi movido para 'Contato'.`,
+        description: `Um novo card para ${approvedLead.name} foi adicionado à coluna 'Contato'.`,
     });
   };
 
-  const handleReactivate = (leadToReactivate: Lead) => {
-    updateLeadWithHistory(leadToReactivate, 'Contato', { proposalNotes: 'Oportunidade de reativação.' });
+  const handleReactivate = (reactivationLead: Lead) => {
+    // Create a new lead in 'Contact'
+    const today = new Date().toISOString();
+    const newLeadFromReactivation: Lead = {
+        ...reactivationLead,
+        id: `lead-${Date.now()}-${Math.random()}`,
+        displayId: generateDisplayId(leads),
+        status: 'Contato',
+        statusHistory: [{ status: 'Contato', date: today, details: 'Reativação' }],
+        proposalNotes: 'Oportunidade de reativação.',
+        value: 0
+    };
+    onAddLead(newLeadFromReactivation);
+    
+    // Remove the suggestion card from the 'Reativar' column
+    setLeads(prev => prev.filter(l => l.id !== reactivationLead.id));
+    
     toast({
-        title: "Cliente em Reativação!",
-        description: `A oportunidade para ${leadToReactivate.name} foi movida para 'Contato'.`,
+      title: "Cliente Reativado!",
+      description: `Uma nova oportunidade para ${reactivationLead.name} foi criada em 'Contato'.`,
     });
-};
+  };
+  
+  const handleDismissReactivation = (reactivationLeadId: string) => {
+    setLeads(prev => prev.filter(l => l.id !== reactivationLeadId));
+    toast({
+        variant: "destructive",
+        title: "Reativação Dispensada",
+        description: "A sugestão de reativação foi removida.",
+    });
+  };
 
 
   const handleViewGroup = (group: Lead[], title: string) => {
@@ -1447,6 +1500,7 @@ export default function SalesFunnel({
                                 onOpenContactModal={handleOpenContactModal}
                                 onApprove={() => onOpenNewOrder(lead)}
                                 onReject={() => updateLeadWithHistory(lead, 'Reprovado')}
+                                onDismissReactivation={handleDismissReactivation}
                             />
                         ))
                     )}
