@@ -105,7 +105,7 @@ export default function Home() {
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
+      // initiateAnonymousSignIn(auth);
     }
   }, [isUserLoading, user, auth]);
 
