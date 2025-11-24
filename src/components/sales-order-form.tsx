@@ -93,6 +93,8 @@ export default function SalesOrderForm({
       shipping: 0,
       shippingMethod: 'Retirada',
       items: [{ productId: "", productName: "", quantity: 1, price: 0 }],
+      paymentMethod: "Cartão de Crédito",
+      paymentStatus: "Pendente",
     },
   });
 
@@ -156,6 +158,8 @@ export default function SalesOrderForm({
             quantity: item.quantity || 1,
             price: item.price || 0,
           })) || defaultItems,
+          paymentMethod: proposalData?.paymentMethods || "Cartão de Crédito",
+          paymentStatus: "Pendente",
         });
       } else {
         form.reset({
@@ -164,6 +168,8 @@ export default function SalesOrderForm({
           shipping: 0,
           shippingMethod: 'Retirada',
           items: defaultItems,
+          paymentMethod: "Cartão de Crédito",
+          paymentStatus: "Pendente",
         });
       }
     };
@@ -347,210 +353,248 @@ export default function SalesOrderForm({
     <div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
-              <FormField
-                control={form.control}
-                name="customerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cliente</FormLabel>
-                    <div className="flex items-center gap-2">
-                       {cameFromLead ? (
-                         <div className="flex-grow">
-                          <Input
-                            readOnly
-                            value={customerForLead?.companyName || customerForLead?.name || leadData?.name || ''}
-                            className="bg-muted/50"
-                          />
-                         </div>
-                       ) : (
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={isEditMode}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um cliente" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {customers.map((customer) => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                {customer.companyName || customer.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                       )}
-                       <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" disabled={isEditMode || (cameFromLead && !!customerForLead)} type="button">
-                            <UserPlus className="h-4 w-4" />
-                            <span className="sr-only">Novo Cliente</span>
-                          </Button>
-                       </DialogTrigger>
-                    </div>
-                     { (cameFromLead && !customerForLead) && (
-                        <CardDescription className="text-xs text-destructive mt-1 font-semibold">
-                            Este lead ainda não é um cliente. Clique no botão '+' para completar o cadastro.
-                        </CardDescription>
-                      )}
-                      {!cameFromLead && !isEditMode && (
-                         <CardDescription className="text-xs text-muted-foreground mt-1">
-                            Não encontrou o cliente? Clique no botão '+' para cadastrar.
-                        </CardDescription>
-                      )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogContent className="sm:max-w-[800px]">
-                <DialogHeader>
-                    <DialogTitle>Cadastro de Cliente</DialogTitle>
-                </DialogHeader>
-                <CustomerRegistrationForm 
-                    onSuccess={handleCustomerFormSuccess}
-                    initialData={leadCustomerData}
-                    shippingSettings={shippingSettings}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-4">
+              <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
+                <FormField
+                  control={form.control}
+                  name="customerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cliente</FormLabel>
+                      <div className="flex items-center gap-2">
+                         {cameFromLead ? (
+                           <div className="flex-grow">
+                            <Input
+                              readOnly
+                              value={customerForLead?.companyName || customerForLead?.name || leadData?.name || ''}
+                              className="bg-muted/50"
+                            />
+                           </div>
+                         ) : (
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={isEditMode}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione um cliente" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {customers.map((customer) => (
+                                <SelectItem key={customer.id} value={customer.id}>
+                                  {customer.companyName || customer.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                         )}
+                         <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" disabled={isEditMode || (cameFromLead && !!customerForLead)} type="button">
+                              <UserPlus className="h-4 w-4" />
+                              <span className="sr-only">Novo Cliente</span>
+                            </Button>
+                         </DialogTrigger>
+                      </div>
+                       { (cameFromLead && !customerForLead) && (
+                          <CardDescription className="text-xs text-destructive mt-1 font-semibold">
+                              Este lead ainda não é um cliente. Clique no botão '+' para completar o cadastro.
+                          </CardDescription>
+                        )}
+                        {!cameFromLead && !isEditMode && (
+                           <CardDescription className="text-xs text-muted-foreground mt-1">
+                              Não encontrou o cliente? Clique no botão '+' para cadastrar.
+                          </CardDescription>
+                        )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </DialogContent>
-            </Dialog>
+                <DialogContent className="sm:max-w-[800px]">
+                  <DialogHeader>
+                      <DialogTitle>Cadastro de Cliente</DialogTitle>
+                  </DialogHeader>
+                  <CustomerRegistrationForm 
+                      onSuccess={handleCustomerFormSuccess}
+                      initialData={leadCustomerData}
+                      shippingSettings={shippingSettings}
+                  />
+                </DialogContent>
+              </Dialog>
+              <FormField
+                  control={form.control}
+                  name="paymentStatus"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Status do Pagamento</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          <SelectItem value="Pendente">Pendente</SelectItem>
+                          <SelectItem value="Pago">Pago</SelectItem>
+                          <SelectItem value="Parcial">Parcial</SelectItem>
+                      </SelectContent>
+                      </Select>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
+              <FormField
+                  control={form.control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Forma de Pagamento</FormLabel>
+                      <FormControl>
+                      <Input placeholder="Ex: Cartão de Crédito" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
 
-               {proposalData && (
-                <div className="flex items-center gap-4">
-                  <Button type="button" variant="outline" size="sm" onClick={loadProposalData}>
-                      <FileDown className="mr-2 h-4 w-4" />
-                      Carregar Dados da Proposta
-                  </Button>
-                  <div className="text-sm text-muted-foreground">
-                    Proposta ID: <span className="font-mono text-foreground">{proposalData.id}</span>
+            </div>
+
+            <div className="md:col-span-2 space-y-4">
+                 {proposalData && (
+                  <div className="flex items-center gap-4">
+                    <Button type="button" variant="outline" size="sm" onClick={loadProposalData}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Carregar Dados da Proposta
+                    </Button>
+                    <div className="text-sm text-muted-foreground">
+                      Proposta ID: <span className="font-mono text-foreground">{proposalData.id}</span>
+                    </div>
                   </div>
-                </div>
-            )}
+              )}
+               <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Itens do Pedido</h3>
+                  <Separator />
+                  <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-2/5">Produto</TableHead>
+                                <TableHead className="w-1/5">Qtd.</TableHead>
+                                <TableHead className="w-1/5">Preço Unit.</TableHead>
+                                <TableHead className="w-1/5 text-right">Subtotal</TableHead>
+                                <TableHead className="w-[50px]"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                  {fields.map((field, index) => (
+                    <TableRow key={field.id} className="align-top">
+                        <TableCell>
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.productId`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <div className="flex gap-2">
+                                  <Select
+                                      onValueChange={(value) => {
+                                          field.onChange(value);
+                                          handleProductSelect(value, index);
+                                      }}
+                                      value={field.value}
+                                  >
+                                      <FormControl>
+                                      <SelectTrigger>
+                                          <SelectValue placeholder="Selecione..." />
+                                      </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                      {products.map((product) => (
+                                          <SelectItem key={product.id} value={product.id}>
+                                          {product.name}
+                                          </SelectItem>
+                                      ))}
+                                      </SelectContent>
+                                  </Select>
+                                   <DialogTrigger asChild>
+                                      <Button variant="outline" size="icon" type="button">
+                                          <Plus className="h-4 w-4"/>
+                                          <span className="sr-only">Adicionar Produto</span>
+                                      </Button>
+                                   </DialogTrigger>
+                                </div>
+                                <FormMessage className="mt-1 text-xs"/>
+                                </FormItem>
+                            )}
+                            />
+                        </TableCell>
+                        <TableCell>
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.quantity`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormControl>
+                                    <Input type="number" placeholder="0" {...field} value={field.value ?? 1} onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)} />
+                                </FormControl>
+                                <FormMessage className="mt-1 text-xs"/>
+                                </FormItem>
+                            )}
+                            />
+                        </TableCell>
+                        <TableCell>
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.price`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormControl>
+                                    <Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? 0} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
+                                </FormControl>
+                                <FormMessage className="mt-1 text-xs"/>
+                                </FormItem>
+                            )}
+                            />
+                        </TableCell>
+                        <TableCell className="text-right">
+                            {((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.price || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </TableCell>
+                        <TableCell>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => remove(index)}
+                                disabled={fields.length <= 1}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Remover item</span>
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                  ))}
+                  </TableBody>
+                  </Table>
+                  <DialogContent className="sm:max-w-2xl">
+                      <DialogHeader>
+                      <DialogTitle>Novo Produto</DialogTitle>
+                      </DialogHeader>
+                      <ProductForm onSuccess={(product) => handleNewProductSuccess(product as Product & { id: string })} />
+                  </DialogContent>
+                  </Dialog>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ productId: "", productName: "", quantity: 1, price: 0 })}
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Adicionar Item
+                  </Button>
+                  {form.formState.errors.items?.root && <p className="text-sm font-medium text-destructive">{form.formState.errors.items.root.message}</p>}
+               </div>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Itens do Pedido</h3>
-            <Separator />
-            <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                          <TableHead className="w-2/5">Produto</TableHead>
-                          <TableHead className="w-1/5">Quantidade</TableHead>
-                          <TableHead className="w-1/5">Preço Unit.</TableHead>
-                          <TableHead className="w-1/5 text-right">Subtotal</TableHead>
-                          <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-            {fields.map((field, index) => (
-              <TableRow key={field.id} className="align-top">
-                  <TableCell>
-                      <FormField
-                      control={form.control}
-                      name={`items.${index}.productId`}
-                      render={({ field }) => (
-                          <FormItem>
-                          <div className="flex gap-2">
-                            <Select
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    handleProductSelect(value, index);
-                                }}
-                                value={field.value}
-                            >
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione..." />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                {products.map((product) => (
-                                    <SelectItem key={product.id} value={product.id}>
-                                    {product.name}
-                                    </SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                             <DialogTrigger asChild>
-                                <Button variant="outline" size="icon" type="button">
-                                    <Plus className="h-4 w-4"/>
-                                    <span className="sr-only">Adicionar Produto</span>
-                                </Button>
-                             </DialogTrigger>
-                          </div>
-                          <FormMessage className="mt-1 text-xs"/>
-                          </FormItem>
-                      )}
-                      />
-                  </TableCell>
-                  <TableCell>
-                      <FormField
-                      control={form.control}
-                      name={`items.${index}.quantity`}
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormControl>
-                              <Input type="number" placeholder="0" {...field} value={field.value ?? 1} onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)} />
-                          </FormControl>
-                          <FormMessage className="mt-1 text-xs"/>
-                          </FormItem>
-                      )}
-                      />
-                  </TableCell>
-                  <TableCell>
-                      <FormField
-                      control={form.control}
-                      name={`items.${index}.price`}
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormControl>
-                              <Input type="number" step="0.01" placeholder="0,00" {...field} value={field.value ?? 0} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
-                          </FormControl>
-                          <FormMessage className="mt-1 text-xs"/>
-                          </FormItem>
-                      )}
-                      />
-                  </TableCell>
-                  <TableCell className="text-right">
-                      {((watchedItems[index]?.quantity || 0) * (watchedItems[index]?.price || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                  </TableCell>
-                  <TableCell>
-                      <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => remove(index)}
-                          disabled={fields.length <= 1}
-                      >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Remover item</span>
-                      </Button>
-                  </TableCell>
-              </TableRow>
-            ))}
-            </TableBody>
-            </Table>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                <DialogTitle>Novo Produto</DialogTitle>
-                </DialogHeader>
-                <ProductForm onSuccess={(product) => handleNewProductSuccess(product as Product & { id: string })} />
-            </DialogContent>
-            </Dialog>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => append({ productId: "", productName: "", quantity: 1, price: 0 })}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Item
-            </Button>
-            {form.formState.errors.items?.root && <p className="text-sm font-medium text-destructive">{form.formState.errors.items.root.message}</p>}
-          </div>
 
           <Separator />
 
@@ -607,5 +651,3 @@ export default function SalesOrderForm({
     </div>
   );
 }
-
-    

@@ -32,33 +32,34 @@ import {
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { collection, CollectionReference, DocumentReference } from "firebase/firestore";
+import AnalyticsDashboard from "@/components/analytics-dashboard";
 
 
 const initialProducts: (Product & { id: string })[] = [
-    { id: "prod-1", name: "Eletrônicos - Notebook Pro", category: "Eletrônicos", price: 7500, rawMaterialCost: 4000, laborCost: 1000, suppliesCost: 200, fees: 50, taxes: 1000, profitMargin: 20 },
-    { id: "prod-2", name: "Acessórios - Mouse Sem Fio", category: "Acessórios", price: 120.50, rawMaterialCost: 50, laborCost: 10, suppliesCost: 5, fees: 2, taxes: 15, profitMargin: 30 },
-    { id: "prod-3", name: "Acessórios - Teclado Mecânico", category: "Acessórios", price: 450, rawMaterialCost: 200, laborCost: 50, suppliesCost: 20, fees: 10, taxes: 70, profitMargin: 25 },
-    { id: "prod-4", name: "Eletrônicos - Monitor 4K", category: "Eletrônicos", price: 2300, rawMaterialCost: 1200, laborCost: 200, suppliesCost: 100, fees: 30, taxes: 400, profitMargin: 20 },
+    { id: "prod-1", name: "Eletrônicos - Notebook Pro", category: "Eletrônicos", price: 7500, rawMaterialCost: 4000, laborCost: 1000, suppliesCost: 200, fees: 5, taxes: 15, profitMargin: 20, productionMinutes: 120 },
+    { id: "prod-2", name: "Acessórios - Mouse Sem Fio", category: "Acessórios", price: 120.50, rawMaterialCost: 50, laborCost: 10, suppliesCost: 5, fees: 5, taxes: 10, profitMargin: 30, productionMinutes: 15 },
+    { id: "prod-3", name: "Acessórios - Teclado Mecânico", category: "Acessórios", price: 450, rawMaterialCost: 200, laborCost: 50, suppliesCost: 20, fees: 5, taxes: 12, profitMargin: 25, productionMinutes: 45 },
+    { id: "prod-4", name: "Eletrônicos - Monitor 4K", category: "Eletrônicos", price: 2300, rawMaterialCost: 1200, laborCost: 200, suppliesCost: 100, fees: 5, taxes: 18, profitMargin: 20, productionMinutes: 90 },
 ];
 
 const initialOrders: SalesOrder[] = [
-  { id: "ORD-00003", leadId: "lead-3", customerId: "cust-gama-1", customerName: "Comércio Gama", date: "2024-07-26", total: 25000, status: "Processando", shipping: 0, items: [ {id: "item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 1, price: 25000} ] },
-  { id: "ORD-00005", leadId: "lead-5", customerId: "cust-epsilon-1", customerName: "Indústria Epsilon", date: "2024-07-24", total: 50000, status: "Entregue", shipping: 0, items: [ {id: "item-2", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 5, price: 10000} ] },
+  { id: "ORD-00003", leadId: "lead-3", customerId: "cust-gama-1", customerName: "Comércio Gama", date: "2024-07-26", total: 15000, status: "Processando", shipping: 0, items: [ {id: "item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 2, price: 7500} ], paymentMethod: 'Boleto', paymentStatus: 'Pendente' },
+  { id: "ORD-00005", leadId: "lead-5", customerId: "cust-epsilon-1", customerName: "Indústria Epsilon", date: "2024-07-24", total: 37250, status: "Entregue", shipping: 250, items: [ {id: "item-2", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 5, price: 7400} ], paymentMethod: 'Cartão de Crédito', paymentStatus: 'Pago' },
 ];
 
 const initialLeads: Lead[] = [
   { id: "lead-1", displayId: "LD-00001", name: "Empresa Alpha", contact: "João", phone: "(11) 91111-1111", value: 15000, status: "Contato", proposalNotes: "Criar proposta para 10 licenças anuais do software X.", statusHistory: [{ status: "Contato", date: "2024-07-20"}] },
   { id: "lead-2", displayId: "LD-00002", name: "Startup Beta", contact: "Mariana", phone: "(21) 92222-2222", value: 8000, status: "Proposta", proposalNotes: "Proposta para desenvolvimento de app mobile.", statusHistory: [{ status: "Proposta", date: "2024-07-21"}] },
-  { id: "lead-3", displayId: "LD-00003", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 25000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-lead-3", statusHistory: [{ status: "Aprovado", date: "2024-07-22"}] },
+  { id: "lead-3", displayId: "LD-00003", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 15000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-lead-3", statusHistory: [{ status: "Aprovado", date: "2024-07-22"}] },
   { id: "lead-4", displayId: "LD-00004", name: "Serviços Delta", contact: "Fernanda", phone: "(41) 94444-4444", value: 5000, status: "Lista de Leads", statusHistory: [{ status: "Lista de Leads", date: "2024-07-23"}] },
-  { id: "lead-5", displayId: "LD-00005", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 50000, status: "Aprovado", customerId: "cust-epsilon-1", proposalId: "prop-lead-5", statusHistory: [{ status: "Aprovado", date: "2024-07-24"}] },
+  { id: "lead-5", displayId: "LD-00005", name: "Indústria Epsilon", contact: "Ricardo", phone: "(51) 95555-5555", value: 37000, status: "Aprovado", customerId: "cust-epsilon-1", proposalId: "prop-lead-5", statusHistory: [{ status: "Aprovado", date: "2024-07-24"}] },
   { id: "lead-6", displayId: "LD-00006", name: "Varejo Zeta", contact: "Ana", phone: "(61) 96666-6666", value: 12000, status: "Reprovado", statusHistory: [{ status: "Reprovado", date: "2024-07-25"}] },
-  { id: "lead-7", displayId: "LD-00007", name: "Consultoria Sigma", contact: "Beatriz", phone: "(71) 97777-7777", value: 18000, status: "Negociação", proposalId: "prop-lead-7", statusHistory: [{ status: "Negociação", date: "2024-07-26"}] },
-  { id: "lead-8", displayId: "LD-00008", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 7000, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-lead-8", statusHistory: [{ status: "Aprovado", date: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString() }] }, // Old approved to test reactivation
+  { id: "lead-7", displayId: "LD-00007", name: "Consultoria Sigma", contact: "Beatriz", phone: "(71) 97777-7777", value: 4500, status: "Negociação", proposalId: "prop-lead-7", statusHistory: [{ status: "Negociação", date: "2024-07-26"}] },
+  { id: "lead-8", displayId: "LD-00008", name: "Comércio Gama", contact: "Carlos", phone: "(31) 93333-3333", value: 6900, status: "Aprovado", customerId: "cust-gama-1", proposalId: "prop-lead-8", statusHistory: [{ status: "Aprovado", date: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString() }] },
 ];
 
 const initialProposals: Proposal[] = [
-  { id: "prop-lead-3", leadId: "lead-3", date: "2024-07-21", status: "Sent", items: [{ id: "p-item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 2, price: 7500 }], total: 15000, discount: 0, shipping: 100 },
+  { id: "prop-lead-3", leadId: "lead-3", date: "2024-07-21", status: "Sent", items: [{ id: "p-item-1", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 2, price: 7500 }], total: 15000, discount: 0, shipping: 0 },
   { id: "prop-lead-8", leadId: "lead-8", date: "2024-07-28", status: "Sent", items: [{ id: "p-item-2", productId: "prod-4", productName: "Eletrônicos - Monitor 4K", quantity: 3, price: 2300 }], total: 6900, discount: 0, shipping: 50 },
   { id: "prop-lead-5", leadId: "lead-5", date: "2024-07-23", status: "Sent", items: [{ id: "p-item-3", productId: "prod-1", productName: "Eletrônicos - Notebook Pro", quantity: 5, price: 7400 }], total: 37000, discount: 0, shipping: 250 },
   { id: "prop-lead-7", leadId: "lead-7", date: "2024-07-25", status: "Sent", items: [{ id: "p-item-4", productId: "prod-3", productName: "Acessórios - Teclado Mecânico", quantity: 10, price: 450 }], total: 4500, discount: 0, shipping: 0 },
@@ -129,8 +130,8 @@ export default function Home() {
     if (isEditing) {
       setOrders(prevOrders => prevOrders.map(o => o.id === savedOrder.id ? savedOrder : o));
     } else {
-      let orderId = `ORD-${Date.now()}`;
-      if (leadForOrder && leadForOrder.displayId) {
+      let orderId = `ORD-${String(Date.now()).slice(-5)}`;
+       if (leadForOrder && leadForOrder.displayId) {
           const leadNum = leadForOrder.displayId.split('-')[1];
           orderId = `ORD-${leadNum}`;
       }
@@ -274,7 +275,7 @@ const handleProposalSent = (proposal: Proposal) => {
                     </MenubarContent>
                 </MenubarMenu>
                  <MenubarMenu>
-                    <MenubarTrigger disabled>Análises</MenubarTrigger>
+                    <MenubarTrigger onClick={() => setActiveTab('analytics')}>Análises</MenubarTrigger>
                 </MenubarMenu>
             </Menubar>
           </div>
@@ -340,6 +341,14 @@ const handleProposalSent = (proposal: Proposal) => {
               onSave={setShippingSettings}
             />
           </TabsContent>
+          <TabsContent value="analytics">
+            <AnalyticsDashboard
+                orders={orders}
+                products={products}
+                customers={customers}
+                leads={leads}
+            />
+          </TabsContent>
         </Tabs>
         
         <Dialog open={isSalesOrderDialogOpen} onOpenChange={(isOpen) => {
@@ -381,8 +390,3 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
-
-    
-
-    
-

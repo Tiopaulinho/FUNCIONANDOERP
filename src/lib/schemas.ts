@@ -49,13 +49,14 @@ export const productSchema = z.object({
     return totalPercentage < 100;
 }, {
     message: "A soma de taxas, impostos e margem de lucro deve ser menor que 100%.",
-    path: ["profitMargin"], // You can also point to a more generic path if needed
+    path: ["profitMargin"], 
 });
 
 
 export type Product = z.infer<typeof productSchema>;
 
 export type OrderStatus = "Pendente" | "Processando" | "Enviado" | "Entregue";
+export type PaymentStatus = "Pendente" | "Pago" | "Parcial";
 
 export const salesOrderItemSchema = z.object({
   id: z.string().optional(),
@@ -75,6 +76,8 @@ export const salesOrderSchema = z.object({
   shipping: z.coerce.number().min(0, "O frete não pode ser negativo.").optional(),
   shippingMethod: z.string().optional(),
   items: z.array(salesOrderItemSchema).min(1, "Adicione pelo menos um item ao pedido."),
+  paymentMethod: z.string().optional(),
+  paymentStatus: z.enum(["Pendente", "Pago", "Parcial"]).optional(),
 });
 
 
