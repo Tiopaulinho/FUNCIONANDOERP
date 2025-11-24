@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/menubar";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
-import { collection, CollectionReference } from "firebase/firestore";
+import { collection, CollectionReference, DocumentReference } from "firebase/firestore";
 
 
 const initialProducts: (Product & { id: string })[] = [
@@ -174,10 +174,10 @@ export default function Home() {
     setIsSalesOrderDialogOpen(true);
   }
 
-  const addCustomer = (collectionRef: CollectionReference | null, customerData: Omit<Customer, 'id'>) => {
+  const addCustomer = (collectionRef: CollectionReference | null, customerData: Omit<Customer, 'id'>): Promise<DocumentReference | undefined> => {
     if (!collectionRef) {
       console.error("Collection reference is not available for adding a customer.");
-      return;
+      return Promise.resolve(undefined);
     };
     return addDocumentNonBlocking(collectionRef, customerData);
   }
@@ -298,6 +298,7 @@ const handleProposalSent = (proposal: Proposal) => {
               onProposalSave={handleProposalSave}
               onProposalSent={handleProposalSent}
               shippingSettings={shippingSettings}
+              orders={orders}
             />
           </TabsContent>
            <TabsContent value="proposals">

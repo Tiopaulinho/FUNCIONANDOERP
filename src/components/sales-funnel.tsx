@@ -11,8 +11,8 @@ import {
   CardFooter,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail, MessageCircle, PhoneCall, Play, Square, Ban } from "lucide-react";
-import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings, LeadActivity, LeadHistoryEntry } from "@/lib/schemas";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail, MessageCircle, PhoneCall, Play, Square, Ban, Package } from "lucide-react";
+import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings, LeadActivity, LeadHistoryEntry, SalesOrder } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -239,6 +239,7 @@ const LeadDetailsModal = ({
   onNewPurchase,
   proposals,
   onOpenContactModal,
+  orders,
 }: { 
   lead: Lead | null; 
   open: boolean; 
@@ -249,10 +250,12 @@ const LeadDetailsModal = ({
   onNewPurchase: (lead: Lead) => void;
   proposals: Proposal[];
   onOpenContactModal: (lead: Lead) => void;
+  orders: SalesOrder[];
 }) => {
   if (!lead) return null;
 
   const proposal = proposals.find(p => p.id === lead.proposalId);
+  const order = orders.find(o => o.leadId === lead.id);
 
   const handleGenerateClick = () => {
     onGenerateProposal(lead, !!lead.proposalId);
@@ -294,6 +297,21 @@ const LeadDetailsModal = ({
             <div className="flex items-center gap-2">
                  <Badge variant="secondary">{lead.status}</Badge>
             </div>
+            {order && lead.status === 'Aprovado' && (
+              <div className="space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2"><Package className="h-4 w-4" /> Pedido Gerado</h4>
+                  <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border space-y-1">
+                      <div className="flex justify-between items-center">
+                          <span>ID do Pedido:</span>
+                          <span className="font-mono text-foreground">{order.id}</span>
+                      </div>
+                       <div className="flex justify-between items-center">
+                          <span>Status do Pedido:</span>
+                          <span className="font-semibold text-foreground">{order.status}</span>
+                      </div>
+                  </div>
+              </div>
+            )}
             {proposal && (
                 <div className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5 text-muted-foreground" />
@@ -804,6 +822,7 @@ interface SalesFunnelProps {
   onProposalSave: (proposal: Proposal) => void;
   onProposalSent: (proposal: Proposal) => void;
   shippingSettings: ShippingSettings;
+  orders: SalesOrder[];
 }
 
 export default function SalesFunnel({ 
@@ -819,7 +838,8 @@ export default function SalesFunnel({
     proposals,
     onProposalSave,
     onProposalSent,
-    shippingSettings
+    shippingSettings,
+    orders,
 }: SalesFunnelProps) {
   const { toast } = useToast();
   const [nameFilter, setNameFilter] = React.useState("");
@@ -1461,6 +1481,7 @@ export default function SalesFunnel({
           onNewPurchase={handleNewPurchase}
           proposals={proposals}
           onOpenContactModal={handleOpenContactModal}
+          orders={orders}
         />
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
