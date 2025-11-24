@@ -68,6 +68,7 @@ export default function CustomerRegistrationForm({
       city: "",
       state: "",
       distance: 0,
+      aniversario: "",
     },
   });
   
@@ -88,6 +89,7 @@ export default function CustomerRegistrationForm({
             city: initialData.city || "",
             state: initialData.state || "",
             distance: initialData.distance || 0,
+            aniversario: initialData.aniversario || "",
         });
     }
   }, [initialData, reset]);
@@ -289,6 +291,21 @@ export default function CustomerRegistrationForm({
                   )}
                 />
               </div>
+               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <FormField
+                    control={form.control}
+                    name="aniversario"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Data de Nascimento</FormLabel>
+                        <FormControl>
+                            <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+               </div>
             </div>
 
             <div className="space-y-6">

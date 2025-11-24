@@ -14,6 +14,7 @@ export const customerRegistrationSchema = z.object({
   city: z.string().min(3, { message: "A cidade é obrigatória." }),
   state: z.string().min(2, { message: "O estado é obrigatório." }).max(2, { message: "Use a sigla do estado (ex: SP)." }),
   distance: z.coerce.number().min(0, "A distância não pode ser negativa.").optional(),
+  aniversario: z.string().optional(),
 });
 
 export type Customer = z.infer<typeof customerRegistrationSchema> & { id?: string; userId?: string };
@@ -88,7 +89,7 @@ export type SalesOrder = z.infer<typeof salesOrderSchema> & {
 export const leadStatusSchema = z.enum(["Lista de Leads", "Contato", "Proposta", "Negociação", "Aprovado", "Reativar", "Reprovado"]);
 export type LeadStatus = z.infer<typeof leadStatusSchema>;
 
-export const leadActivitySchema = z.enum(["Ligação", "WhatsApp", "Email"]);
+export const leadActivitySchema = z.enum(["Ligação", "WhatsApp", "Email", "Aniversário"]);
 export type LeadActivity = z.infer<typeof leadActivitySchema>;
 
 export const leadHistoryEntrySchema = z.object({

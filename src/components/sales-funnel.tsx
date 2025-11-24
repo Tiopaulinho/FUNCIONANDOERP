@@ -11,7 +11,7 @@ import {
   CardFooter,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail, MessageCircle, PhoneCall, Play, Square, Ban, Package } from "lucide-react";
+import { DollarSign, Building, User, Upload, FilePenLine, Trash2, StickyNote, Loader2, FileText, Phone, Send, Save, FileCheck2, ShoppingCart, Users, History, PlusCircle, RefreshCw, Mail, MessageCircle, PhoneCall, Play, Square, Ban, Package, Gift } from "lucide-react";
 import type { Lead, LeadStatus, Customer, Product, Proposal, ShippingSettings, LeadActivity, LeadHistoryEntry, SalesOrder } from "@/lib/schemas";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -153,7 +153,7 @@ const LeadCard = ({
       </CardHeader>
       
       {(lead.status === 'Proposta' && !lead.proposalId) || status === 'Reativar' || status === 'Contato' || status === 'Negociação' ? (
-        <CardFooter className="p-2 pl-6 flex justify-end">
+        <CardFooter className="p-2 flex justify-center items-center">
             {lead.status === 'Contato' && (
                  <TooltipProvider>
                     <Tooltip>
@@ -187,7 +187,7 @@ const LeadCard = ({
 
             {status === 'Negociação' && (
                 <TooltipProvider>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700" onClick={handleApproveClick}>
@@ -216,7 +216,7 @@ const LeadCard = ({
 
             {status === 'Reativar' && (
                 <TooltipProvider>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleReactivateClick}>
@@ -833,6 +833,62 @@ const ImportModal = ({
 };
 
 
+const BirthdayModal = ({
+    customers,
+    open,
+    onOpenChange,
+    onSendMessage
+}: {
+    customers: Customer[];
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSendMessage: (customer: Customer) => void;
+}) => {
+    const [birthdayCustomers, setBirthdayCustomers] = React.useState<Customer[]>([]);
+
+    React.useEffect(() => {
+        if (open) {
+            const currentMonth = new Date().getMonth() + 1;
+            const filtered = customers.filter(c => {
+                if (!c.aniversario) return false;
+                const birthMonth = parseInt(c.aniversario.split('-')[1], 10);
+                return birthMonth === currentMonth;
+            });
+            setBirthdayCustomers(filtered);
+        }
+    }, [open, customers]);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Gift className="h-5 w-5" /> Aniversariantes do Mês</DialogTitle>
+                    <DialogDescription>
+                        Envie uma mensagem de parabéns e um cupom de desconto para seus clientes.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-3 max-h-80 overflow-y-auto">
+                    {birthdayCustomers.length > 0 ? (
+                        birthdayCustomers.map(customer => (
+                            <div key={customer.id} className="flex items-center justify-between p-2 rounded-md border">
+                                <div>
+                                    <p className="font-semibold">{customer.name}</p>
+                                    <p className="text-sm text-muted-foreground">{new Date(customer.aniversario + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</p>
+                                </div>
+                                <Button size="sm" onClick={() => onSendMessage(customer)}>
+                                    <Send className="mr-2 h-4 w-4" /> Enviar
+                                </Button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-8">Nenhum aniversariante este mês.</p>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 interface SalesFunnelProps {
   leads: Lead[];
@@ -887,6 +943,7 @@ export default function SalesFunnel({
   const [callLead, setCallLead] = React.useState<Lead | null>(null);
   const [isCallModalOpen, setIsCallModalOpen] = React.useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
+  const [isBirthdayModalOpen, setIsBirthdayModalOpen] = React.useState(false);
 
 
   const [savedProposal, setSavedProposal] = React.useState<Proposal | null>(null);
@@ -934,16 +991,11 @@ export default function SalesFunnel({
             }
         });
 
-        const existingReactivationLeadIds = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.id));
+        const existingReactivationLeadIds = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.customerId));
 
         Object.keys(customerLastApproval).forEach(customerId => {
             const originalLead = leads.find(l => l.customerId === customerId); // Find any lead for this customer to get their data
-            if (!originalLead) return;
-
-            // Check if there is already a reactivation lead for this customer
-            const hasReactivationLead = leads.some(l => l.status === 'Reativar' && l.customerId === customerId);
-
-            if (hasReactivationLead) {
+            if (!originalLead || existingReactivationLeadIds.has(customerId)) {
                 return;
             }
 
@@ -955,7 +1007,7 @@ export default function SalesFunnel({
                 const today = new Date().toISOString();
                 const reactivationLead: Lead = {
                     ...originalLead, // Copy data from an original lead
-                    id: `reactivate-${customerId}-${Date.now()}-${Math.random()}`,
+                    id: `reactivate-${customerId}`, // Non-unique, temporary ID for suggestion
                     displayId: undefined, // No displayId for reactivation suggestions
                     status: 'Reativar',
                     statusHistory: [{ status: 'Reativar', date: today }],
@@ -964,10 +1016,8 @@ export default function SalesFunnel({
                     value: 0,
                 };
                 
-                if (!existingReactivationLeadIds.has(reactivationLead.id)) {
-                    setLeads(prevLeads => [...prevLeads, reactivationLead]);
-                    existingReactivationLeadIds.add(reactivationLead.id);
-                }
+                setLeads(prevLeads => [...prevLeads, reactivationLead]);
+                existingReactivationLeadIds.add(customerId);
             }
         });
     };
@@ -1340,6 +1390,17 @@ export default function SalesFunnel({
     });
   };
 
+   const handleSendBirthdayMessage = (customer: Customer) => {
+        const message = `Olá, ${customer.name}! Feliz aniversário! Para comemorar, estamos oferecendo 10% de desconto em sua próxima compra este mês.`;
+        console.log(`Simulando envio de mensagem de aniversário para ${customer.name}: ${message}`);
+        // Here you would add the history to the customer or a notification system
+        // For now, just show a toast
+        toast({
+            title: "Mensagem Enviada!",
+            description: `A mensagem de aniversário foi enviada para ${customer.name}.`,
+        });
+    };
+
 
   const filteredLeads = React.useMemo(() => {
     const lowercasedNameFilter = nameFilter.toLowerCase();
@@ -1393,6 +1454,10 @@ export default function SalesFunnel({
                 <p className="text-muted-foreground">Arraste e solte os leads para atualizar o status.</p>
             </div>
             <div className="flex gap-2">
+                <Button onClick={() => setIsBirthdayModalOpen(true)} variant="outline">
+                  <Gift className="mr-2 h-4 w-4" />
+                  Aniversariantes
+                </Button>
                 <Button onClick={() => setIsNewLeadModalOpen(true)} >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Novo Lead
@@ -1458,7 +1523,7 @@ export default function SalesFunnel({
                                             {group.length} {group.length > 1 ? 'oportunidades ganhas' : 'oportunidade ganha'}
                                         </CardDescription>
                                     </CardHeader>
-                                     <CardFooter className="p-2 pl-6 flex justify-end">
+                                     <CardFooter className="p-2 flex justify-center items-center">
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -1664,12 +1729,13 @@ export default function SalesFunnel({
             expectedHeaders={["name", "contact", "phone", "email", "value", "zip", "distance"]}
         />
 
+        <BirthdayModal 
+            customers={customers}
+            open={isBirthdayModalOpen}
+            onOpenChange={setIsBirthdayModalOpen}
+            onSendMessage={handleSendBirthdayMessage}
+        />
+
     </div>
   );
 }
-
-    
-
-    
-
-
