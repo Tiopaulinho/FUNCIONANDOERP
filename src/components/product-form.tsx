@@ -122,16 +122,20 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
     const suppliesCost = Number(watchedFields.suppliesCost) || 0;
     const feesPercent = Number(watchedFields.fees) || 0;
     const taxesPercent = Number(watchedFields.taxes) || 0;
-    const profitMargin = Number(watchedFields.profitMargin) || 0;
+    const profitMarginPercent = Number(watchedFields.profitMargin) || 0;
     const chargedPrice = Number(watchedFields.price) || 0;
 
     const baseCost = rawMaterialCost + laborCost + suppliesCost;
-    const feesValue = baseCost * (feesPercent / 100);
-    const taxesValue = baseCost * (taxesPercent / 100);
-    const totalCost = baseCost + feesValue + taxesValue;
     
-    const profitValue = totalCost * (profitMargin / 100);
-    const suggestedPrice = totalCost + profitValue;
+    // Markup Divisor Calculation
+    const totalPercentage = (feesPercent + taxesPercent + profitMarginPercent) / 100;
+    const markupDivisor = 1 - totalPercentage;
+    
+    const suggestedPrice = markupDivisor > 0 ? baseCost / markupDivisor : baseCost;
+
+    const feesValue = chargedPrice * (feesPercent / 100);
+    const taxesValue = chargedPrice * (taxesPercent / 100);
+    const totalCost = baseCost + feesValue + taxesValue;
     const actualProfit = chargedPrice - totalCost;
     
     const finalCategory = watchedFields.category === 'OUTROS' ? watchedFields.newCategory : watchedFields.category;
@@ -370,44 +374,27 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                 )} />
 
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <FormField control={form.control} name="fees" render={({ field }) => (
-                    <FormItem><FormLabel>Taxas (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="taxes" render={({ field }) => (
-                    <FormItem><FormLabel>Impostos (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
-                )} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <Card className="bg-muted/50">
-                    <CardHeader className="p-4">
-                        <CardDescription>Custo Base (Sem Taxas)</CardDescription>
-                        <CardTitle className="text-2xl">{baseCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
-                    </CardHeader>
-                </Card>
-                 <Card>
-                    <CardHeader className="p-4">
-                        <CardDescription>Custo Total (Com Taxas)</CardDescription>
-                        <CardTitle className="text-2xl">{totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
-                    </CardHeader>
-                </Card>
-              </div>
+              <Card className="bg-muted/50">
+                <CardHeader className="p-4">
+                    <CardDescription>Custo Base Total (Matéria Prima + Insumos + Mão de Obra)</CardDescription>
+                    <CardTitle className="text-2xl">{baseCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
+                </CardHeader>
+              </Card>
             </div>
 
             <div className="space-y-4">
                <h3 className="text-lg font-semibold">Preço e Lucro</h3>
                <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <FormField control={form.control} name="fees" render={({ field }) => (
+                        <FormItem><FormLabel>Taxas da Venda (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="taxes" render={({ field }) => (
+                        <FormItem><FormLabel>Impostos (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
+                    )} />
                     <FormField control={form.control} name="profitMargin" render={({ field }) => (
                         <FormItem><FormLabel>Margem de Lucro (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    
-                    <Card className="bg-muted/50">
-                        <CardHeader className="p-4">
-                            <CardDescription>Preço Sugerido</CardDescription>
-                            <CardTitle className="text-2xl">{suggestedPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
-                        </CardHeader>
-                    </Card>
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                     <FormField
@@ -430,15 +417,21 @@ export default function ProductForm({ initialData, onSuccess }: ProductFormProps
                         </FormItem>
                         )}
                     />
-                    <Card>
+                    <Card className="bg-muted/50">
                         <CardHeader className="p-4">
-                            <CardDescription>Lucro Real</CardDescription>
-                            <CardTitle className={`text-2xl ${actualProfit < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                                {actualProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </CardTitle>
+                            <CardDescription>Preço Sugerido (com base no lucro)</CardDescription>
+                            <CardTitle className="text-2xl">{suggestedPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</CardTitle>
                         </CardHeader>
                     </Card>
                  </div>
+                  <Card>
+                      <CardHeader className="p-4">
+                          <CardDescription>Lucro Real por Unidade (após taxas e impostos sobre o preço de venda)</CardDescription>
+                          <CardTitle className={`text-2xl ${actualProfit < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                              {actualProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </CardTitle>
+                      </CardHeader>
+                  </Card>
             </div>
 
 

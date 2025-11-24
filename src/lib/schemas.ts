@@ -43,6 +43,12 @@ export const productSchema = z.object({
 }, {
     message: "Por favor, especifique o nome da nova categoria.",
     path: ["newCategory"],
+}).refine(data => {
+    const totalPercentage = (data.fees || 0) + (data.taxes || 0) + (data.profitMargin || 0);
+    return totalPercentage < 100;
+}, {
+    message: "A soma de taxas, impostos e margem de lucro deve ser menor que 100%.",
+    path: ["profitMargin"], // You can also point to a more generic path if needed
 });
 
 
