@@ -541,9 +541,15 @@ const ContactModal = ({
     const [selectedMethod, setSelectedMethod] = React.useState<"whatsapp" | "email" | null>(null);
     const [message, setMessage] = React.useState("");
 
+    const isReactivation = lead?.displayId?.startsWith("RE-");
+
     const templates = {
-        whatsapp: `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`,
-        email: `Prezado(a) ${lead?.contact || '[Nome do Contato]'},\n\nEspero que esteja tudo bem.\n\nMeu nome é [Seu Nome] e represento a [Sua Empresa]. Vi que você demonstrou interesse em nossos produtos e gostaria de me colocar à sua disposição para uma conversa, sem compromisso.\n\nFico no aguardo de um retorno.\n\nAtenciosamente,\n[Seu Nome]`
+        whatsapp: isReactivation
+            ? `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nNotei que faz um tempo desde nossa última conversa e gostaria de apresentar algumas novidades e ofertas especiais que preparamos para você.\n\nPodemos conversar?`
+            : `Olá ${lead?.contact || '[Nome do Contato]'}, tudo bem?\n\nMe chamo [Seu Nome] e falo em nome da [Sua Empresa].\n\nGostaria de apresentar nossos produtos e entender melhor como podemos te ajudar.\n\nPodemos conversar?`,
+        email: isReactivation
+            ? `Prezado(a) ${lead?.contact || '[Nome do Contato]'},\n\nEspero que esteja tudo bem.\n\nFaz um tempo que não nos falamos e estamos com saudades! Temos novos produtos e condições especiais que acreditamos que você vai adorar.\n\nGostaria de dar uma olhada nas novidades?\n\nAtenciosamente,\n[Seu Nome]`
+            : `Prezado(a) ${lead?.contact || '[Nome do Contato]'},\n\nEspero que esteja tudo bem.\n\nMeu nome é [Seu Nome] e represento a [Sua Empresa]. Vi que você demonstrou interesse em nossos produtos e gostaria de me colocar à sua disposição para uma conversa, sem compromisso.\n\nFico no aguardo de um retorno.\n\nAtenciosamente,\n[Seu Nome]`
     };
 
     React.useEffect(() => {
@@ -889,13 +895,25 @@ export default function SalesFunnel({
   const generateDisplayId = (existingLeads: Lead[]): string => {
     const leadNumbers = existingLeads
       .map(l => l.displayId)
-      .filter((id): id is string => !!id)
+      .filter((id): id is string => !!id && id.startsWith("LD-"))
       .map(id => parseInt(id.split('-')[1], 10))
       .filter(num => !isNaN(num));
     
     const maxId = leadNumbers.length > 0 ? Math.max(...leadNumbers) : 0;
     const newId = maxId + 1;
     return `LD-${newId.toString().padStart(5, '0')}`;
+  };
+  
+  const generateReactivationDisplayId = (existingLeads: Lead[]): string => {
+    const leadNumbers = existingLeads
+      .map(l => l.displayId)
+      .filter((id): id is string => !!id && id.startsWith("RE-"))
+      .map(id => parseInt(id.split('-')[1], 10))
+      .filter(num => !isNaN(num));
+    
+    const maxId = leadNumbers.length > 0 ? Math.max(...leadNumbers) : 0;
+    const newId = maxId + 1;
+    return `RE-${newId.toString().padStart(5, '0')}`;
   };
 
 
@@ -1215,7 +1233,7 @@ export default function SalesFunnel({
     const newLeadFromReactivation: Lead = {
         ...reactivationLead,
         id: `lead-${Date.now()}-${Math.random()}`,
-        displayId: generateDisplayId(leads),
+        displayId: generateReactivationDisplayId(leads),
         status: 'Contato',
         statusHistory: [{ status: 'Contato', date: today, details: 'Reativação' }],
         proposalNotes: 'Oportunidade de reativação.',
@@ -1653,4 +1671,5 @@ export default function SalesFunnel({
     
 
     
+
 
