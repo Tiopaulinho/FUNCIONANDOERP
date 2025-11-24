@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "Cliente": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Cliente",
+      "type": "object",
+      "description": "Represents a customer in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Cliente entity."
+        },
+        "nome": {
+          "type": "string",
+          "description": "The full name of the customer."
+        },
+        "informacoesDeContato": {
+          "type": "string",
+          "description": "The contact information of the customer."
+        },
+        "endereco": {
+          "type": "string",
+          "description": "The address of the customer."
+        },
+        "outrasInformacoes": {
+          "type": "string",
+          "description": "Other relevant information about the customer."
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "informacoesDeContato",
+        "endereco"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/clientes/{clienteId}",
+        "definition": {
+          "entityName": "Cliente",
+          "schema": {
+            "$ref": "#/backend/entities/Cliente"
+          },
+          "description": "Stores customer data for a specific user. Access is restricted to the user with the matching userId. Includes denormalized ownerId for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the customer data."
+            },
+            {
+              "name": "clienteId",
+              "description": "The unique identifier for the customer document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Based on the provided information, the most suitable Firestore data structure is a path-based ownership model. The app requires storing customer data, and each user (assuming authentication is tied to user accounts even with anonymous sign-in) should have their own set of customer records. This approach ensures data privacy and simplifies security rules. Specifically, each user will have their own `/clientes` subcollection where their customer data is stored. This isolates user data, preventing unauthorized access. Denormalization isn't explicitly needed here as the primary access control is based on user ID. Security rules will leverage `request.auth.uid` to ensure a user can only access their own customer data. This design inherently supports the required QAPs by limiting list operations to the authenticated user's specific data. The structure promotes Authorization Independence because access control is based on the path (`/users/{userId}/clientes/{clienteId}`) rather than relying on data within the documents themselves."
+  }
+}

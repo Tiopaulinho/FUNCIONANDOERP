@@ -1,0 +1,116 @@
+/**
+ * # Firestore Security Rules
+ *
+ * ## Core Philosophy
+ * This ruleset enforces a strict user-ownership model. All data is scoped to an authenticated user,
+ * ensuring that a user can only ever access or modify their own information. There are no public
+ * or shared collections.
+ *
+ * ## Data Structure
+ * The data is organized hierarchically under the `/users` collection. Each user's data,
+ * such as their customers (`clientes`), is stored in a subcollection under their unique user ID:
+ * `/users/{userId}/clientes/{clienteId}`. This structure inherently isolates user data.
+ *
+ * ## Key Security Decisions
+ * - **Default Deny:** All paths are closed by default. Access must be explicitly granted.
+ * - **No User Enumeration:** Rules explicitly prevent the listing of documents in the top-level `/users` collection.
+ * - **Strict Ownership:** All operations (read, write, delete) are gated by a check that ensures the requesting user's ID matches the `{userId}` in the document path.
+ *
+ * ## Denormalization for Authorization
+ * To ensure data integrity and enable robust security validation, these rules assume that any document created
+ * within a user's data tree (e.g., a `cliente` document) will contain a denormalized `userId` field.
+ * This internal field is validated on create to match the owner's `userId` from the path and is enforced
+ * as immutable on update, preventing the document's ownership from ever being reassigned.
+ *
+ * ## Structural Segregation
+ * This model does not require structural segregation as all data is considered private to the user.
+ * There is no concept of public or published content.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing data ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update and delete
+     * operations to prevent acting on documents that don't exist.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates required authorization fields during Cliente creation.
+     * Ensures the new document is correctly linked to its owner via an
+     * internal `userId` field, enforcing relational integrity.
+     */
+    function isValidClienteCreate(userId) {
+      // Prototyping Mode: Only validate fields critical for authorization.
+      // The client MUST send a `userId` field that matches the {userId} in the path.
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Validates critical fields during Cliente updates.
+     * Enforces immutability of the ownership link.
+     */
+    function isValidClienteUpdate() {
+      // Prototyping Mode: Only validate fields critical for authorization.
+      // The `userId` field cannot be changed after the document is created.
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Disallows any operations on user root documents.
+     * @path /users/{userId}
+     * @allow (none) No direct access is permitted.
+     * @deny (list) A user tries to list all documents in the `/users` collection.
+     * @principle Prevents user enumeration by securing the parent collection.
+     */
+    match /users/{userId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages a user's private list of customers ('clientes').
+     * @path /users/{userId}/clientes/{clienteId}
+     * @allow (create) An authenticated user creates a 'cliente' document under their own user ID.
+     * @deny (get) An authenticated user attempts to read a 'cliente' document from another user's path.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /users/{userId}/clientes/{clienteId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidClienteCreate(userId);
+      allow update: if isExistingOwner(userId) && isValidClienteUpdate();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
