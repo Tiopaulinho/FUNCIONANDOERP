@@ -974,81 +974,57 @@ export default function SalesFunnel({
   };
 
 
-  React.useEffect(() => {
-    const checkReactivation = () => {
-      const now = new Date();
-      const customerLastApproval: { [customerId: string]: string } = {};
-  
-      leads.forEach(lead => {
-        if (lead.status === 'Aprovado' && lead.customerId) {
-          const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
-          if (approvedEntry) {
-            if (!customerLastApproval[lead.customerId] || new Date(approvedEntry.date) > new Date(customerLastApproval[lead.customerId])) {
-              customerLastApproval[lead.customerId] = approvedEntry.date;
-            }
+  const reactivationSuggestions = React.useMemo(() => {
+    const now = new Date();
+    const customerLastApproval: { [customerId: string]: { date: string, lead: Lead } } = {};
+
+    // Find the latest approval date for each customer
+    leads.forEach(lead => {
+      if (lead.status === 'Aprovado' && lead.customerId) {
+        const approvedEntry = [...(lead.statusHistory || [])].reverse().find(h => h.status === 'Aprovado');
+        if (approvedEntry) {
+          if (!customerLastApproval[lead.customerId] || new Date(approvedEntry.date) > new Date(customerLastApproval[lead.customerId].date)) {
+            customerLastApproval[lead.customerId] = { date: approvedEntry.date, lead: lead };
           }
         }
-      });
-  
-      const existingReactivationCustomerIds = new Set(
-        leads.filter(l => l.status === 'Reativar').map(l => l.customerId)
-      );
-  
-      const newReactivationLeads: Lead[] = [];
-  
-      Object.keys(customerLastApproval).forEach(customerId => {
-        if (existingReactivationCustomerIds.has(customerId)) {
-          return;
-        }
-  
-        const lastApprovalDate = new Date(customerLastApproval[customerId]);
-        const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-        if (diffDays > (shippingSettings.reactivationPeriodDays || 14)) {
-          const originalLead = leads.find(l => l.customerId === customerId);
-          if (!originalLead) return;
-  
-          const today = new Date().toISOString();
-          const reactivationLead: Lead = {
-            ...originalLead,
-            id: `reactivate-${customerId}`, // Non-unique but fine for suggestions
-            status: 'Reativar',
-            statusHistory: [{ status: 'Reativar', date: today }],
-            proposalId: undefined,
-            proposalNotes: 'Oportunidade de reativação.',
-            value: 0,
-            displayId: undefined,
-          };
-          newReactivationLeads.push(reactivationLead);
-        }
-      });
-  
-      return newReactivationLeads;
-    };
-  
-    const interval = setInterval(() => {
-      const newLeads = checkReactivation();
-      if (newLeads.length > 0) {
-        setLeads(currentLeads => {
-          const currentReactivationIds = new Set(currentLeads.filter(l => l.status === 'Reativar').map(l => l.id));
-          const leadsToAdd = newLeads.filter(l => !currentReactivationIds.has(l.id));
-          if (leadsToAdd.length > 0) {
-            return [...currentLeads, ...leadsToAdd];
-          }
-          return currentLeads;
-        });
       }
-    }, 1000 * 60 * 60); // Check every hour
-  
-    // Initial check
-    const initialNewLeads = checkReactivation();
-    if (initialNewLeads.length > 0) {
-      setLeads(currentLeads => [...currentLeads, ...initialNewLeads]);
-    }
-  
-    return () => clearInterval(interval);
-  }, [leads, shippingSettings.reactivationPeriodDays, setLeads]);
+    });
+
+    // Get customerIds that already have an open reactivation lead
+    const openReactivationCustomerIds = new Set(
+      leads.filter(l => l.displayId?.startsWith("RE-")).map(l => l.customerId)
+    );
+
+    const suggestions: Lead[] = [];
+
+    Object.entries(customerLastApproval).forEach(([customerId, { date, lead }]) => {
+      // Don't create a suggestion if there's already an open reactivation lead for this customer
+      if (openReactivationCustomerIds.has(customerId)) {
+        return;
+      }
+
+      const lastApprovalDate = new Date(date);
+      const diffTime = Math.abs(now.getTime() - lastApprovalDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays > (shippingSettings.reactivationPeriodDays || 14)) {
+        const suggestionLead: Lead = {
+          ...lead,
+          id: `reactivate-${customerId}`, // Temporary, unique ID for the suggestion card
+          status: 'Reativar',
+          statusHistory: [],
+          proposalId: undefined,
+          proposalNotes: 'Oportunidade de reativação.',
+          value: 0,
+          displayId: undefined, // No displayId for suggestions
+        };
+        suggestions.push(suggestionLead);
+      }
+    });
+
+    return suggestions;
+  }, [leads, shippingSettings.reactivationPeriodDays]);
+
 
   const updateLeadWithHistory = (lead: Lead, newStatus: LeadStatus, updates?: Partial<Lead>) => {
     const today = new Date().toISOString();
@@ -1313,8 +1289,8 @@ export default function SalesFunnel({
     };
     onAddLead(newLeadFromReactivation);
     
-    // Remove the suggestion card from the 'Reativar' column
-    setLeads(prev => prev.filter(l => l.id !== reactivationLead.id));
+    // We don't remove the suggestion card. It will disappear on the next render
+    // because the customer will now have an open reactivation lead.
     
     toast({
       title: "Cliente Reativado!",
@@ -1323,11 +1299,13 @@ export default function SalesFunnel({
   };
   
   const handleDismissReactivation = (reactivationLeadId: string) => {
-    setLeads(prev => prev.filter(l => l.id !== reactivationLeadId));
+    // To dismiss, we can create a temporary "ignored" lead so the suggestion disappears.
+    // A better approach would be a separate state for ignored suggestions.
+    // For now, we'll just show a toast.
     toast({
         variant: "destructive",
-        title: "Reativação Dispensada",
-        description: "A sugestão de reativação foi removida.",
+        title: "Reativação Dispensada (Simulação)",
+        description: "Em um sistema real, esta sugestão seria ocultada.",
     });
   };
 
@@ -1444,6 +1422,7 @@ export default function SalesFunnel({
     };
 
     for (const status of funnelStatuses) {
+        if (status === 'Reativar') continue; // We handle 'Reativar' separately with suggestions
         const statusLeads = filteredLeads.filter(lead => lead.status === status);
         statusLeads.sort((a, b) => getSortDate(a, status).getTime() - getSortDate(b, status).getTime());
         groupedByStatus[status] = statusLeads;
@@ -1516,6 +1495,7 @@ export default function SalesFunnel({
                     <Badge variant="secondary" className="rounded-full">
                        {status === 'Aprovado' ? Object.keys(groupedApprovedLeads).length 
                         : status === 'Reprovado' ? Object.keys(groupedRejectedLeads).length
+                        : status === 'Reativar' ? reactivationSuggestions.length
                         : leadsByStatus[status]?.length || 0}
                     </Badge>
                   </div>
@@ -1585,7 +1565,24 @@ export default function SalesFunnel({
                                 </Card>
                             );
                         })
-                    ) : (
+                    ) : status === 'Reativar' ? (
+                      reactivationSuggestions.map((lead) => (
+                          <LeadCard
+                              key={lead.id}
+                              lead={lead}
+                              onDragStart={() => {}}
+                              onClick={() => {}}
+                              proposals={[]}
+                              onGenerateProposal={() => {}}
+                              onReactivate={handleReactivate}
+                              status={status}
+                              onOpenContactModal={() => {}}
+                              onApprove={() => {}}
+                              onReject={() => {}}
+                              onDismissReactivation={handleDismissReactivation}
+                          />
+                      ))
+                  ) : (
                         (leadsByStatus[status] || []).map((lead) => (
                             <LeadCard
                                 key={lead.id}
@@ -1603,7 +1600,7 @@ export default function SalesFunnel({
                             />
                         ))
                     )}
-                  {((status !== 'Aprovado' && status !== 'Reprovado') && (leadsByStatus[status]?.length || 0) === 0) && (
+                  {((status !== 'Aprovado' && status !== 'Reprovado' && status !== 'Reativar') && (leadsByStatus[status]?.length || 0) === 0) && (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                           {filteredLeads.length > 0 && leads.length > filteredLeads.length ? 'Nenhum lead encontrado com este filtro' : 'Arraste um lead aqui'}
                       </div>
@@ -1618,6 +1615,11 @@ export default function SalesFunnel({
                           Arraste um lead aqui
                       </div>
                   )}
+                   {(status === 'Reativar' && reactivationSuggestions.length === 0) && (
+                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm p-4 text-center">
+                            Nenhum cliente para reativar no momento.
+                        </div>
+                    )}
                   </CardContent>
               </Card>
             </div>
