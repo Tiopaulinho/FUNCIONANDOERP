@@ -152,7 +152,7 @@ interface CustomerListProps {
 export default function CustomerList({ customers, shippingSettings, collectionRef }: CustomerListProps) {
   const [nameFilter, setNameFilter] = React.useState("");
   const [emailFilter, setEmailFilter] = React.useState("");
-  const [filteredCustomers, setFilteredCustomers] = React.useState(customers);
+  const [filteredCustomers, setFilteredCustomers] = React.useState<(Customer & { id: string })[]>([]);
   const [editingCustomer, setEditingCustomer] = React.useState<(Customer & { id: string}) | null>(null);
   const [isNewCustomerDialogOpen, setIsNewCustomerDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
@@ -165,12 +165,14 @@ export default function CustomerList({ customers, shippingSettings, collectionRe
     const lowercasedNameFilter = nameFilter.toLowerCase();
     const lowercasedEmailFilter = emailFilter.toLowerCase();
 
-    const filtered = customers.filter((customer) => {
-      const nameMatch = (customer.name.toLowerCase().includes(lowercasedNameFilter) || (customer.companyName && customer.companyName.toLowerCase().includes(lowercasedNameFilter)));
-      const emailMatch = customer.email.toLowerCase().includes(lowercasedEmailFilter);
-      return nameMatch && emailMatch;
-    });
-    setFilteredCustomers(filtered);
+    if (customers) {
+      const filtered = customers.filter((customer) => {
+        const nameMatch = (customer.name.toLowerCase().includes(lowercasedNameFilter) || (customer.companyName && customer.companyName.toLowerCase().includes(lowercasedNameFilter)));
+        const emailMatch = customer.email.toLowerCase().includes(lowercasedEmailFilter);
+        return nameMatch && emailMatch;
+      });
+      setFilteredCustomers(filtered);
+    }
   }, [nameFilter, emailFilter, customers]);
   
   const handleEditClick = (customer: Customer & { id: string }) => {
@@ -317,7 +319,7 @@ export default function CustomerList({ customers, shippingSettings, collectionRe
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {filteredCustomers && filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.companyName || customer.name}</TableCell>
                   <TableCell>{customer.companyName ? customer.name : '-'}</TableCell>
