@@ -727,14 +727,9 @@ export default function SalesFunnel({
                 const originalLead = leads.find(l => l.customerId === customerId && l.status === 'Aprovado');
                 if (originalLead) {
                     const today = new Date().toISOString();
-                     const totalCount = leads.length + 1;
-                     const customerLeadCount = leads.filter(
-                        (l) => l.name.toLowerCase() === originalLead.name.toLowerCase()
-                     ).length + 1;
-
-                    const newLead: Lead = {
+                     const newLead: Lead = {
                         ...originalLead,
-                        id: `${totalCount}-${customerLeadCount}`,
+                        id: `lead-${Date.now()}-${Math.random()}`,
                         status: 'Reativar',
                         statusHistory: [{ status: 'Reativar', date: today }],
                         proposalId: undefined, 
@@ -835,22 +830,16 @@ export default function SalesFunnel({
 
   const simulateImport = () => {
     const today = new Date().toISOString();
-    const currentLeadCount = leads.length;
 
     const newLeadsData: Omit<Lead, 'id' | 'status' | 'statusHistory'>[] = [
       { name: "TecnoCorp", contact: "Roberto", phone: "(11) 98877-6655", value: 22000 },
       { name: "InovaSoluções", contact: "Sandra", phone: "(21) 99988-7766", value: 33000 },
     ];
 
-    const newLeads: Lead[] = newLeadsData.map((leadData, index) => {
-         const totalCount = currentLeadCount + index + 1;
-         const customerLeadCount = leads.filter(
-            (l) => l.name.toLowerCase() === leadData.name.toLowerCase()
-         ).length + 1;
-
+    const newLeads: Lead[] = newLeadsData.map((leadData) => {
         return {
             ...leadData,
-            id: `${totalCount}-${customerLeadCount}`,
+            id: `lead-${Date.now()}-${Math.random()}`,
             status: "Lista de Leads",
             statusHistory: [{ status: 'Lista de Leads', date: today }]
         }
@@ -966,14 +955,9 @@ export default function SalesFunnel({
 
   const handleNewPurchase = (approvedLead: Lead) => {
     const today = new Date().toISOString();
-     const totalCount = leads.length + 1;
-     const customerLeadCount = leads.filter(
-        (l) => l.name.toLowerCase() === approvedLead.name.toLowerCase()
-     ).length + 1;
-
     const newLead: Lead = {
       ...approvedLead,
-      id: `${totalCount}-${customerLeadCount}`,
+      id: `lead-${Date.now()}-${Math.random()}`,
       status: 'Contato',
       statusHistory: [{ status: 'Contato', date: today }],
       proposalId: undefined,
@@ -1099,7 +1083,7 @@ export default function SalesFunnel({
 
     for (const status of funnelStatuses) {
         const statusLeads = filteredLeads.filter(lead => lead.status === status);
-        statusLeads.sort((a, b) => getSortDate(a, status).getTime() - getSortDate(b, status).getTime());
+        statusLeads.sort((a, b) => getSortDate(b, status).getTime() - getSortDate(a, status).getTime());
         groupedByStatus[status] = statusLeads;
     }
     
