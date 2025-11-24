@@ -66,6 +66,8 @@ const LeadCard = ({
     onReactivate,
     status,
     onOpenContactModal,
+    onApprove,
+    onReject,
 }: { 
     lead: Lead;
     onDragStart: (e: React.DragEvent, leadId: string) => void;
@@ -75,6 +77,8 @@ const LeadCard = ({
     onReactivate: (lead: Lead) => void;
     status: LeadStatus;
     onOpenContactModal: (lead: Lead) => void;
+    onApprove: (lead: Lead) => void;
+    onReject: (lead: Lead) => void;
 }) => {
   const proposal = proposals.find(p => p.id === lead.proposalId);
 
@@ -92,6 +96,16 @@ const LeadCard = ({
   const handleReactivateClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onReactivate(lead);
+  };
+  
+  const handleApproveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onApprove(lead);
+  };
+
+  const handleRejectClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onReject(lead);
   };
 
 
@@ -131,7 +145,7 @@ const LeadCard = ({
         )}
       </CardHeader>
       
-      {(lead.status === 'Proposta' && !lead.proposalId) || status === 'Reativar' || status === 'Contato' ? (
+      {(lead.status === 'Proposta' && !lead.proposalId) || status === 'Reativar' || status === 'Contato' || status === 'Negociação' ? (
         <CardFooter className="p-2 pl-6 flex justify-end">
             {lead.status === 'Contato' && (
                  <TooltipProvider>
@@ -161,6 +175,35 @@ const LeadCard = ({
                             <p>Gerar Proposta</p>
                         </TooltipContent>
                     </Tooltip>
+                </TooltipProvider>
+            )}
+
+            {status === 'Negociação' && (
+                <TooltipProvider>
+                    <div className="flex gap-1">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700" onClick={handleApproveClick}>
+                                    <FileCheck2 className="h-4 w-4"/>
+                                    <span className="sr-only">Aprovar Proposta</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Aprovar Proposta</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700" onClick={handleRejectClick}>
+                                    <Ban className="h-4 w-4"/>
+                                    <span className="sr-only">Reprovar Proposta</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Reprovar Proposta</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
                 </TooltipProvider>
             )}
 
@@ -1096,7 +1139,7 @@ export default function SalesFunnel({
       id: `lead-${Date.now()}-${Math.random()}`,
       displayId: generateDisplayId(leads),
       status: 'Contato',
-      statusHistory: [{ status: 'Contato', date: today }],
+      statusHistory: [{ status: 'Contato', date: today, details: "Nova Compra" }],
       proposalId: undefined,
       proposalNotes: 'Oportunidade de nova compra.',
       value: 0,
@@ -1214,13 +1257,13 @@ export default function SalesFunnel({
     const groupedByStatus: { [key in LeadStatus]?: Lead[] } = {};
 
     const getSortDate = (lead: Lead, status: LeadStatus): Date => {
-      const entry = [...(lead.statusHistory || [])].reverse().find(h => h.status === status);
+      const entry = (lead.statusHistory || []).find(h => h.status === status);
       return entry ? new Date(entry.date) : new Date(0);
     };
 
     for (const status of funnelStatuses) {
         const statusLeads = filteredLeads.filter(lead => lead.status === status);
-        statusLeads.sort((a, b) => getSortDate(b, status).getTime() - getSortDate(a, status).getTime());
+        statusLeads.sort((a, b) => getSortDate(a, status).getTime() - getSortDate(b, status).getTime());
         groupedByStatus[status] = statusLeads;
     }
     
@@ -1374,6 +1417,8 @@ export default function SalesFunnel({
                                 onReactivate={handleReactivate}
                                 status={status}
                                 onOpenContactModal={handleOpenContactModal}
+                                onApprove={() => onOpenNewOrder(lead)}
+                                onReject={() => updateLeadWithHistory(lead, 'Reprovado')}
                             />
                         ))
                     )}
@@ -1527,5 +1572,3 @@ export default function SalesFunnel({
     </div>
   );
 }
-
-    
