@@ -5,7 +5,7 @@
  * gerenciar suas próprias informações. Não há conceito de dados públicos ou compartilhados.
  *
  * Estrutura de Dados: Todos os dados da aplicação estão aninhados sob o caminho `/users/{userId}`.
- * A coleção principal, `clientes`, existe como uma subcoleção para cada usuário,
+ * A coleção principal, `clientes`, existe como uma git init
  * garantindo uma separação clara e segura dos dados entre diferentes usuários.
  * A estrutura é `/users/{userId}/clientes/{clienteId}`.
  *
