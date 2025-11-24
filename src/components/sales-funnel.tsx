@@ -991,11 +991,14 @@ export default function SalesFunnel({
             }
         });
 
-        const existingReactivationLeadIds = new Set(leads.filter(l => l.status === 'Reativar').map(l => l.customerId));
+        const updatedLeads = [...leads];
+        const existingReactivationCustomerIds = new Set(
+            leads.filter(l => l.status === 'Reativar').map(l => l.customerId)
+        );
 
         Object.keys(customerLastApproval).forEach(customerId => {
-            const originalLead = leads.find(l => l.customerId === customerId); // Find any lead for this customer to get their data
-            if (!originalLead || existingReactivationLeadIds.has(customerId)) {
+            // Check if there is already a reactivation card for this customer
+            if (existingReactivationCustomerIds.has(customerId)) {
                 return;
             }
 
@@ -1004,21 +1007,32 @@ export default function SalesFunnel({
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
             if (diffDays > shippingSettings.reactivationPeriodDays) {
+                const originalLead = leads.find(l => l.customerId === customerId);
+                if (!originalLead) return;
+
                 const today = new Date().toISOString();
                 const reactivationLead: Lead = {
-                    ...originalLead, // Copy data from an original lead
-                    id: `reactivate-${customerId}`, // Non-unique, temporary ID for suggestion
-                    displayId: undefined, // No displayId for reactivation suggestions
+                    ...originalLead,
+                    id: `reactivate-${customerId}-${Date.now()}`, // Unique ID for the suggestion
                     status: 'Reativar',
                     statusHistory: [{ status: 'Reativar', date: today }],
-                    proposalId: undefined, 
+                    proposalId: undefined,
                     proposalNotes: 'Oportunidade de reativação.',
                     value: 0,
+                    displayId: undefined, // No displayId for reactivation suggestions
                 };
                 
-                setLeads(prevLeads => [...prevLeads, reactivationLead]);
-                existingReactivationLeadIds.add(customerId);
+                updatedLeads.push(reactivationLead);
+                existingReactivationCustomerIds.add(customerId); // Mark as added to prevent duplicates in this run
             }
+        });
+
+        // Use a functional update to avoid race conditions if setLeads is called elsewhere
+        setLeads(currentLeads => {
+            // Merge with current state to avoid overwriting other changes
+            const currentLeadIds = new Set(currentLeads.map(l => l.id));
+            const newLeadsToAdd = updatedLeads.filter(l => !currentLeadIds.has(l.id));
+            return [...currentLeads, ...newLeadsToAdd];
         });
     };
 
