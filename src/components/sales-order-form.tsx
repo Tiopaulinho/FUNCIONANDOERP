@@ -33,6 +33,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import ProductForm from "./product-form";
 import { CardDescription } from "./ui/card";
 import CustomerRegistrationForm from "./customer-registration-form";
+import type { CollectionReference, DocumentReference } from "firebase/firestore";
 
 type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
@@ -51,8 +52,9 @@ interface SalesOrderFormProps {
   leadData?: Lead | null;
   proposalData?: Proposal | null;
   customers: (Customer & { id: string })[];
-  onCustomerAdd: (customerData: Omit<Customer, 'id'>) => Customer & { id: string };
+  onCustomerAdd: (customerData: Omit<Customer, 'id'>) => Promise<DocumentReference | undefined>;
   shippingSettings: ShippingSettings;
+  collectionRef: CollectionReference | null;
 }
 
 export default function SalesOrderForm({ 
@@ -65,6 +67,7 @@ export default function SalesOrderForm({
   customers,
   onCustomerAdd,
   shippingSettings,
+  collectionRef,
 }: SalesOrderFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -203,14 +206,14 @@ export default function SalesOrderForm({
     setIsProductDialogOpen(false);
   }
   
-  const handleCustomerFormSuccess = (customerData: Omit<Customer, 'id'>) => {
-    const newCustomer = onCustomerAdd(customerData);
-    if (newCustomer) {
-      form.setValue("customerId", newCustomer.id, { shouldValidate: true });
+  const handleCustomerFormSuccess = async (customerData: Omit<Customer, 'id'>) => {
+    const newCustomerDocRef = await onCustomerAdd(customerData);
+    if (newCustomerDocRef) {
+      form.setValue("customerId", newCustomerDocRef.id, { shouldValidate: true });
       setIsCustomerDialogOpen(false);
       toast({
         title: "Cliente Cadastrado!",
-        description: `O cliente ${newCustomer.name} foi selecionado.`,
+        description: `O cliente ${customerData.name} foi selecionado.`,
       });
     }
   }
@@ -604,3 +607,5 @@ export default function SalesOrderForm({
     </div>
   );
 }
+
+    

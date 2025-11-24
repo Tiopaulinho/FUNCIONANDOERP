@@ -29,9 +29,9 @@ import {
   MenubarMenu,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
-import { collection } from "firebase/firestore";
+import { collection, CollectionReference } from "firebase/firestore";
 
 
 const initialProducts: (Product & { id: string })[] = [
@@ -174,11 +174,12 @@ export default function Home() {
     setIsSalesOrderDialogOpen(true);
   }
 
-  const addCustomer = (customerData: Omit<Customer, 'id'>): Customer & { id: string } => {
-    // This will be replaced by a Firestore call in CustomerList
-    console.error("addCustomer should be handled by Firestore now");
-    const newCustomer = { ...customerData, id: `cust-${Date.now()}` };
-    return newCustomer;
+  const addCustomer = (collectionRef: CollectionReference | null, customerData: Omit<Customer, 'id'>) => {
+    if (!collectionRef) {
+      console.error("Collection reference is not available for adding a customer.");
+      return;
+    };
+    return addDocumentNonBlocking(collectionRef, customerData);
   }
   
   const addLead = (leadData: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => {
@@ -358,8 +359,9 @@ const handleProposalSent = (proposal: Proposal) => {
                 leadData={leadForOrder}
                 proposalData={proposalForOrder}
                 customers={customers}
-                onCustomerAdd={addCustomer}
+                onCustomerAdd={(customerData) => addCustomer(clientesCollection, customerData)}
                 shippingSettings={shippingSettings}
+                collectionRef={clientesCollection}
               />
             </DialogContent>
         </Dialog>
@@ -376,5 +378,7 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
+
+    
 
     
