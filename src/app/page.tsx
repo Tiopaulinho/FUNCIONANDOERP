@@ -104,9 +104,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = React.useState("funnel");
 
   React.useEffect(() => {
-    if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
-    }
+    // if (!isUserLoading && !user) {
+    //   initiateAnonymousSignIn(auth);
+    // }
   }, [isUserLoading, user, auth]);
 
 
@@ -390,3 +390,5 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
+
+    
