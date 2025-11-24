@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset implements a strict, user-centric ownership model.
  * All data is sandboxed, meaning each authenticated user can only access and
@@ -82,3 +83,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

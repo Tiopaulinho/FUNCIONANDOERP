@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Cliente": {
@@ -73,3 +74,5 @@
     "reasoning": "Based on the requirements, the data structure will prioritize storing customer data securely and enabling efficient retrieval. Since there's no explicit collaboration or complex access control specified, a path-based ownership model under the `/users/{userId}/clientes/{clienteId}` collection is ideal. This design ensures that each user owns their customer data. The `Cliente` entity data is stored in a way that access control can be easily implemented through Firebase security rules.\n\nThis structure facilitates Authorization Independence by ensuring that access to `clientes` is directly tied to the user's ID. There is no reliance on parent document data for authorization. The security rules can be written to only allow a user to access their own customers.\n\nRegarding QAPs, this structure inherently supports secure list operations because the security rules can restrict listing `clientes` to only the authenticated user's customer records, preventing unauthorized access to other users' data. Because all `clientes` are owned by a user, we can easily apply the same security rules to all documents in the `clientes` collection."
   }
 }
+
+    

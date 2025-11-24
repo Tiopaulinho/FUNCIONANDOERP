@@ -1,8 +1,12 @@
+
 export const firebaseConfig = {
-  "projectId": "studio-3215266765-e23ca",
-  "appId": "1:971840042646:web:4b824d9daa26b5c406f4b7",
-  "apiKey": "AIzaSyCSX__BPlM23fYUUu-klcSc1HKLmNzlOQs",
-  "authDomain": "studio-3215266765-e23ca.firebaseapp.com",
+  "projectId": "app-de-vendas-do-rodrigo",
+  "appId": "1:914619342731:web:53d0859c258d4a66a7e0a1",
+  "apiKey": "AIzaSyAzF-S5xLssFhL66A39vE1CgGfe003fBPI",
+  "authDomain": "app-de-vendas-do-rodrigo.firebaseapp.com",
   "measurementId": "",
-  "messagingSenderId": "971840042646"
+  "storageBucket": "app-de-vendas-do-rodrigo.appspot.com",
+  "messagingSenderId": "914619342731"
 };
+
+    
