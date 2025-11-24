@@ -73,11 +73,11 @@ export default function NewLeadForm({ onSuccess, leads, customers, shippingSetti
         const normalizedContact = data.contact.trim().toLowerCase();
         if (data.type === 'pj') {
             const normalizedName = (data.name || "").trim().toLowerCase();
-            return customers.some(c => (c.companyName || '').toLowerCase() === normalizedName) ||
-                   leads.some(l => l.name.toLowerCase() === normalizedName);
+            return (customers || []).some(c => (c.companyName || '').toLowerCase() === normalizedName) ||
+                   (leads || []).some(l => l.name.toLowerCase() === normalizedName);
         } else { // pf
-            return customers.some(c => c.name.toLowerCase() === normalizedContact) ||
-                   leads.some(l => l.contact.toLowerCase() === normalizedContact && l.name.toLowerCase() === normalizedContact);
+            return (customers || []).some(c => c.name.toLowerCase() === normalizedContact) ||
+                   (leads || []).some(l => l.contact.toLowerCase() === normalizedContact && l.name.toLowerCase() === normalizedContact);
         }
     };
 
