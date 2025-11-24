@@ -239,6 +239,7 @@ export default function CustomerList({ customers, shippingSettings, collectionRe
             city: row['city'] || "",
             state: row['state'] || "",
             distance: Number(row['distance']) || 0,
+            aniversario: row['aniversario'] || "",
             userId: user.uid,
         };
         addDocumentNonBlocking(collectionRef, customerData);
@@ -358,7 +359,7 @@ export default function CustomerList({ customers, shippingSettings, collectionRe
                 onOpenChange={setIsImportModalOpen}
                 onImport={handleImportCustomers}
                 sampleFileName="clientes-exemplo.csv"
-                expectedHeaders={["name", "companyName", "email", "phone", "zip", "street", "number", "complement", "neighborhood", "city", "state", "distance"]}
+                expectedHeaders={["name", "companyName", "email", "phone", "zip", "street", "number", "complement", "neighborhood", "city", "state", "distance", "aniversario"]}
             />
       </CardContent>
     </Card>
