@@ -184,14 +184,9 @@ export default function Home() {
   const addLead = (leadData: Omit<Lead, 'id' | 'status' | 'statusHistory'>) => {
     const today = new Date().toISOString();
 
-    const totalCount = leads.length + 1;
-    const customerLeadCount = leads.filter(
-        (l) => l.name.toLowerCase() === leadData.name.toLowerCase()
-    ).length + 1;
-
     const newLead: Lead = {
       ...leadData,
-      id: `${totalCount}-${customerLeadCount}`,
+      id: `lead-${Date.now()}-${Math.random()}`,
       status: "Lista de Leads",
       statusHistory: [{ status: "Lista de Leads", date: today }],
     };
@@ -381,3 +376,5 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
+
+    
