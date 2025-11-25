@@ -1,12 +1,9 @@
-
 export const firebaseConfig = {
-  "projectId": "app-de-vendas-do-rodrigo",
-  "appId": "1:914619342731:web:53d0859c258d4a66a7e0a1",
-  "apiKey": "AIzaSyAzF-S5xLssFhL66A39vE1CgGfe003fBPI",
-  "authDomain": "app-de-vendas-do-rodrigo.firebaseapp.com",
-  "measurementId": "",
-  "storageBucket": "app-de-vendas-do-rodrigo.appspot.com",
-  "messagingSenderId": "914619342731"
+  "apiKey": "AIzaSyCHQp-0HF4O2NVv9aC2FGeKhOsS2lbgqnE",
+  "authDomain": "erpnovo-483a1.firebaseapp.com",
+  "projectId": "erpnovo-483a1",
+  "storageBucket": "erpnovo-483a1.firebasestorage.app",
+  "messagingSenderId": "280722278498",
+  "appId": "1:280722278498:web:7457bbf34033a04ed2293b",
+  "measurementId": "G-KZTG44B3P5"
 };
-
-    
