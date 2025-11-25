@@ -278,7 +278,7 @@ export default function Home() {
                     <MenubarContent>
                         <MenubarItem onClick={() => setActiveTab('proposals')}>Propostas</MenubarItem>
                         <MenubarItem onClick={() => setActiveTab('orders')}>Pedidos de Venda</MenubarItem>
-                    </emenubarContent>
+                    </MenubarContent>
                 </MenubarMenu>
                  <MenubarMenu>
                     <MenubarTrigger onClick={() => setActiveTab('analytics')}>Análises</MenubarTrigger>
