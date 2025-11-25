@@ -32,16 +32,21 @@ import {
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, doc, CollectionReference, DocumentReference } from "firebase/firestore";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
+import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 
-// REMOVED: All `initial...` fake data arrays have been removed.
-// Data will now be fetched directly from Firestore.
 
 export default function Home() {
+  const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  // Firestore Collection References
-  // Using useMemoFirebase to create stable collection references once the user is available.
+  // FIX: Re-added automatic anonymous sign-in
+  React.useEffect(() => {
+    if (!isUserLoading && !user) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [isUserLoading, user, auth]);
+
   const clientesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clientes') : null, [firestore, user]);
   const productsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'products') : null, [firestore, user]);
   const ordersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'orders') : null, [firestore, user]);
@@ -49,18 +54,14 @@ export default function Home() {
   const proposalsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'proposals') : null, [firestore, user]);
   const settingsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'settings') : null, [firestore, user]);
   
-  // Settings document reference
   const shippingSettingsDoc = useMemoFirebase(() => settingsCollection ? doc(settingsCollection, 'shipping') : null, [settingsCollection]);
 
-  // Live Data from Firestore
-  // Using the `useCollection` hook to get real-time data.
   const { data: customers = [], isLoading: customersLoading } = useCollection<Customer>(clientesCollection);
   const { data: products = [], isLoading: productsLoading } = useCollection<Product>(productsCollection);
   const { data: orders = [], isLoading: ordersLoading } = useCollection<SalesOrder>(ordersCollection);
   const { data: leads = [], isLoading: leadsLoading } = useCollection<Lead>(leadsCollection);
   const { data: proposals = [], isLoading: proposalsLoading } = useCollection<Proposal>(proposalsCollection);
   
-  // For settings, we will manage state manually since it's a single document
   const [shippingSettings, setShippingSettings] = React.useState<ShippingSettings | null>(null);
   const [settingsLoading, setSettingsLoading] = React.useState(true);
   
@@ -71,7 +72,6 @@ export default function Home() {
         if (doc.exists()) {
           setShippingSettings(doc.data() as ShippingSettings);
         } else {
-          // Set default settings if none exist
           setShippingSettings({
             originZip: "01001-000",
             tiers: [
@@ -84,20 +84,19 @@ export default function Home() {
         setSettingsLoading(false);
       });
       return () => unsubscribe();
+    } else if (!isUserLoading && user) {
+        // If there's a user but no doc, means we can stop loading for settings.
+        setSettingsLoading(false);
     }
-  }, [shippingSettingsDoc]);
+  }, [shippingSettingsDoc, isUserLoading, user]);
 
 
-  // State for UI dialogs
   const [editingOrder, setEditingOrder] = React.useState<SalesOrder | null>(null);
   const [leadForOrder, setLeadForOrder] = React.useState<Lead | null>(null);
   const [proposalForOrder, setProposalForOrder] = React.useState<Proposal | null>(null);
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = React.useState(false);
   const [isSalesOrderDialogOpen, setIsSalesOrderDialogOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("funnel");
-
-  // CRUD Operations (Create, Read, Update, Delete)
-  // All functions now interact with Firestore collections.
 
   const addProduct = async (newProduct: Omit<Product, 'id'>) => {
     if (!productsCollection) return;
@@ -279,7 +278,7 @@ export default function Home() {
                     <MenubarContent>
                         <MenubarItem onClick={() => setActiveTab('proposals')}>Propostas</MenubarItem>
                         <MenubarItem onClick={() => setActiveTab('orders')}>Pedidos de Venda</MenubarItem>
-                    </MenubarContent>
+                    </emenubarContent>
                 </MenubarMenu>
                  <MenubarMenu>
                     <MenubarTrigger onClick={() => setActiveTab('analytics')}>Análises</MenubarTrigger>
