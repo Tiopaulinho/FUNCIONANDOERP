@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from 'next/navigation'; 
 import CustomerList from "@/components/customer-list";
 import SalesOrderList from "@/components/sales-order-list";
 import {
@@ -29,8 +30,7 @@ import {
   MenubarMenu,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
 import { collection, CollectionReference, DocumentReference } from "firebase/firestore";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
 
@@ -77,7 +77,7 @@ const initialShippingSettings: ShippingSettings = {
 
 
 export default function Home() {
-  const auth = useAuth();
+  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
@@ -105,10 +105,9 @@ export default function Home() {
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
-      // initiateAnonymousSignIn(auth);
+      router.push('/login');
     }
-  }, [isUserLoading, user, auth]);
-
+  }, [isUserLoading, user, router]);
 
   const addProduct = (newProduct: Product & { id: string }) => {
     setProducts((prevProducts) => [...prevProducts, newProduct]);
@@ -241,7 +240,7 @@ const handleProposalSent = (proposal: Proposal) => {
   };
 
 
-  if (isUserLoading || customersLoading) {
+  if (isUserLoading || !user) { // Updated condition
     return (
       <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-muted/30 p-4 md:p-8">
         <p>Carregando...</p>
@@ -390,8 +389,3 @@ const handleProposalSent = (proposal: Proposal) => {
     </main>
   );
 }
-
-    
-
-    
-    

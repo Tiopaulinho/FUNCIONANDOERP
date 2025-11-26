@@ -1,32 +1,4 @@
 
-/**
- * Filosofia Principal: Este conjunto de regras implementa um modelo de propriedade estrito e centrado no usuário.
- * Todos os dados são isolados (sandboxed), o que significa que cada usuário autenticado só pode acessar e
- * gerenciar suas próprias informações. Não há conceito de dados públicos ou compartilhados.
- *
- * Estrutura de Dados: Todos os dados da aplicação estão aninhados sob o caminho `/users/{userId}`.
- * A coleção principal, `clientes`, existe como uma git init
- * garantindo uma separação clara e segura dos dados entre diferentes usuários.
- * A estrutura é `/users/{userId}/clientes/{clienteId}`.
- *
- * Decisões Chave de Segurança:
- * - Negação por Padrão: Todas as operações são negadas por padrão. O acesso só é concedido
- *   através de declarações `allow` explícitas.
- * - Propriedade Estrita: A identidade de um usuário (`request.auth.uid`) é verificada
- *   contra o parâmetro `userId` no caminho do documento para cada operação. Isso
- *   impede que qualquer usuário acesse os dados de outro usuário.
- * - Sem Listagem de Usuários: A coleção de nível superior `/users` não é legível,
- *   impedindo que atores mal-intencionados descubram a lista de todos os usuários da aplicação.
- *
- * Desnormalização para Autorização: Este conjunto de regras depende da Autorização Baseada em Caminho
- * (Path-Based Authorization). O `userId` no caminho `/users/{userId}` é a única fonte
- * de verdade para a propriedade. Este design é altamente performático, pois não requer
- * leituras extras de documentos (chamadas `get()`) para autorizar uma operação.
- *
- * Segregação Estrutural: Todo o modelo de dados é construído sobre segregação. Os dados de cada
- * usuário são armazenados em sua própria árvore de documentos, tornando impossível para as
- * consultas de lista vazarem acidentalmente dados de outros usuários.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -35,51 +7,26 @@ service cloud.firestore {
     // Funções Auxiliares
     // ----------------------------------------------------------------------
 
-    /**
-     * Verifica se o usuário está autenticado.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Valida se o ID do usuário atualmente autenticado corresponde ao
-     * userId do caminho do documento, estabelecendo a propriedade.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * Garante que uma operação de atualização ou exclusão vise um documento existente
-     * e que o solicitante seja o proprietário legítimo. Isso impede a modificação
-     * ou exclusão de documentos que não existem.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
     }
 
     // ----------------------------------------------------------------------
     // Regras das Coleções
     // ----------------------------------------------------------------------
 
-    /**
-     * @description Gerencia o acesso à lista privada de clientes ('clientes') de um usuário.
-     * Apenas o proprietário da árvore de dados pode realizar qualquer ação em seus clientes.
-     * @path /users/{userId}/clientes/{clienteId}
-     * @allow (create) Um usuário autenticado com UID 'user_abc' pode criar um novo documento de cliente em `/users/user_abc/clientes/cliente_123`.
-     * @deny (get) Um usuário autenticado com UID 'user_xyz' é impedido de ler `/users/user_abc/clientes/cliente_123`.
-     * @principle Restringe o acesso à própria árvore de dados de um usuário. Todas as operações são autorizadas com base no `userId` no caminho.
-     */
-    match /users/{userId}/clientes/{clienteId} {
-      // Permissões de leitura: Apenas o proprietário pode obter ou listar seus próprios clientes.
+    match /users/{userId} {
+      // O próprio documento do usuário pode ser lido por ele mesmo
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
 
-      // Permissões de escrita: Apenas o proprietário pode criar, atualizar ou excluir seus próprios clientes.
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      // Regras para todas as subcoleções do usuário
+      match /{collection}/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
   }
 }
