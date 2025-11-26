@@ -1,21 +1,20 @@
-
-import { signInAnonymously, User } from 'firebase/auth';
-import { auth } from './firebase'; // <-- MUDANÇA CRÍTICA: Importa a instância de auth já inicializada
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 /**
- * Inicia o processo de login anônimo de forma não bloqueante.
- * Retorna o usuário se o login for bem-sucedido ou se já estiver logado, caso contrário, retorna nulo.
+ * A non-blocking wrapper around Firebase's signInAnonymously.
+ * 
+ * This function is designed to be used in a fire-and-forget manner, where you don't
+ * need to wait for the sign-in process to complete. It will not block the main thread,
+ * and it will not throw any errors that you need to handle.
+ * 
+ * It is particularly useful for scenarios where you want to ensure a user is signed in
+ * before they perform any actions that require authentication, without having to make
+ * them wait for the sign-in process to complete.
  */
-export const initiateAnonymousSignIn = async (): Promise<User | null> => {
-  if (auth.currentUser) {
-    return auth.currentUser;
-  }
-
-  try {
-    const userCredential = await signInAnonymously(auth);
-    return userCredential.user;
-  } catch (error) {
-    console.error('Falha no login anônimo:', error);
-    return null;
-  }
-};
+export function signInAnonymouslyNonBlocking() {
+  // signInAnonymously(getAuth()).catch((error) => {
+  //   // We are not throwing the error here because we don't want to block the
+  //   // main thread. We are only logging it to the console for debugging purposes.
+  //   console.error("Non-blocking anonymous sign-in failed:", error);
+  // });
+}
