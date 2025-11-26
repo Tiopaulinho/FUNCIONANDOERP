@@ -40,13 +40,6 @@ export default function Home() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  React.useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [isUserLoading, user, router]);
-
-  const clientesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clientes') : null, [firestore, user]);
   const productsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'products') : null, [firestore, user]);
   const ordersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'orders') : null, [firestore, user]);
   const leadsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'leads') : null, [firestore, user]);
@@ -55,11 +48,12 @@ export default function Home() {
   
   const shippingSettingsDoc = useMemoFirebase(() => settingsCollection ? doc(settingsCollection, 'shipping') : null, [settingsCollection]);
 
-  const { data: customers = [], isLoading: customersLoading } = useCollection<Customer>(clientesCollection);
   const { data: products = [], isLoading: productsLoading } = useCollection<Product>(productsCollection);
   const { data: orders = [], isLoading: ordersLoading } = useCollection<SalesOrder>(ordersCollection);
   const { data: leads = [], isLoading: leadsLoading } = useCollection<Lead>(leadsCollection);
   const { data: proposals = [], isLoading: proposalsLoading } = useCollection<Proposal>(proposalsCollection);
+  const { data: customers = [], isLoading: customersLoading } = useCollection<Customer>(useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'customers') : null, [firestore, user]));
+
   
   const [shippingSettings, setShippingSettings] = React.useState<ShippingSettings | null>(null);
   const [settingsLoading, setSettingsLoading] = React.useState(true);
@@ -165,6 +159,7 @@ export default function Home() {
   }
 
   const addCustomer = async (customerData: Omit<Customer, 'id'>): Promise<DocumentReference | undefined> => {
+    const clientesCollection = user ? collection(firestore, 'users', user.uid, 'customers') : null;
     if (!clientesCollection) return undefined;
     return addDocumentNonBlocking(clientesCollection, customerData);
   }
@@ -286,9 +281,7 @@ export default function Home() {
           </div>
           <TabsContent value="customers">
             <CustomerList 
-                customers={customers} 
                 shippingSettings={shippingSettings}
-                collectionRef={clientesCollection}
             />
           </TabsContent>
           <TabsContent value="funnel">

@@ -30,11 +30,10 @@ import {
 } from "./ui/dialog";
 import CustomerRegistrationForm from "./customer-registration-form";
 import type { Customer, ShippingSettings } from "@/lib/schemas";
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
-import { doc, CollectionReference } from "firebase/firestore";
+import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
+import { doc, collection, CollectionReference } from "firebase/firestore";
 import { Label } from "./ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/firebase";
 
 const ImportModal = ({
     open,
@@ -144,12 +143,10 @@ const ImportModal = ({
 
 
 interface CustomerListProps {
-  customers: (Customer & { id: string })[];
   shippingSettings: ShippingSettings;
-  collectionRef: CollectionReference | null;
 }
 
-export default function CustomerList({ customers, shippingSettings, collectionRef }: CustomerListProps) {
+export default function CustomerList({ shippingSettings }: CustomerListProps) {
   const [nameFilter, setNameFilter] = React.useState("");
   const [emailFilter, setEmailFilter] = React.useState("");
   const [filteredCustomers, setFilteredCustomers] = React.useState<(Customer & { id: string })[]>([]);
@@ -160,12 +157,16 @@ export default function CustomerList({ customers, shippingSettings, collectionRe
 
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
+
+  const collectionRef = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clientes') : null, [firestore, user]);
+  const { data: customers, isLoading: customersLoading } = useCollection<Customer>(collectionRef);
 
   React.useEffect(() => {
-    const lowercasedNameFilter = nameFilter.toLowerCase();
-    const lowercasedEmailFilter = emailFilter.toLowerCase();
-
     if (customers) {
+      const lowercasedNameFilter = nameFilter.toLowerCase();
+      const lowercasedEmailFilter = emailFilter.toLowerCase();
+      
       const filtered = customers.filter((customer) => {
         const nameMatch = (customer.name.toLowerCase().includes(lowercasedNameFilter) || (customer.companyName && customer.companyName.toLowerCase().includes(lowercasedNameFilter)));
         const emailMatch = customer.email.toLowerCase().includes(lowercasedEmailFilter);
@@ -203,11 +204,11 @@ export default function CustomerList({ customers, shippingSettings, collectionRe
   }
 
   const handleImportCustomers = (data: any[]) => {
-    if (!collectionRef || !user) {
+    if (!collectionRef || !user || !customers) {
         toast({
             variant: "destructive",
-            title: "Erro de Autenticação",
-            description: "Você precisa estar logado para importar clientes.",
+            title: "Erro de Autenticação ou Dados",
+            description: "Você precisa estar logado e os clientes carregados para importar.",
         });
         return;
     }
@@ -254,6 +255,13 @@ export default function CustomerList({ customers, shippingSettings, collectionRe
     });
 };
 
+ if (customersLoading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <Card className="shadow-lg">

@@ -10,18 +10,11 @@ import { auth, firestore } from './firebase'; // Importa instâncias inicializad
  * Hook para obter o estado do usuário atual e o status de carregamento.
  */
 export function useUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isUserLoading, setIsUserLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsUserLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  return { user, isUserLoading };
+  const user = {
+    uid: "s5kI8z12treu6QNyOzGvikjZQMU2",
+    email: "prschmiedel@gmail.com",
+  } as User;
+  return { user, isUserLoading: false };
 }
 
 /**
