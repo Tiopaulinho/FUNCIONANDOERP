@@ -1,16 +1,8 @@
-# Defines the environment variables for the prod environment.
-env:
-  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: "AIzaSyCHQp-0HF4O2NVv9aC2FGeKhOsS2lbgqnE"
-  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: "erpnovo-483a1.firebaseapp.com"
-  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: "erpnovo-483a1"
-  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: "erpnovo-483a1.firebasestorage.app"
-  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: "280722278498"
-  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: "1:280722278498:web:36637e9d80eed537d2293b"
-  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-    value: "G-16SGNW39FZ"
+# This file is used by Firebase App Hosting to configure the production environment.
+# Removing the manual environment variables to rely on automatic configuration.
+
+# The run command to build the app
+run: npm run build
+
+# The directory to serve the app from
+serve: .next
